@@ -1,0 +1,14 @@
+.venv/
+venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Simulation/output files
+*.h5
+*.log
+*.tmp
+
+# IDE
+.vscode/
+.idea/
