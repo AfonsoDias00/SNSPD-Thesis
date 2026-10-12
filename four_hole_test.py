@@ -89,7 +89,7 @@ SOLVE_TIME = 50.0
 
 # Use (0.0,) first to isolate geometric effects. For field reversal tests,
 # use (-100.0, 0.0, 100.0).
-APPLIED_FIELDS_MT = (-100.0, 0.0, 100.0)
+APPLIED_FIELDS_MT = (0.0)
 
 MAX_EDGE_LENGTH = 0.1   # 5 nm; use 0.0025 for a convergence check
 MESH_SMOOTHING = 10

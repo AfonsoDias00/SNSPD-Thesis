@@ -38,7 +38,7 @@ layer = tdgl.Layer(
 )
 
 width = 0.2                 # 200 nm
-length = 1.0                # 1 um
+length = 2.0                # 2 um
 hole_diameter = 0.050       # 50 nm
 
 CONFIGURATIONS = {
@@ -57,13 +57,10 @@ CONFIGURATIONS = {
 # SWEEP AND SOLVER SETTINGS
 # ============================================================
 
-# Use a geometry-specific grid after the initial coarse sweep. These ranges
-# bracket the transitions observed in that run and use 10 uA spacing.
-# Expand a range if its threshold is not reached.
 CURRENTS_UA = {
-    "no_hole": np.arange(406.0, 408.0, 1.0),
-    "single_hole": np.arange(394.0, 396.0, 2.0),
-    "four_symmetric": np.arange(340.0, 342.0, 2.0),
+    "no_hole": np.arange(404.0, 408.0, 2.0), #406 304
+    "single_hole": np.arange(392.0, 396.0, 2.0), #394 300
+    "four_symmetric": np.arange(338.0, 342.0, 2.0), #340 286
 }
 
 APPLIED_FIELD_MT = 0.0
@@ -74,8 +71,6 @@ SAVE_EVERY = 10
 MAX_EDGE_LENGTH = 0.005  # 5 nm; repeat final points with 0.0025 for convergence
 MESH_SMOOTHING = 10
 
-# This is an operational criterion, not a universal TDGL constant.
-# Voltage is measured between the two probe points in dimensionless V0 units.
 VOLTAGE_THRESHOLD = 0.01
 RELAXATION_START_FRACTION = 0.5
 
@@ -113,7 +108,7 @@ def make_device(name, hole_centers):
         film=film,
         holes=holes,
         terminals=[source, drain],
-        probe_points=[(0.0, 0.4 * length), (0.0, -0.4 * length)],
+        probe_points=[(0.0, 0.3 * length), (0.0, -0.3 * length)],
     )
     device.make_mesh(
         max_edge_length=MAX_EDGE_LENGTH,
