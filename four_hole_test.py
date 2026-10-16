@@ -82,16 +82,16 @@ HOLE_CONFIGURATIONS = {
 # CURRENT, FIELD, AND MESH SETTINGS
 # ============================================================
 
-I_MAX = 500.0              # uA
+I_MAX = 605.0              # uA; critical current for the symmetric four-hole device
 T_START = 0.0
 T_END_RAMP = 2.0
-SOLVE_TIME = 50.0
+SOLVE_TIME = 150.0
 
 # Use (0.0,) first to isolate geometric effects. For field reversal tests,
 # use (-100.0, 0.0, 100.0).
-APPLIED_FIELDS_MT = (0.0)
+APPLIED_FIELDS_MT = (0.0,)
 
-MAX_EDGE_LENGTH = 0.1   # 5 nm; use 0.0025 for a convergence check
+MAX_EDGE_LENGTH = 0.1    # 10 nm; use 0.005 for a convergence check
 MESH_SMOOTHING = 10
 
 
@@ -135,7 +135,7 @@ def make_device(name, hole_centers):
         film=film,
         holes=holes,
         terminals=[source, drain],
-        probe_points=[(0.0, 0.4 * length), (0.0, -0.4 * length)],
+        probe_points=[(0.0, 0.3 * length), (0.0, -0.3 * length)],
     )
     device.make_mesh(
         max_edge_length=MAX_EDGE_LENGTH,
