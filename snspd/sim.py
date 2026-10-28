@@ -6,10 +6,10 @@ Detection criterion (a run "switched" if ANY holds):
   1. peak |V| after t0 + 4 tau0 exceeds V_POST_MAX
   2. a V_TRAIL_WIN-long trailing mean of |V| ending at t >= V_TRAIL_START exceeds V_TRAIL_MEAN
   3. the supercurrent through a monitored cross-section of the geometry drops below COLLAPSE_REL * I_dep(strip width)
-     at any saved frame after t0 + 4 tau0   (50 uA for the 200 nm strip with the default film)
+     at any saved frame after t0 + 4 tau0   (4.25 uA for the 200 nm strip with the default film)
 Voltages are pyTDGL's normalised probe voltage (units of V0); the probes sit at y = +/- L/3.
 
-Thresholds come from bisection to TOL_REL * I_dep(strip width) (4 uA for 200 nm, 0.0034 in i):
+Thresholds come from bisection to TOL_REL * I_dep(strip width) (0.34 uA for 200 nm, 0.0034 in i):
   I_sw   in ISW_BRACKET * I_dep(narrowest free width), no photon
   I_det  in [hit_lo_frac, 1] * I_sw
 """

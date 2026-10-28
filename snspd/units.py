@@ -10,7 +10,7 @@ Screening is off (pyTDGL's default, used throughout), so lambda enters ONLY thes
 (i_det = I_det / I_sw, I_sw / I_dep) is independent of lambda, absolute currents scale as 1 / lambda^2 and absolute
 times as lambda^2 / rho_n.  The GL depairing sheet current [2] in the same units is
 
-  j_dep = K0 / (6 sqrt 3) = d Phi0 / (3 sqrt 3 pi mu0 lambda^2 xi)        (5.925 uA/nm for the default film)
+  j_dep = K0 / (6 sqrt 3) = d Phi0 / (3 sqrt 3 pi mu0 lambda^2 xi)        (0.504 uA/nm for the default film)
 
 and a uniform strip of width w has I_dep = j_dep * w.  Bisection tolerances and detection thresholds are expressed
 as fractions of I_dep so they stay meaningful if lambda changes.
@@ -35,9 +35,14 @@ class Film:
 
     The defaults are the values used for every result in results/.  rho_uohm_cm is only needed to quote times in
     picoseconds; it does not change any simulation.  Set it to the measured normal-state resistivity of the film.
+
+    lambda = 600 nm follows the fit to 9 nm NbTiN hairpins (Jonsson et al., PR Applied 17, 064046 (2022)); with it
+    the hotspot's D = 10 nm^2/tau0 and t_relax = 35 tau0 are 0.2-0.55 cm^2/s and 6-16 ps for rho_n = 100-250 uOhm cm.
+    Results up to 28 Oct 2026 were simulated with lambda = 175 nm; since lambda only sets the current and time units,
+    their stored currents were rescaled by (175/600)^2 and all normalised values are unchanged.
     """
     xi_nm: float = 5.0             # coherence length
-    lambda_nm: float = 175.0       # London penetration depth (a fit to 9 nm NbTiN hairpins gives ~600 nm; see README)
+    lambda_nm: float = 600.0       # London penetration depth
     d_nm: float = 9.0              # thickness
     gamma: float = 1.0             # GTDGL inelastic-scattering parameter (pyTDGL default is 10)
     u: float = 5.79                # GTDGL ratio of relaxation times (dirty limit, pyTDGL default)

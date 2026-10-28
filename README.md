@@ -44,10 +44,10 @@ Result files are tagged `<hotspot>_T<tmax>_m<mesh_xi>`, e.g. `summary_conserving
 
 * **Solver:** generalized TDGL (Kramer & Watts-Tobin, PRL 40, 1041 (1978)) in pyTDGL (Bishop-Van Horn, Comput.
   Phys. Commun. 291, 108799 (2023)); no screening, no applied field, γ = 1, u = 5.79.
-* **Film** (`snspd/units.py`): ξ = 5 nm, λ = 175 nm, d = 9 nm; strip 200 nm × 0.8 µm with film-width terminals.
-* **Units:** lengths in ξ, sheet current in K0 = 4ξB_c2/(μ0Λ) = 61.57 µA/nm, time in τ0 = μ0σλ². The GL depairing
-  current is j_dep = K0/(6√3) = 5.925 µA/nm, so I_dep = j_dep × narrowest free width. These are computed from pyTDGL's
-  own definitions (`Film.K0_uA_per_nm` equals `device.K0`).
+* **Film** (`snspd/units.py`): ξ = 5 nm, λ = 600 nm, d = 9 nm; strip 200 nm × 0.8 µm with film-width terminals.
+* **Units:** lengths in ξ, sheet current in K0 = 4ξB_c2/(μ0Λ) = 5.238 µA/nm, time in τ0 = μ0σλ². The GL depairing
+  current is j_dep = K0/(6√3) = 0.504 µA/nm, so I_dep = j_dep × narrowest free width (100.8 µA for 200 nm). These are
+  computed from pyTDGL's own definitions (`Film.K0_uA_per_nm` equals `device.K0`).
 * **Bisection tolerance and the collapse threshold** are fractions of I_dep (0.34 % and 4.2 %), not fixed µA, so they
   stay correct if λ changes.
 * **Hotspot** (`snspd/hotspot.py`): r0 = 14 nm, A = −2.5, D = 10 nm²/τ0, t_relax = 35 τ0, photon at 20 τ0, window
@@ -60,13 +60,19 @@ both:
 
 | λ | ρ_n [µΩ cm] | τ0 | D = 10 nm²/τ0 | t_relax = 35 τ0 | I_dep(200 nm) |
 |---|---|---|---|---|---|
-| 175 nm (current) | 100–250 | 0.015–0.038 ps | 2.6–6.5 cm²/s | 0.5–1.4 ps | 1185 µA |
-| 600 nm | 100–250 | 0.18–0.45 ps | 0.22–0.55 cm²/s | 6–16 ps | 101 µA |
+| 175 nm (until 28 Oct) | 100–250 | 0.015–0.038 ps | 2.6–6.5 cm²/s | 0.5–1.4 ps | 1185 µA |
+| **600 nm (current)** | 100–250 | 0.18–0.45 ps | 0.22–0.55 cm²/s | 6–16 ps | 101 µA |
 
-Literature values for NbN-like films are D ≈ 0.5 cm²/s and τ_e-ph ≈ 17 ps (Zotova & Vodolazov, PRB 85, 024509
-(2012)), and a fit to 9 nm NbTiN gives λ ≈ 600 nm (Jönsson et al., PR Applied 17, 064046 (2022)). So the simulations
-already run are physically consistent if the film has λ ≈ 600 nm. Choosing λ and ρ_n for the target film is open; it
-needs no new simulations, only a rescaling of the stored µA values.
+λ = 600 nm follows the fit to 9 nm NbTiN hairpins (Jönsson et al., PR Applied 17, 064046 (2022)). With it the hotspot
+parameters match literature values for NbN-like films, D ≈ 0.5 cm²/s and τ_e-ph ≈ 17 ps (Zotova & Vodolazov, PRB 85,
+024509 (2012)), and I_sw(200 nm) ≈ 100 µA is in the range of real NbTiN strips. ρ_n is still open: set it to the
+film's measured value to pin τ0.
+
+**Change of λ on 28 Oct 2026.** All results were simulated with λ = 175 nm. Their stored currents (CSV, JSON and
+crowding maps) were multiplied once by (175/600)² = 0.08507; every normalised value is unchanged. Fresh λ = 600 nm
+runs reproduce the rescaled values within the bisection tolerance (plain I_sw 99.50 vs 99.41 µA, 56 nm I_sw 27.92 vs
+27.93 µA, plain centre i_det 0.852 vs 0.852). Absolute currents in older documents (e.g. the 28 Oct meeting report)
+are in λ = 175 nm units: multiply by 0.0851 to compare.
 
 ## Current results
 
