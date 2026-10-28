@@ -10,6 +10,8 @@ results/checks/ and never into the map data.
   delay      single runs at fixed bias with a long window: when (and by which branch) does a photon at one site
              trigger?  A sharp threshold shows as a delay that diverges just above it; a slow, window-limited
              "threshold" shows as triggers spread over the whole window.
+  fluxoid    single runs at fixed bias: the fluxoid (trapped flux quanta) of every hole and the probe voltage vs
+             time after the photon.  Shows whether a photon leaves vortices trapped in the holes.
 
 Usage
 -----
@@ -17,6 +19,7 @@ Usage
   python checks.py run    edge     --mesh-xi 0.8
   python checks.py report symmetry --mesh-xi 0.8
   python checks.py delay  --geom Long_Zipper --site 0,0 --biases 0.76,0.78,0.80,0.82,0.84 --tmax 500
+  python checks.py fluxoid --geom Long_Zipper --site=-68,0 --biases 0.770,0.785 --tmax 500   (bias in I_dep units)
 
 The I_sw and the reference thresholds come from results/hitmap/ with the same hotspot, window and mesh.
 """
@@ -155,9 +158,67 @@ def cmd_delay(cfg, a):
                 f"{r['branch']:<9} t = {r['t_trigger'] or '-'}")
 
 
+def fluxoid_task(task):
+    """One fixed-bias run with a photon; fluxoid of every hole and the probe voltage every ~25 tau0 (worker)."""
+    import time
+    import numpy as np
+    import tdgl
+    from dataclasses import replace
+    from snspd import hotspot as hsm
+    t_start = time.time()
+    try:
+        g, cfg = task["geom"], replace(task["cfg"], save_every=40)
+        ctx = sim.context(g, cfg.mesh_xi)
+        eps = hsm.build_eps(ctx["hs"], cfg.hotspot, task["x_nm"], task["y_nm"], 1.0, cfg.tmax)
+        sol = tdgl.solve(ctx["device"], sim.solver_options(cfg, cfg.tmax, sim.temp_h5(cfg)),
+                         terminal_currents=dict(source=task["I"], drain=-task["I"]), disorder_epsilon=eps)
+        try:
+            steps, times = sim.saved_steps_and_times(sol)
+            t, v = np.asarray(sol.dynamics.time), np.abs(np.asarray(sol.dynamics.voltage()))
+            names, out = [h.name for h in ctx["device"].holes], []
+            for s, tm in zip(steps, times):
+                if tm < 15 or (out and tm - out[-1][0] < 24.5):
+                    continue
+                sol.solve_step = int(s)
+                fl = [round(float(sum(sol.hole_fluxoid(n, with_units=False)))) for n in names]
+                win = (t > tm - 25) & (t <= tm)
+                out.append((float(tm), fl, float(v[win].max()) if win.any() else 0.0))
+        finally:
+            os.remove(sol.path)
+        return dict(ok=True, task=task, res=out, wall_s=time.time() - t_start)
+    except Exception as exc:
+        return dict(ok=False, task=task, error=f"{type(exc).__name__}: {exc}", wall_s=time.time() - t_start)
+
+
+def cmd_fluxoid(cfg, a):
+    """Trapped flux after a photon: hole fluxoids vs time at the given biases (units of I_dep of the narrowest
+    cross-section).  Holes are multiply connected, so a vortex that enters a hole stays as a fluxoid."""
+    sim.need_tdgl()
+    os.makedirs(cfg.out_dir, exist_ok=True)
+    g = geo.get(a.geom)
+    if not g.holes:
+        raise SystemExit(f"{g.key} has no holes")
+    x, y = (float(v) for v in a.site.split(","))
+    i_dep = a.film.I_dep_uA(g.free_width_min_nm())
+    tasks = [dict(geom=g, cfg=cfg, x_nm=x, y_nm=y, bias=b, I=b * i_dep) for b in a.biases]
+    res = {}
+    sim.execute(tasks, a.workers, lambda r: res.__setitem__(r["task"]["bias"], r), fn=fluxoid_task)
+    L = [f"FLUXOID {g.key} photon at ({x:g},{y:g}) nm, t0 = 20 tau0   {cfg.tag}   bias in units of I_dep = {i_dep:.2f} uA",
+         "holes (x, y nm): " + ", ".join(f"({h.cx_nm:g},{h.cy_nm:g})" for h in g.holes)]
+    for b in sorted(res):
+        r = res[b]
+        L.append(f"bias {b:.3f} I_dep" + ("" if r["ok"] else f"  FAILED {r['error']}"))
+        for tm, fl, vmax in r.get("res", []):
+            L.append(f"  t = {tm:6.1f}   fluxoid per hole {fl}   max|V| over the last 25 tau0 = {vmax:.3f}")
+    text = "\n".join(L)
+    sim.log(text)
+    with open(cfg.path(f"fluxoid_{g.key}_{x:g}_{y:g}", "txt"), "w") as fh:
+        fh.write(text + "\n")
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("Usage")[0], formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["run", "report", "delay"])
+    ap.add_argument("command", choices=["run", "report", "delay", "fluxoid"])
     ap.add_argument("check", nargs="?", choices=list(CHECKS))
     ap.add_argument("--geom", default="Long_Zipper", help="delay: geometry key")
     ap.add_argument("--site", default="0,0", help="delay: photon site x,y [nm]")
@@ -172,10 +233,10 @@ def main(argv=None):
     a = ap.parse_args(argv)
     a.film = Film()
     a.biases = [float(s) for s in a.biases.split(",") if s]
-    if a.command != "delay" and a.check is None:
-        ap.error("run / report need a check name")
     cfg = sim.SimConfig(tmax=a.tmax, hotspot=a.hotspot, mesh_xi=a.mesh_xi, hit_lo_frac=a.hit_lo_frac, out_dir=a.out)
-    {"run": cmd_run, "report": cmd_report, "delay": cmd_delay}[a.command](cfg, a)
+    if a.command != "delay" and a.check is None and a.command != "fluxoid":
+        ap.error("run / report need a check name")
+    {"run": cmd_run, "report": cmd_report, "delay": cmd_delay, "fluxoid": cmd_fluxoid}[a.command](cfg, a)
 
 
 if __name__ == "__main__":

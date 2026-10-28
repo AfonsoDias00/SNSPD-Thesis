@@ -1,0 +1,37 @@
+FLUXOID Long_Zipper photon at (-68,0) nm, t0 = 20 tau0   conserving_T500_m1.4   bias in units of I_dep = 87.35 uA
+holes (x, y nm): (-36,-122), (-36,0), (-36,122), (36,-183), (36,-61), (36,61), (36,183)
+bias 0.770 I_dep
+  t =   20.8   fluxoid per hole [0, 0, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 30.412
+  t =   49.3   fluxoid per hole [0, -1, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.230
+  t =   74.6   fluxoid per hole [0, -2, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.206
+  t =  106.6   fluxoid per hole [0, -2, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.002
+  t =  138.6   fluxoid per hole [0, -2, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.001
+  t =  170.6   fluxoid per hole [0, -2, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.001
+  t =  202.6   fluxoid per hole [0, -2, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.000
+  t =  234.6   fluxoid per hole [0, -2, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.000
+  t =  266.6   fluxoid per hole [0, -2, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.000
+  t =  298.6   fluxoid per hole [0, -2, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.000
+  t =  330.6   fluxoid per hole [0, -2, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.000
+  t =  362.6   fluxoid per hole [0, -2, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.000
+  t =  394.6   fluxoid per hole [0, -2, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.000
+  t =  426.6   fluxoid per hole [0, -2, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.000
+  t =  458.6   fluxoid per hole [0, -2, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.000
+  t =  490.6   fluxoid per hole [0, -2, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.000
+bias 0.785 I_dep
+  t =   20.8   fluxoid per hole [0, 0, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 31.004
+  t =   48.9   fluxoid per hole [0, -1, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.250
+  t =   75.2   fluxoid per hole [0, -2, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.220
+  t =  107.2   fluxoid per hole [0, -2, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.002
+  t =  139.2   fluxoid per hole [0, -2, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.001
+  t =  171.2   fluxoid per hole [0, -2, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.021
+  t =  196.3   fluxoid per hole [0, -1, 0, 0, 0, -1, 0]   max|V| over the last 25 tau0 = 0.208
+  t =  221.3   fluxoid per hole [0, 0, 0, 0, 0, -2, 0]   max|V| over the last 25 tau0 = 0.205
+  t =  247.1   fluxoid per hole [0, 0, 0, 0, 0, 2, 0]   max|V| over the last 25 tau0 = 0.356
+  t =  279.3   fluxoid per hole [0, 0, 0, 0, 0, 2, 0]   max|V| over the last 25 tau0 = 0.032
+  t =  311.3   fluxoid per hole [0, 0, 0, 0, 0, 2, 0]   max|V| over the last 25 tau0 = 0.003
+  t =  343.3   fluxoid per hole [0, 0, 0, 0, 0, 2, 0]   max|V| over the last 25 tau0 = 0.016
+  t =  369.4   fluxoid per hole [0, 1, 0, 0, 0, 1, 0]   max|V| over the last 25 tau0 = 0.238
+  t =  397.7   fluxoid per hole [0, 2, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.285
+  t =  422.6   fluxoid per hole [0, -2, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.470
+  t =  450.7   fluxoid per hole [0, -4, 0, 0, 0, 0, 0]   max|V| over the last 25 tau0 = 0.323
+  t =  476.0   fluxoid per hole [0, 0, 0, 0, -2, -2, 0]   max|V| over the last 25 tau0 = 0.505

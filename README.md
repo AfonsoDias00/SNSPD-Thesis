@@ -16,7 +16,7 @@ snspd/                  shared library, imported by every current script
   plotting.py           figure style and standard figures
 hitmap.py               photon-threshold maps: hole geometries vs the plain 200 nm wire, go / no-go
 narrow_baseline.py      plain strips of any width (control) and the width scan
-checks.py               tests of the map assumptions: symmetry, edge band, trigger delay vs bias
+checks.py               tests of the map assumptions: symmetry, edge band, trigger delay, trapped flux
 results/hitmap/         plain wire vs long zipper            (hitmap.py)        } voltage-only criterion,
 results/narrow_baseline/ plain strips                         (narrow_baseline.py)} from 29 Oct 2026
 results/checks/         symmetry, edge-band and delay checks (checks.py)          }
@@ -87,8 +87,32 @@ are in λ = 175 nm units: multiply by 0.0851 to compare.
 
 ## Current results
 
-The production results below were made with the first criterion (voltage or channel collapse) and live in
-`results/v1_voltage_or_collapse/`; they are being repeated with the voltage-only criterion in `results/`.
+### Voltage-only criterion, 400 τ0 window, 1.4 ξ mesh (29 Oct 2026)
+
+| Result | File | Key numbers (units of I_dep of the narrowest cross-section) |
+|---|---|---|
+| Plain wire vs long zipper, full grid | `results/hitmap/summary_conserving_T400_m1.4.txt` | plain i_50 0.845, i_95 0.850; zipper i_50 0.795, i_95 0.853, i_max 0.907; go / no-go 1/3 (C3 passes by 0.001, with one non-detecting probe per geometry) |
+| Width scan + zipper | `results/narrow_baseline/width_scan_summary_conserving_T400_m1.4.txt` | i_50 = 0.327 / 0.603 / 0.766 / 0.845 at 30 / 56 / 100 / 200 nm; zipper 0.795 |
+| Narrow-strip comparison | `results/narrow_baseline/narrow56nm_summary_conserving_T400_m1.4.txt` | 56 nm: i_50 0.603, i_95 0.614: beats the zipper on onset and plateau |
+| Flux trapping | `results/checks/fluxoid_Long_Zipper_-68_0_conserving_T500_m1.4.txt` | see below |
+
+All strips and the zipper switch at I_sw/I_dep = 0.968–0.971 with this window. The 30 nm strip agrees with a 0.8 ξ
+run within 0.006. Detection latency at threshold (t_trigger − t0): plain wire median 93 τ0, max 129 τ0; zipper median
+175 τ0, max 366 τ0, with 18 of 42 sites above 200 τ0.
+
+**The holes trap flux.** In the zipper's left channel (x ≤ −50 nm, y ≤ 30 nm) 11 sites share the same threshold,
+0.777 I_dep, and all switch 320–370 τ0 after the photon. A photon there pushes two flux quanta into the neighbouring
+hole within ~55 τ0, with only a 0.2 V0 voltage blip (below the detection thresholds). Below 0.777 I_dep the device then
+sits at zero voltage with the flux trapped for the rest of the run (500 τ0): no detection, but a different device
+state. Above it the trapped flux starts hopping between holes after ~150 τ0 and the voltage builds until the device
+switches. So the zipper's long-window onset (i_10 0.777 I_dep) is fluxoid-mediated delayed switching, not prompt
+hotspot detection, and a sub-threshold photon can leave the device with a much lower effective switching current.
+Deterministic TDGL has no thermal escape, so how long such flux stays trapped in a real device is not modelled.
+
+### First criterion (voltage or channel collapse), 150 τ0 window
+
+These live in `results/v1_voltage_or_collapse/`. A voltage-only re-run of the 1.4 ξ critical grid at 150 τ0
+reproduces them within 0.003.
 
 | Result | File (under `results/v1_voltage_or_collapse/`) | Key numbers |
 |---|---|---|
@@ -129,10 +153,10 @@ layout has a symmetry other than `strip` or `zipper`, add its map rule to `snspd
 
 ## Next steps for the hole study
 
-0. **Re-run the reference comparison with the voltage-only criterion** (done: criterion; open: window). Choose the
-   window from the τ0 estimate above (400 τ0 ≈ 46–69 ps covers the slow zipper sites) and keep the recorded trigger
-   time as a latency figure of merit: the zipper's channel sites are slow. Then re-run the plain wire, long zipper and
-   56 nm strip (1.4 ξ full grid, 0.8 ξ spot checks).
+0. **Flux trapping** (new, 29 Oct). Map which absorption sites leave flux in a hole below threshold, how much, and
+   what the trapped state's own switching current is; separate prompt detection (voltage within ~100–150 τ0 of the
+   photon) from fluxoid-mediated delayed switching in the efficiency curves. Then 0.8 ξ spot checks of the 400 τ0
+   critical grid.
    Also worth a check: 0.5 ξ mesh at the 12 nm bridges, and a longer strip with more hole periods (end effects).
 1. Hole-length sweep of the zipper (channel length / width from 2 to ~6): separates "current bypasses the short
    channel" from "detection needs the whole width to switch" as the reason the 56 nm channels do not act as narrow
