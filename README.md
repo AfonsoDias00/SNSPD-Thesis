@@ -16,8 +16,10 @@ snspd/                  shared library, imported by every current script
   plotting.py           figure style and standard figures
 hitmap.py               photon-threshold maps: hole geometries vs the plain 200 nm wire, go / no-go
 narrow_baseline.py      plain strips of any width (control) and the width scan
+checks.py               tests of the map assumptions: symmetry, edge band, trigger delay vs bias
 results/hitmap/         plain wire vs long zipper            (hitmap.py)
 results/narrow_baseline/ plain strips 30-200 nm               (narrow_baseline.py)
+results/checks/         symmetry, edge-band and delay checks (checks.py)
 parked/edge_bank/       edge-bank strip: code + results, parked until the hole study is done
 archive/                unreliable and superseded early work, see archive/README.md
 docs/                   literature review
@@ -79,12 +81,33 @@ are in λ = 175 nm units: multiply by 0.0851 to compare.
 | Result | File | Key numbers |
 |---|---|---|
 | Plain wire vs long zipper (reference) | `results/hitmap/summary_conserving_T150_m0.8.txt` | i_50 0.857 vs 0.831, i_95 0.861 vs 0.872, i_max 0.862 vs 0.925; go / no-go 0/3 |
+| Window check, critical grid, 1.4 ξ | `results/hitmap/summary_conserving_T{150,250,400}_m1.4.txt` | in I_dep units: plain stable (i_50 0.843–0.845); zipper i_50 0.817 → 0.803 → 0.800 |
 | Same at 1.4 ξ, critical grid; legacy hotspot | `results/hitmap/summary_{conserving,legacy}_T150_m1.4.txt` | mesh convergence ≤ 0.007 at shared sites |
 | Narrow-strip control | `results/narrow_baseline/narrow56nm_summary_conserving_T150_m0.8.txt` | 56 nm: i_50 0.607, i_95 0.618 (beats the zipper by 0.22–0.25) |
 | Width scan | `results/narrow_baseline/width_scan_summary_conserving_T150_m0.8.txt` | i_50 = 0.33 / 0.61 / 0.78 / 0.86 at 30 / 56 / 100 / 200 nm |
 | Edge banks (parked) | `parked/edge_bank/results/edge_bank*_summary_*.txt` | no plateau gain in 16 configurations |
 
-Every geometry switches at the depairing current of its narrowest cross-section (I_sw/I_dep = 0.99–1.03).
+Every geometry switches at the depairing current of its narrowest cross-section (I_sw/I_dep = 0.97–1.03).
+
+### Checks of the method (29 Oct 2026, `checks.py`, `results/checks/`)
+
+* **Mesh:** thresholds at 0.8 ξ and 1.4 ξ agree within 0.007.
+* **Edge band:** x = −98 nm agrees with x = −96 nm within 0.003, so filling the outer 4 nm is fine.
+* **Symmetry:** plain-wire mirror images (including hits on the monitored slice), the zipper's y-mirror and its glide
+  images in the centre channel and at the bridges all agree within the bisection tolerance. **Exception:** a photon
+  inside the zipper's monitored channel, (68, 61), "detects" at 0.724 vs 0.801 at its glide image, by supercurrent
+  collapse with no voltage: the per-channel collapse branch fires on local channel blocking. The maps are not affected
+  (only x ≤ 0 is simulated), but the criterion is not a device-level one for channel geometries.
+* **Window:** the plain wire's photon thresholds are window-independent (delay ≤ 95 τ0 just above threshold), but
+  several zipper channel and edge sites switch slowly (150–370 τ0 after the photon) and their thresholds keep falling
+  with the window (site (−96, 0): 0.803 → 0.787 → 0.777 I_dep at 150 / 250 / 400 τ0). The dark I_sw of the plain wire
+  also drifts (0.986 → 0.970 I_dep), so i_det = I_det/I_sw mixes in a window effect; quote thresholds in I_dep units.
+  The conclusions survive: zipper onset earlier by 0.03–0.045 I_dep, plateau later by 0.025–0.03 I_dep, and the 56 nm
+  strip (i_50 0.60, i_95 0.61 I_dep at 400 τ0) beats it on both.
+* **Current crowding:** the old K_peak/K_uniform (1.21 plain, 1.45 zipper at 1.4 ξ) was dominated by single-node and
+  boundary-node noise; a straight strip must give 1.00. The crowding peak is now the disc average over centres at
+  least 1.5 ξ from all walls: 1.04 / 1.08 (plain, 0.8 / 1.4 ξ) and 1.24 / 1.24 (zipper). At I_sw both reach 1.04–1.06
+  j_dep locally, i.e. both switch at the depairing current.
 
 ## Adding a hole geometry
 
@@ -94,6 +117,12 @@ layout has a symmetry other than `strip` or `zipper`, add its map rule to `snspd
 
 ## Next steps for the hole study
 
+0. **Fix the detection definition before new production runs.** (a) Replace the per-channel collapse branch by the
+   total supercurrent through a full-width cross-section, or drop it and rely on the probe voltage. (b) Choose the
+   window as a physical detection time once ρ_n is known (150 / 400 τ0 = 27–68 / 72–180 ps for ρ_n = 100–250 µΩ cm)
+   and keep the recorded trigger time as a latency figure of merit: the zipper's channel sites are slow.
+   (c) Re-run the plain wire, long zipper and 56 nm strip under that definition (1.4 ξ full grid, 0.8 ξ spot checks).
+   Also worth a check: 0.5 ξ mesh at the 12 nm bridges, and a longer strip with more hole periods (end effects).
 1. Hole-length sweep of the zipper (channel length / width from 2 to ~6): separates "current bypasses the short
    channel" from "detection needs the whole width to switch" as the reason the 56 nm channels do not act as narrow
    strips.

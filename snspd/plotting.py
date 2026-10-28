@@ -135,7 +135,7 @@ def fig_crowding(geoms, npz_paths, bias, path, film):
         draw_holes(ax, g)
         sel = np.abs(pts[:, 1]) <= g.crowd_half_y_nm * 1e-3
         raw = float(K[sel].max())
-        sm, loc = smoothed_peak(pts, K, g.crowd_half_y_nm * 1e-3, 1.5 * film.xi_nm * 1e-3)
+        sm, loc = smoothed_peak(pts, K, g, 1.5 * film.xi_nm * 1e-3)
         ax.plot(loc[0] * 1e3, loc[1] * 1e3, "*", ms=13, mfc="white", mec=INK, zorder=5)
         ax.set_title(f"{g.label}\nsmoothed peak {sm:.2f}x uniform  (single-node max {raw:.2f}x)", fontsize=10)
         ax.set_xlim(-g.width_nm / 2, g.width_nm / 2)
@@ -145,6 +145,6 @@ def fig_crowding(geoms, npz_paths, bias, path, film):
         ax.grid(False)
     axes[0].set_ylabel("y [nm]")
     fig.colorbar(ims[0], ax=axes, shrink=0.8, pad=0.02, label="|K| / (I / W)   (steady state before the photon)")
-    fig.suptitle(f"Current crowding at {bias:.2f} I_sw  (star = smoothed peak, disc radius 1.5 xi)")
+    fig.suptitle(f"Current crowding at {bias:.2f} I_sw  (star = interior disc-averaged peak, radius 1.5 xi)")
     fig.savefig(path, dpi=200)
     plt.close(fig)

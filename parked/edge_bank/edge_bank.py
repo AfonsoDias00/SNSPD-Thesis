@@ -200,7 +200,7 @@ def task_fn(task):
         ctx = context(conf["width"], cfg.mesh_xi)
         res = dict(I_dep_uA=round(i_dep, 2))
         if kind == "isw":
-            val, flag, n = sim.bisect(ctx["device"], ctx["slices"], 0.55 * i_dep, 1.15 * i_dep, static_eps(conf), cfg,
+            val, flag, n, _ = sim.bisect(ctx["device"], ctx["slices"], 0.55 * i_dep, 1.15 * i_dep, static_eps(conf), cfg,
                                       tol, collapse)
             res.update(I_uA=val, i_rel=val / i_dep, flag="above_bracket" if flag == "at_wall" else flag, n_sims=n)
         elif kind == "nucleation":
@@ -208,7 +208,7 @@ def task_fn(task):
         elif kind == "hit":
             hot = hsm.build_eps(ctx["hs"], cfg.hotspot, task["x_nm"], 0.0, task["f"], cfg.tmax)
             i_sw = task["I_sw"]
-            val, flag, n = sim.bisect(ctx["device"], ctx["slices"], cfg.hit_lo_frac * i_sw, i_sw,
+            val, flag, n, _ = sim.bisect(ctx["device"], ctx["slices"], cfg.hit_lo_frac * i_sw, i_sw,
                                       with_hotspot(static_eps(conf), hot, task.get("alpha", 0.0)), cfg, tol, collapse)
             res.update(I_uA=val, i_rel=val / i_sw, flag=flag, n_sims=n)
         else:

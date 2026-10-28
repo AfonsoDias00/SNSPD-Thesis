@@ -1,0 +1,32 @@
+==============================================================================
+SUMMARY   hotspot=conserving   T=400 tau0   mesh=1.4 xi   grid=critical
+NOTE: critical grid -> the maps are interpolated from few points; quantiles are indicative only.
+film: xi = 5 nm, lambda = 600 nm, d = 9 nm, gamma = 1, u = 5.79, rho_n = not set
+units: K0 = 5.238 uA/nm, j_dep = K0/(6 sqrt 3) = 0.504 uA/nm, Pearl length = 80.00 um, tau0 = n/a (set rho_n)
+hotspot: r0 = 14 nm, A = -2.5, D = 10 nm^2/tau0, t_relax = 35 tau0, t0 = 20 tau0
+==============================================================================
+                                  Plain wire   Long zipper
+I_sw [uA]                               97.7          84.5
+narrowest free width [nm]                200           173
+I_sw / I_dep(free width)               0.970         0.968
+i_10                                   0.869         0.803
+i_50                                   0.871         0.827
+i_90                                   0.876         0.887
+i_95                                   0.877         0.904
+i_99                                   0.877         0.916
+i_max (100 % point)                    0.877         0.937
+10-90 % width                          0.007         0.084
+i_10  in units of I_dep                0.843         0.777
+i_50  in units of I_dep                0.845         0.800
+i_95  in units of I_dep                0.850         0.875
+i_max  in units of I_dep               0.850         0.907
+  (samples used)                           3             9
+onset gain  ref - Long_Zipper   i_10: +0.066   i_50: +0.045   (positive = holes turn on earlier)
+plateau gain ref - Long_Zipper  i_90: -0.011   i_95: -0.027   i_99: -0.039
+Long_Zipper area above 0.87/0.90  15.6 % / 7.4 %   (the tail that sets i_95 / i_99)
+------------------------------------------------------------------------------
+GO / NO-GO vs Plain wire   (margins: --go-margin 0.03, --sel-margin 0.01)
+  Long zipper  C1 detection : ref i_95 - i_95 = -0.027   need >= 0.030   -> FAIL
+  Long zipper  OVERALL: NO-GO / not shown   [0/1 criteria passed]
+------------------------------------------------------------------------------
+caveats: deterministic TDGL; one photon energy (plus probes); sparse sampling near the edge is extrapolated; K_peak at hole tips depends on the mesh.

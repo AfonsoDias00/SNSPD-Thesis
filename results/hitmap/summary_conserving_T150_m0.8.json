@@ -30,16 +30,16 @@
   }
  },
  "K95": {
-  "Plain_Wire": 5750.133201148135,
-  "Long_Zipper": 6015.9017846369625
+  "Plain_Wire": 451.55764697293387,
+  "Long_Zipper": 468.92574325802303
  },
  "Kfail": {
-  "Plain_Wire": 6672.5955760276465,
-  "Long_Zipper": 6823.308735828665
+  "Plain_Wire": 524.1290322286934,
+  "Long_Zipper": 533.6599403856936
  },
  "I_sw": {
-  "Plain_Wire": 1186.875,
-  "Long_Zipper": 1018.75
+  "Plain_Wire": 100.96679687500001,
+  "Long_Zipper": 86.6644965277778
  },
  "free_width_nm": {
   "Plain_Wire": 200.0,

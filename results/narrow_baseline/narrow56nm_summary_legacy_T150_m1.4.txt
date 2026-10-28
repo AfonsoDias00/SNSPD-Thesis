@@ -1,10 +1,10 @@
 ==============================================================================
 NARROW-STRIP BASELINE   hotspot=legacy   T=150 tau0   mesh=1.4 xi   narrow width=56 nm
-film: xi = 5 nm, lambda = 175 nm, d = 9 nm, gamma = 1, u = 5.79, rho_n = not set
-units: K0 = 61.572 uA/nm, j_dep = K0/(6 sqrt 3) = 5.925 uA/nm, Pearl length = 6.81 um, tau0 = n/a (set rho_n)
+film: xi = 5 nm, lambda = 600 nm, d = 9 nm, gamma = 1, u = 5.79, rho_n = not set
+units: K0 = 5.238 uA/nm, j_dep = K0/(6 sqrt 3) = 0.504 uA/nm, Pearl length = 80.00 um, tau0 = n/a (set rho_n)
 ==============================================================================
                                    Plain wire    Long zipper    Plain 56 nm
-I_sw [uA]                              1168.6         1000.0          328.3
+I_sw [uA]                                99.4           85.1           27.9
 narrowest free width [nm]                 200            173             56
 I_sw / I_dep(free width)                0.986          0.974          0.989
 i_10                                    0.855          0.840          0.661

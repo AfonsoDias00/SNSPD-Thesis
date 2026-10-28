@@ -1,0 +1,16 @@
+{
+ "Long_Zipper": {
+  "I_sw": 84.6845920612006,
+  "flag": "",
+  "n_sims": 8,
+  "branch": "V_peak",
+  "t_trigger": 221.237622478783
+ },
+ "Plain_Wire": {
+  "I_sw": 98.91307210309986,
+  "flag": "",
+  "n_sims": 8,
+  "branch": "V_peak",
+  "t_trigger": 241.43648620892725
+ }
+}

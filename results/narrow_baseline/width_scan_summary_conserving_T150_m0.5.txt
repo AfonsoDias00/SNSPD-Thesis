@@ -1,8 +1,8 @@
 ================================================================================================
-WIDTH SCAN   hotspot=conserving   T=150 tau0   mesh=0.5 xi   I_dep = 5.925 uA/nm x narrowest free width (GL)
+WIDTH SCAN   hotspot=conserving   T=150 tau0   mesh=0.5 xi   I_dep = 0.504 uA/nm x narrowest free width (GL)
 ================================================================================================
                                   30 nm
-I_sw [uA]                         179.2
+I_sw [uA]                          15.2
 I_sw / I_dep                      1.008
 i_10  [I_sw]                      0.315
 i_50  [I_sw]                      0.325

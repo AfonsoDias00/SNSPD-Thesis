@@ -140,18 +140,14 @@ def cmd_run(cfg, a, geoms):
 
 
 def enrich_crowd(cfg, crowd, film, geoms):
-    """Add the smoothed peak to entries written by older runs, recomputed from the saved K maps."""
+    """(Re)compute the interior disc-averaged peak Ksm from the saved K maps, so every entry uses the current
+    definition (older runs stored a boundary-dominated value)."""
     by_key = {g.key: g for g in geoms}
     for c in crowd:
-        if "Ksm" in c or c["geom"] not in by_key:
-            continue
         f = cfg.path(f"crowd_{c['geom']}_{c['bias']:.2f}", "npz")
-        if os.path.exists(f):
+        if c["geom"] in by_key and os.path.exists(f):
             d_ = np.load(f)
-            c["Ksm"], _ = sim.smoothed_peak(d_["points"], d_["K"], by_key[c["geom"]].crowd_half_y_nm * 1e-3,
-                                            1.5 * film.xi_nm * 1e-3)
-        else:
-            c["Ksm"] = c["Kmax"]
+            c["Ksm"], _ = sim.smoothed_peak(d_["points"], d_["K"], by_key[c["geom"]], 1.5 * film.xi_nm * 1e-3)
     return crowd
 
 
@@ -194,6 +190,9 @@ def cmd_report(cfg, a, geoms):
     for key, name in [("i_10", "i_10"), ("i_50", "i_50"), ("i_90", "i_90"), ("i_95", "i_95"), ("i_99", "i_99"),
                       ("i_max", "i_max (100 % point)"), ("width_10_90", "10-90 % width")]:
         P(f"{name:<30}" + "".join(f"{met[g.key][key]:>14.3f}" for g in geoms))
+    for key in ("i_10", "i_50", "i_95", "i_max"):
+        P(f"{key + '  in units of I_dep':<30}"
+          + "".join(f"{met[g.key][key] * isw[g.key] / a.film.I_dep_uA(g.free_width_min_nm()):>14.3f}" for g in geoms))
     P(f"{'  (samples used)':<30}" + "".join(f"{len(samples[g.key]):>14d}" for g in geoms))
 
     ref, cands = geoms[0], geoms[1:]
@@ -218,7 +217,7 @@ def cmd_report(cfg, a, geoms):
             Kraw[g.key] = top["Kmax"] / top["K_uniform"]
     if K95:
         P("-" * 78)
-        P("current crowding (steady state; K_peak = max of K averaged over 1.5 xi)")
+        P("current crowding (steady state; K_peak = max of K averaged over discs of 1.5 xi, >= 1.5 xi from all walls)")
         P(f"{'K_peak / K_uniform @ top bias':<30}" + "".join(f"{an.fmt(Kcrowd.get(g.key), 2):>14}" for g in geoms))
         P(f"{'  (single-node max, noisy)':<30}" + "".join(f"{an.fmt(Kraw.get(g.key), 2):>14}" for g in geoms))
         P(f"{'K_peak at own i_95 [uA/um]':<30}" + "".join(f"{an.fmt(K95.get(g.key), 0):>14}" for g in geoms))

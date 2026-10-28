@@ -12,6 +12,9 @@ Voltages are pyTDGL's normalised probe voltage (units of V0); the probes sit at 
 Thresholds come from bisection to TOL_REL * I_dep(strip width) (0.34 uA for 200 nm, 0.0034 in i):
   I_sw   in ISW_BRACKET * I_dep(narrowest free width), no photon
   I_det  in [hit_lo_frac, 1] * I_sw
+Each threshold also records which branch fired earliest in the switching run at the threshold ("V_peak",
+"V_trail" or "collapse") and when (t_trigger, tau0).  A collapse-only detection with no voltage is the case to look at when
+separating a passing vortex from a growing normal domain.
 """
 from __future__ import annotations
 
@@ -21,6 +24,7 @@ import tempfile
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from dataclasses import dataclass, replace
+from typing import NamedTuple, Optional
 
 import numpy as np
 
@@ -131,40 +135,52 @@ def _trapz(y, dx):
     return (np.trapezoid if hasattr(np, "trapezoid") else np.trapz)(y, dx=dx)
 
 
-def trailing_mean_exceeds(t, v):
+def trailing_mean_time(t, v) -> Optional[float]:
+    """End time of the first V_TRAIL_WIN-long trailing mean of |V| above V_TRAIL_MEAN (ending at t >= V_TRAIL_START)."""
     dtg = 0.25
     if t[-1] < V_TRAIL_START:
-        return False
+        return None
     tg = np.arange(0.0, t[-1], dtg)
     vg = np.interp(tg, t, v)
     n = int(round(V_TRAIL_WIN / dtg))
     if len(vg) < n:
-        return False
+        return None
     cs = np.concatenate([[0.0], np.cumsum(vg)])
     ends = np.arange(n, len(vg) + 1)
     means = (cs[ends] - cs[ends - n]) / n
-    sel = tg[ends - 1] >= V_TRAIL_START
-    return bool(sel.any() and means[sel].max() > V_TRAIL_MEAN)
+    hit = np.flatnonzero((tg[ends - 1] >= V_TRAIL_START) & (means > V_TRAIL_MEAN))
+    return float(tg[ends[hit[0]] - 1]) if hit.size else None
 
 
-def slice_collapsed(sol, slices_um, collapse_uA, t_after):
+def collapse_time(sol, slices_um, collapse_uA, t_after, t_before=None) -> Optional[float]:
+    """First saved time in (t_after, t_before) at which a monitored cross-section carries less than collapse_uA."""
     steps, times = saved_steps_and_times(sol)
-    frames = [int(s) for s, tm in zip(steps, times) if tm > t_after]
+    frames = [(int(s), float(tm)) for s, tm in zip(steps, times) if tm > t_after]
+    first = t_before
     for x_min, x_max, y_sl in slices_um:
         x_pts = np.linspace(x_min, x_max, 30)
         pts = np.column_stack([x_pts, np.full_like(x_pts, y_sl)])
         dx = x_pts[1] - x_pts[0]
-        for s in frames:
+        for s, tm in frames:
+            if first is not None and tm >= first:
+                break
             sol.solve_step = s
             J = sol.interp_current_density(pts, dataset="supercurrent", units="uA/um")
             if _trapz(np.abs(J[:, 1]), dx) < collapse_uA:
-                return True
-    return False
+                first = tm
+                break
+    return None if first == t_before else first
+
+
+class Trigger(NamedTuple):
+    switched: bool
+    branch: str = ""                 # "V_peak", "V_trail" or "collapse": the branch that fired earliest
+    t: Optional[float] = None        # when it fired [tau0]
 
 
 def run_simulation(device, current_uA, slices_um, eps_func, cfg: SimConfig, collapse_uA: float,
-                   t0: float = hs_mod.HOTSPOT.t0_tau0) -> bool:
-    """One TDGL run at a fixed current. True if it counts as switching / detection."""
+                   t0: float = hs_mod.HOTSPOT.t0_tau0) -> Trigger:
+    """One TDGL run at a fixed current: did it count as switching / detection, by which branch, and when."""
     h5_path = temp_h5(cfg)
     kw = {} if eps_func is None else {"disorder_epsilon": eps_func}
     sol = None
@@ -174,11 +190,19 @@ def run_simulation(device, current_uA, slices_um, eps_func, cfg: SimConfig, coll
         t = np.asarray(sol.dynamics.time)
         v = np.abs(np.asarray(sol.dynamics.voltage()))
         post = t > t0 + 4.0
+        times = {}
         if post.any() and v[post].max() > V_POST_MAX:
-            return True
-        if trailing_mean_exceeds(t, v):
-            return True
-        return slice_collapsed(sol, slices_um, collapse_uA, t0 + 4.0)
+            times["V_peak"] = float(t[post][np.argmax(v[post] > V_POST_MAX)])
+        t_tr = trailing_mean_time(t, v)
+        if t_tr is not None:
+            times["V_trail"] = t_tr
+        t_col = collapse_time(sol, slices_um, collapse_uA, t0 + 4.0, min(times.values(), default=None))
+        if t_col is not None:
+            times["collapse"] = t_col
+        if not times:
+            return Trigger(False)
+        branch = min(times, key=times.get)
+        return Trigger(True, branch, times[branch])
     finally:
         path = getattr(sol, "path", None) or h5_path
         if path and os.path.exists(path):
@@ -186,14 +210,16 @@ def run_simulation(device, current_uA, slices_um, eps_func, cfg: SimConfig, coll
 
 
 def bisect(device, slices_um, lo, hi, eps_func, cfg: SimConfig, tol_uA: float, collapse_uA: float):
-    """Lowest switching current in [lo, hi] to tol_uA. Returns (I, flag, n_runs); flag 'at_wall' = never switched
-    below hi, 'below_bracket' = switched even at lo."""
-    lo0, hi0, n = lo, hi, 0
+    """Lowest switching current in [lo, hi] to tol_uA. Returns (I, flag, n_runs, trigger), where trigger describes
+    the switching run at I (empty if it never switched); flag 'at_wall' = never switched below hi, 'below_bracket' =
+    switched even at lo."""
+    lo0, hi0, n, trig = lo, hi, 0, Trigger(False)
     while hi - lo > tol_uA:
         mid = 0.5 * (lo + hi)
         n += 1
-        if run_simulation(device, mid, slices_um, eps_func, cfg, collapse_uA):
-            hi = mid
+        r = run_simulation(device, mid, slices_um, eps_func, cfg, collapse_uA)
+        if r.switched:
+            hi, trig = mid, r
         else:
             lo = mid
     flag = ""
@@ -201,20 +227,27 @@ def bisect(device, slices_um, lo, hi, eps_func, cfg: SimConfig, tol_uA: float, c
         flag = "at_wall"
     elif lo <= lo0:
         flag = "below_bracket"
-    return hi, flag, n
+    return hi, flag, n, trig
 
 
 # ==============================================================================
 # Current crowding (steady state, no photon)
 # ==============================================================================
-def smoothed_peak(points_um, K, half_y_um, radius_um):
-    """Peak of K averaged over a disc of radius_um inside |y| <= half_y_um.  Removes single-node spikes at boundaries
-    without hiding real crowding at hole tips."""
+def smoothed_peak(points_um, K, geom: Geometry, radius_um):
+    """Peak of K averaged over discs of radius_um whose centres are at least radius_um from the film edges and the
+    hole walls, inside |y| <= geom.crowd_half_y_nm.
+
+    pyTDGL builds node currents from the adjacent edges, so single nodes, and boundary nodes in particular, carry
+    +15-40 % spikes: a uniform strip shows a node maximum of 1.2-1.4 K_uniform at the film edge where the true value
+    is 1.00.  The interior disc average gives 1.04 (0.8 xi) / 1.08 (1.4 xi) for the plain strip and 1.235 / 1.239 for
+    the long zipper, i.e. it is mesh-converged and keeps the real crowding beside the holes."""
     from scipy.spatial import cKDTree
     points_um = np.asarray(points_um)
-    tree = cKDTree(points_um)
-    sel = np.flatnonzero(np.abs(points_um[:, 1]) <= half_y_um)
-    nb = tree.query_ball_point(points_um[sel], r=radius_um)
+    r_nm = radius_um * 1e3
+    x_nm, y_nm = points_um[:, 0] * 1e3, points_um[:, 1] * 1e3
+    sel = np.flatnonzero((np.abs(y_nm) <= geom.crowd_half_y_nm) & (np.abs(x_nm) <= geom.width_nm / 2 - r_nm)
+                         & ~geom.inside_hole(x_nm, y_nm, r_nm))
+    nb = cKDTree(points_um).query_ball_point(points_um[sel], r=radius_um)
     Ks = np.array([K[ix].mean() for ix in nb])
     j = int(np.argmax(Ks))
     return float(Ks[j]), points_um[sel[j]]
@@ -233,7 +266,7 @@ def run_crowding(device, geom: Geometry, current_uA, cfg: SimConfig, film: Film 
         pts = np.asarray(device.points)
         sel = np.abs(pts[:, 1]) <= half_y
         i = np.flatnonzero(sel)[int(np.argmax(K[sel]))]
-        Ksm, loc = smoothed_peak(pts, K, half_y, radius)
+        Ksm, loc = smoothed_peak(pts, K, geom, radius)
         return dict(Kmax=float(K[i]), Ksm=Ksm, K99=float(np.quantile(K[sel], 0.99)), x_nm=float(pts[i, 0] * 1e3),
                     y_nm=float(pts[i, 1] * 1e3), xsm_nm=float(loc[0] * 1e3), ysm_nm=float(loc[1] * 1e3),
                     K_uniform=float(current_uA / (geom.width_nm * 1e-3))), (pts, np.asarray(device.triangles), K)
@@ -267,13 +300,14 @@ def task_fn(task):
         tol, collapse, (lo, hi) = scales(geom, film)
         kind = task["kind"]
         if kind == "isw":
-            val, flag, n = bisect(ctx["device"], ctx["slices"], lo, hi, None, cfg, tol, collapse)
-            res = dict(I_sw=val, flag=("above_bracket" if flag == "at_wall" else flag), n_sims=n)
+            val, flag, n, trig = bisect(ctx["device"], ctx["slices"], lo, hi, None, cfg, tol, collapse)
+            res = dict(I_sw=val, flag=("above_bracket" if flag == "at_wall" else flag), n_sims=n, branch=trig.branch,
+                       t_trigger=trig.t)
         elif kind == "hit":
             i_sw = task["I_sw"]
             eps = hs_mod.build_eps(ctx["hs"], cfg.hotspot, task["x_nm"], task["y_nm"], task["f"], cfg.tmax, params)
-            val, flag, n = bisect(ctx["device"], ctx["slices"], cfg.hit_lo_frac * i_sw, i_sw, eps, cfg, tol, collapse)
-            res = dict(I_det=val, flag=flag, n_sims=n, I_sw=i_sw)
+            val, flag, n, trig = bisect(ctx["device"], ctx["slices"], cfg.hit_lo_frac * i_sw, i_sw, eps, cfg, tol, collapse)
+            res = dict(I_det=val, flag=flag, n_sims=n, I_sw=i_sw, branch=trig.branch, t_trigger=trig.t)
         elif kind == "crowd":
             I = task["bias"] * task["I_sw"]
             res, (pts, tri, K) = run_crowding(ctx["device"], geom, I, cfg, film)
