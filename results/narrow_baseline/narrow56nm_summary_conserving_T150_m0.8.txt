@@ -1,0 +1,29 @@
+==============================================================================
+NARROW-STRIP BASELINE   hotspot=conserving   T=150 tau0   mesh=0.8 xi   narrow width=56 nm
+film: xi = 5 nm, lambda = 175 nm, d = 9 nm, gamma = 1, u = 5.79, rho_n = not set
+units: K0 = 61.572 uA/nm, j_dep = K0/(6 sqrt 3) = 5.925 uA/nm, Pearl length = 6.81 um, tau0 = n/a (set rho_n)
+==============================================================================
+                                   Plain wire    Long zipper    Plain 56 nm
+I_sw [uA]                              1186.9         1018.8          333.2
+narrowest free width [nm]                 200            173             56
+I_sw / I_dep(free width)                1.002          0.992          1.004
+i_10                                    0.852          0.813          0.596
+i_50                                    0.857          0.831          0.607
+i_90                                    0.860          0.856          0.616
+i_95                                    0.861          0.872          0.618
+i_99                                    0.862          0.902          0.619
+i_max (100 % point)                     0.862          0.925          0.620
+i_50  in units of I_dep                 0.858          0.825          0.610
+i_95  in units of I_dep                 0.863          0.866          0.620
+window below the wall: 1 - i_95          0.139          0.128          0.382
+  (photon-level sites used)                 8             42              5
+------------------------------------------------------------------------------
+selectivity  median[i_det(f) - i_det(1)] over probe sites
+  f = 0.35                              0.115          0.096          0.279
+  f = 0.6                               0.066          0.059          0.172
+------------------------------------------------------------------------------
+zipper minus narrow strip  (positive = the narrow strip turns on / saturates at the lower bias)
+  onset    i_50: +0.224      i_10: +0.217
+  plateau  i_95: +0.255      i_99: +0.283
+  RESULT: the narrow strip is at least as good as the zipper on onset AND plateau in normalised bias.
+==============================================================================

@@ -1,0 +1,24 @@
+==============================================================================
+NARROW-STRIP BASELINE   hotspot=conserving   T=150 tau0   mesh=0.5 xi   narrow width=30 nm
+film: xi = 5 nm, lambda = 175 nm, d = 9 nm, gamma = 1, u = 5.79, rho_n = not set
+units: K0 = 61.572 uA/nm, j_dep = K0/(6 sqrt 3) = 5.925 uA/nm, Pearl length = 6.81 um, tau0 = n/a (set rho_n)
+==============================================================================
+                                  Plain 30 nm
+I_sw [uA]                               179.2
+narrowest free width [nm]                  30
+I_sw / I_dep(free width)                1.008
+i_10                                    0.315
+i_50                                    0.325
+i_90                                    0.333
+i_95                                    0.333
+i_99                                    0.333
+i_max (100 % point)                     0.333
+i_50  in units of I_dep                 0.328
+i_95  in units of I_dep                 0.335
+window below the wall: 1 - i_95          0.667
+  (photon-level sites used)                 4
+------------------------------------------------------------------------------
+selectivity  median[i_det(f) - i_det(1)] over probe sites
+  f = 0.35                              0.443
+  f = 0.6                               0.243
+==============================================================================

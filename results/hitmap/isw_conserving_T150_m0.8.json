@@ -1,0 +1,12 @@
+{
+ "Plain_Wire": {
+  "I_sw": 1186.875,
+  "flag": "",
+  "n_sims": 7
+ },
+ "Long_Zipper": {
+  "I_sw": 1018.75,
+  "flag": "",
+  "n_sims": 6
+ }
+}
