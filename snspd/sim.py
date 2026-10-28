@@ -2,19 +2,20 @@
 Device construction, one TDGL run with the detection criterion, threshold bisection, the current-crowding run and a
 process-pool task runner.
 
-Detection criterion (a run "switched" if ANY holds):
+Detection criterion: voltage only.  A run "switched" if either holds:
   1. peak |V| after t0 + 4 tau0 exceeds V_POST_MAX
   2. a V_TRAIL_WIN-long trailing mean of |V| ending at t >= V_TRAIL_START exceeds V_TRAIL_MEAN
-  3. the supercurrent through a monitored cross-section of the geometry drops below COLLAPSE_REL * I_dep(strip width)
-     at any saved frame after t0 + 4 tau0   (4.25 uA for the 200 nm strip with the default film)
-Voltages are pyTDGL's normalised probe voltage (units of V0); the probes sit at y = +/- L/3.
+Voltages are pyTDGL's normalised probe voltage (units of V0); the probes sit at y = +/- L/3, so any resistive belt
+between them counts, wherever it forms.  Until 29 Oct 2026 a third branch also counted a collapse of the supercurrent
+through one monitored cross-section; it fired on local channel blocking without any voltage (a photon inside the
+zipper's monitored channel "detected" at 0.724 vs 0.801 at its glide image) and was removed.  Results made with it are
+in results/v1_voltage_or_collapse/.
 
 Thresholds come from bisection to TOL_REL * I_dep(strip width) (0.34 uA for 200 nm, 0.0034 in i):
   I_sw   in ISW_BRACKET * I_dep(narrowest free width), no photon
   I_det  in [hit_lo_frac, 1] * I_sw
-Each threshold also records which branch fired earliest in the switching run at the threshold ("V_peak",
-"V_trail" or "collapse") and when (t_trigger, tau0).  A collapse-only detection with no voltage is the case to look at when
-separating a passing vortex from a growing normal domain.
+Each threshold also records which branch fired earliest in the switching run at the threshold ("V_peak" or
+"V_trail") and when (t_trigger, tau0 after t = 0; the photon arrives at t0): a latency figure of merit.
 """
 from __future__ import annotations
 
@@ -45,7 +46,6 @@ V_POST_MAX = 0.45        # peak |V| after t0 + 4 tau0
 V_TRAIL_MEAN = 0.18      # trailing-mean |V| ...
 V_TRAIL_WIN = 25.0       # ... over this many tau0 ...
 V_TRAIL_START = 55.0     # ... for windows ending at t >= this
-COLLAPSE_REL = 0.0422    # monitored supercurrent collapse threshold [fraction of I_dep(strip width)]
 TOL_REL = 0.003376       # bisection tolerance [fraction of I_dep(strip width)]
 ISW_BRACKET = (0.70, 1.20)   # dark-switching bracket [fraction of I_dep(narrowest free width)]
 CROWD_TIME = 40.0        # steady-state run length for the current-crowding proxy [tau0]
@@ -96,15 +96,14 @@ def make_device(geom: Geometry, mesh_xi: float, film: Film = FILM):
     return device
 
 
-_CTX = {}   # per-process cache: (geometry, mesh, film, hotspot params) -> device, monitored slices [um], hotspot solver
+_CTX = {}   # per-process cache: (geometry, mesh, film, hotspot params) -> device, hotspot solver
 
 
 def context(geom: Geometry, mesh_xi: float, film: Film = FILM, params: hs_mod.HotspotParams = hs_mod.HOTSPOT):
     key = (geom, mesh_xi, film, params)
     if key not in _CTX:
         dev = make_device(geom, mesh_xi, film)
-        _CTX[key] = dict(device=dev, slices=[(a * 1e-3, b * 1e-3, y * 1e-3) for a, b, y in geom.slices],
-                         hs=hs_mod.HotspotSolver(dev.points, dev.triangles, params))
+        _CTX[key] = dict(device=dev, hs=hs_mod.HotspotSolver(dev.points, dev.triangles, params))
     return _CTX[key]
 
 
@@ -131,10 +130,6 @@ def saved_steps_and_times(sol):
     return np.array([int(g) for g in groups]), times
 
 
-def _trapz(y, dx):
-    return (np.trapezoid if hasattr(np, "trapezoid") else np.trapz)(y, dx=dx)
-
-
 def trailing_mean_time(t, v) -> Optional[float]:
     """End time of the first V_TRAIL_WIN-long trailing mean of |V| above V_TRAIL_MEAN (ending at t >= V_TRAIL_START)."""
     dtg = 0.25
@@ -152,34 +147,13 @@ def trailing_mean_time(t, v) -> Optional[float]:
     return float(tg[ends[hit[0]] - 1]) if hit.size else None
 
 
-def collapse_time(sol, slices_um, collapse_uA, t_after, t_before=None) -> Optional[float]:
-    """First saved time in (t_after, t_before) at which a monitored cross-section carries less than collapse_uA."""
-    steps, times = saved_steps_and_times(sol)
-    frames = [(int(s), float(tm)) for s, tm in zip(steps, times) if tm > t_after]
-    first = t_before
-    for x_min, x_max, y_sl in slices_um:
-        x_pts = np.linspace(x_min, x_max, 30)
-        pts = np.column_stack([x_pts, np.full_like(x_pts, y_sl)])
-        dx = x_pts[1] - x_pts[0]
-        for s, tm in frames:
-            if first is not None and tm >= first:
-                break
-            sol.solve_step = s
-            J = sol.interp_current_density(pts, dataset="supercurrent", units="uA/um")
-            if _trapz(np.abs(J[:, 1]), dx) < collapse_uA:
-                first = tm
-                break
-    return None if first == t_before else first
-
-
 class Trigger(NamedTuple):
     switched: bool
-    branch: str = ""                 # "V_peak", "V_trail" or "collapse": the branch that fired earliest
+    branch: str = ""                 # "V_peak" or "V_trail": the branch that fired earliest
     t: Optional[float] = None        # when it fired [tau0]
 
 
-def run_simulation(device, current_uA, slices_um, eps_func, cfg: SimConfig, collapse_uA: float,
-                   t0: float = hs_mod.HOTSPOT.t0_tau0) -> Trigger:
+def run_simulation(device, current_uA, eps_func, cfg: SimConfig, t0: float = hs_mod.HOTSPOT.t0_tau0) -> Trigger:
     """One TDGL run at a fixed current: did it count as switching / detection, by which branch, and when."""
     h5_path = temp_h5(cfg)
     kw = {} if eps_func is None else {"disorder_epsilon": eps_func}
@@ -196,9 +170,6 @@ def run_simulation(device, current_uA, slices_um, eps_func, cfg: SimConfig, coll
         t_tr = trailing_mean_time(t, v)
         if t_tr is not None:
             times["V_trail"] = t_tr
-        t_col = collapse_time(sol, slices_um, collapse_uA, t0 + 4.0, min(times.values(), default=None))
-        if t_col is not None:
-            times["collapse"] = t_col
         if not times:
             return Trigger(False)
         branch = min(times, key=times.get)
@@ -209,7 +180,7 @@ def run_simulation(device, current_uA, slices_um, eps_func, cfg: SimConfig, coll
             os.remove(path)
 
 
-def bisect(device, slices_um, lo, hi, eps_func, cfg: SimConfig, tol_uA: float, collapse_uA: float):
+def bisect(device, lo, hi, eps_func, cfg: SimConfig, tol_uA: float):
     """Lowest switching current in [lo, hi] to tol_uA. Returns (I, flag, n_runs, trigger), where trigger describes
     the switching run at I (empty if it never switched); flag 'at_wall' = never switched below hi, 'below_bracket' =
     switched even at lo."""
@@ -217,7 +188,7 @@ def bisect(device, slices_um, lo, hi, eps_func, cfg: SimConfig, tol_uA: float, c
     while hi - lo > tol_uA:
         mid = 0.5 * (lo + hi)
         n += 1
-        r = run_simulation(device, mid, slices_um, eps_func, cfg, collapse_uA)
+        r = run_simulation(device, mid, eps_func, cfg)
         if r.switched:
             hi, trig = mid, r
         else:
@@ -280,10 +251,9 @@ def run_crowding(device, geom: Geometry, current_uA, cfg: SimConfig, film: Film 
 # Tasks
 # ==============================================================================
 def scales(geom: Geometry, film: Film = FILM):
-    """(tol_uA, collapse_uA, I_sw bracket) for a geometry."""
-    I_strip = film.I_dep_uA(geom.width_nm)
+    """(tol_uA, I_sw bracket) for a geometry."""
     I_free = film.I_dep_uA(geom.free_width_min_nm())
-    return TOL_REL * I_strip, COLLAPSE_REL * I_strip, (ISW_BRACKET[0] * I_free, ISW_BRACKET[1] * I_free)
+    return TOL_REL * film.I_dep_uA(geom.width_nm), (ISW_BRACKET[0] * I_free, ISW_BRACKET[1] * I_free)
 
 
 def task_fn(task):
@@ -297,16 +267,16 @@ def task_fn(task):
         geom, cfg = task["geom"], task["cfg"]
         film, params = task.get("film", FILM), task.get("params", hs_mod.HOTSPOT)
         ctx = context(geom, cfg.mesh_xi, film, params)
-        tol, collapse, (lo, hi) = scales(geom, film)
+        tol, (lo, hi) = scales(geom, film)
         kind = task["kind"]
         if kind == "isw":
-            val, flag, n, trig = bisect(ctx["device"], ctx["slices"], lo, hi, None, cfg, tol, collapse)
+            val, flag, n, trig = bisect(ctx["device"], lo, hi, None, cfg, tol)
             res = dict(I_sw=val, flag=("above_bracket" if flag == "at_wall" else flag), n_sims=n, branch=trig.branch,
                        t_trigger=trig.t)
         elif kind == "hit":
             i_sw = task["I_sw"]
             eps = hs_mod.build_eps(ctx["hs"], cfg.hotspot, task["x_nm"], task["y_nm"], task["f"], cfg.tmax, params)
-            val, flag, n, trig = bisect(ctx["device"], ctx["slices"], cfg.hit_lo_frac * i_sw, i_sw, eps, cfg, tol, collapse)
+            val, flag, n, trig = bisect(ctx["device"], cfg.hit_lo_frac * i_sw, i_sw, eps, cfg, tol)
             res = dict(I_det=val, flag=flag, n_sims=n, I_sw=i_sw, branch=trig.branch, t_trigger=trig.t)
         elif kind == "crowd":
             I = task["bias"] * task["I_sw"]

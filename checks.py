@@ -4,10 +4,8 @@ checks.py -- photon thresholds at extra sites that test assumptions behind the h
 results/checks/ and never into the map data.
 
   symmetry   hitmap.py simulates only x <= 0 and fills the rest by symmetry: mirror x -> -x for the plain wire, the
-             y-mirror and the glide (x, y) -> (-x, 61 - y) for the zipper.  The monitored cross-section of the
-             detection criterion sits at x > 0 (right half at y = 0; zipper right channel at y = 61), and the hole
-             array is finite, so neither the criterion nor the device is exactly symmetric.  Re-simulate image sites
-             and compare with the stored originals.
+             y-mirror and the glide (x, y) -> (-x, 61 - y) for the zipper.  The hole array is finite, so the device
+             is not exactly symmetric.  Re-simulate image sites and compare with the stored originals.
   edge       the outer 4 nm of the strip are filled with the x = -96 nm value.  Simulate x = -98 nm.
   delay      single runs at fixed bias with a long window: when (and by which branch) does a photon at one site
              trigger?  A sharp threshold shows as a delay that diverges just above it; a slow, window-limited
@@ -36,8 +34,8 @@ CHECKS = {   # (geometry, test site, stored reference site) [nm]
         ("Plain_Wire", (14.0, 0.0), (-14.0, 0.0)),
         ("Plain_Wire", (58.0, 0.0), (-58.0, 0.0)),
         ("Plain_Wire", (96.0, 0.0), (-96.0, 0.0)),
-        ("Long_Zipper", (68.0, 61.0), (-68.0, 0.0)),       # glide image, inside the monitored channel
-        ("Long_Zipper", (96.0, 61.0), (-96.0, 0.0)),       # glide image, edge of the monitored channel
+        ("Long_Zipper", (68.0, 61.0), (-68.0, 0.0)),       # glide image, right channel
+        ("Long_Zipper", (96.0, 61.0), (-96.0, 0.0)),       # glide image, right edge
         ("Long_Zipper", (18.0, 31.0), (-18.0, 30.0)),      # glide image, centre channel
         ("Long_Zipper", (36.0, 0.0), (-36.0, 61.0)),       # glide image, right-column bridge
         ("Long_Zipper", (-50.0, -30.0), (-50.0, 30.0)),    # y-mirror
@@ -119,9 +117,8 @@ def delay_task(task):
     try:
         g, cfg = task["geom"], task["cfg"]
         ctx = sim.context(g, cfg.mesh_xi)
-        tol, collapse, _ = sim.scales(g)
         eps = hsm.build_eps(ctx["hs"], cfg.hotspot, task["x_nm"], task["y_nm"], 1.0, cfg.tmax)
-        trig = sim.run_simulation(ctx["device"], task["I"], ctx["slices"], eps, cfg, collapse)
+        trig = sim.run_simulation(ctx["device"], task["I"], eps, cfg)
         return dict(ok=True, task=task, res=trig._asdict(), wall_s=time.time() - t_start)
     except Exception as exc:
         return dict(ok=False, task=task, error=f"{type(exc).__name__}: {exc}", wall_s=time.time() - t_start)

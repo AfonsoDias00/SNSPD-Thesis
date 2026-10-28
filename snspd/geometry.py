@@ -4,7 +4,6 @@ origin, current flows along y, x runs across the width.
 
 A Geometry carries everything the simulation and the analysis need to know about one layout:
   * holes (ellipses), strip width and length
-  * the monitored cross-sections whose supercurrent collapse counts as a detection
   * the photon-hit grids ("full" and "critical") and the probe sites used for the photon-energy sweep
   * the unit cell and symmetry used to turn the sampled thresholds into a map:
       "strip"  -- threshold depends on |x| only (plain strips)
@@ -43,7 +42,6 @@ class Geometry:
     width_nm: float
     length_nm: float = 800.0
     holes: tuple[Ellipse, ...] = ()
-    slices: tuple[tuple[float, float, float], ...] = ()   # monitored cross-sections (x_min, x_max, y) [nm]
     probes: tuple[Site, ...] = ()
     grid_full: tuple[Site, ...] = ()
     grid_critical: tuple[Site, ...] = ()
@@ -99,13 +97,11 @@ def strip_probes(width_nm: float) -> list[Site]:
 
 def plain_strip(width_nm: float, key: str = "Narrow_Wire", label: str | None = None, xs_full=None, xs_critical=None,
                 probes=None, color: str = C_NARROW) -> Geometry:
-    """Hole-free strip.  The monitored cross-section is the right half at y = 0 (the photon hits the left half)."""
-    h = width_nm / 2.0
+    """Hole-free strip; photons are simulated on the left half and mirrored."""
     xs_full = list(xs_full) if xs_full is not None else strip_sites(width_nm)
     xs_crit = list(xs_critical) if xs_critical is not None else xs_full
     return Geometry(
         key=key, label=label or f"Plain {width_nm:g} nm", width_nm=float(width_nm),
-        slices=((2.0, h - 2.0, 0.0),),
         probes=tuple(probes) if probes is not None else tuple(strip_probes(width_nm)),
         grid_full=tuple((float(x), 0.0) for x in xs_full),
         grid_critical=tuple((float(x), 0.0) for x in xs_crit),
@@ -123,8 +119,7 @@ PLAIN_WIRE = plain_strip(
 # ==============================================================================
 def long_zipper() -> Geometry:
     """Two staggered columns of 16 x 110 nm ellipses at x = +/-36 nm, period 122 nm, 12 nm bridges between the holes
-    of a column, three 56 nm channels.  Narrowest free width 173 nm.  The right channel at y = 61 nm (beside the
-    left column's bridge) is the monitored cross-section."""
+    of a column, three 56 nm channels.  Narrowest free width 173 nm."""
     a, b = 8.0, 55.0
     holes = [Ellipse(-36.0, y, a, b) for y in (-122.0, 0.0, 122.0)] + \
             [Ellipse(36.0, y, a, b) for y in (-183.0, -61.0, 61.0, 183.0)]
@@ -133,7 +128,6 @@ def long_zipper() -> Geometry:
     critical = [(-96, 0), (-68, 0), (0, 0), (-50, 30), (-18, 30), (-36, 58), (-36, 61), (-42, 58), (-30, 58)]
     return Geometry(
         key="Long_Zipper", label="Long zipper", width_nm=200.0, holes=tuple(holes),
-        slices=((46.0, 98.0, 61.0),),
         probes=((-96.0, 0.0), (-68.0, 0.0), (0.0, 0.0), (-18.0, 30.0), (-36.0, 61.0)),
         grid_full=tuple((float(x), float(y)) for x, y in base + bridge),
         grid_critical=tuple((float(x), float(y)) for x, y in critical),

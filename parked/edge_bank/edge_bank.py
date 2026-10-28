@@ -4,7 +4,9 @@ edge_bank.py -- PARKED: a straight strip with nominal edge banks around a weaken
 =========================================================================================
 
 Parked on 28 Oct 2026: the thesis focuses on internal holes first.  The 27 Oct sweep (results/ next to this file)
-found no plateau gain from edge banks in 16 configurations with either hotspot scaling.  The script runs on the
+found no plateau gain from edge banks in 16 configurations with either hotspot scaling.  Those results used the old
+detection criterion (voltage or collapse of the right-half supercurrent); the code now uses voltage only, so re-run
+before extending them.  The script runs on the
 shared snspd library; run it from the repository root:  python parked/edge_bank/edge_bank.py report
 
 What it simulates
@@ -120,7 +122,7 @@ def hit_positions(width_nm, bank_nm):
 # 2. Solver tasks (run in worker processes; everything they need travels in the task dict)
 # ==============================================================================
 def context(width_nm, mesh_xi):
-    """Device, monitored right-half slice and hotspot solver of a plain strip (shared cache in snspd.sim)."""
+    """Device and hotspot solver of a plain strip (shared cache in snspd.sim)."""
     return sim.context(geo.plain_strip(width_nm), mesh_xi)
 
 
@@ -196,20 +198,19 @@ def task_fn(task):
         conf, kind = task["conf"], task["kind"]
         i_dep = i_dep_profile(conf["width"], conf["bank"], conf["eps_c"], conf["ramp"])
         cfg = sim.SimConfig(**task["cfg"])
-        tol, collapse = sim.TOL_REL * i_dep, sim.COLLAPSE_REL * i_dep       # both scale with the profile's I_dep
+        tol = sim.TOL_REL * i_dep                                          # scales with the profile's I_dep
         ctx = context(conf["width"], cfg.mesh_xi)
         res = dict(I_dep_uA=round(i_dep, 2))
         if kind == "isw":
-            val, flag, n, _ = sim.bisect(ctx["device"], ctx["slices"], 0.55 * i_dep, 1.15 * i_dep, static_eps(conf), cfg,
-                                      tol, collapse)
+            val, flag, n, _ = sim.bisect(ctx["device"], 0.55 * i_dep, 1.15 * i_dep, static_eps(conf), cfg, tol)
             res.update(I_uA=val, i_rel=val / i_dep, flag="above_bracket" if flag == "at_wall" else flag, n_sims=n)
         elif kind == "nucleation":
             res.update(nucleation(ctx, conf, task["I_sw"], dataclasses.replace(cfg, save_every=20)), I_uA=task["I_sw"], n_sims=1)
         elif kind == "hit":
             hot = hsm.build_eps(ctx["hs"], cfg.hotspot, task["x_nm"], 0.0, task["f"], cfg.tmax)
             i_sw = task["I_sw"]
-            val, flag, n, _ = sim.bisect(ctx["device"], ctx["slices"], cfg.hit_lo_frac * i_sw, i_sw,
-                                      with_hotspot(static_eps(conf), hot, task.get("alpha", 0.0)), cfg, tol, collapse)
+            val, flag, n, _ = sim.bisect(ctx["device"], cfg.hit_lo_frac * i_sw, i_sw,
+                                      with_hotspot(static_eps(conf), hot, task.get("alpha", 0.0)), cfg, tol)
             res.update(I_uA=val, i_rel=val / i_sw, flag=flag, n_sims=n)
         else:
             raise ValueError(kind)
