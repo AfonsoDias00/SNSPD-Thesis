@@ -11,15 +11,18 @@ snspd/                  shared library, imported by every current script
   geometry.py           strips and hole layouts, photon-hit grids, unit cells  <- add new hole layouts here
   hotspot.py            photon hotspot models (energy-conserving FEM diffusion; legacy free-space Gaussian)
   sim.py                device, detection criterion, bisection, current crowding, process-pool runner
+  fluxoid.py            fluxoid (trapped flux quanta) of every hole from the phase winding of psi
   analysis.py           threshold maps, efficiency curves, quantiles, selectivity
   store.py              resumable CSV / JSON results
   plotting.py           figure style and standard figures
 hitmap.py               photon-threshold maps: hole geometries vs the plain 200 nm wire, go / no-go
 narrow_baseline.py      plain strips of any width (control) and the width scan
-checks.py               tests of the map assumptions: symmetry, edge band, trigger delay, trapped flux
+checks.py               tests of the map assumptions: symmetry, edge band, trigger delay
+fluxtrap.py             flux a photon leaves trapped in the holes: state scan, trapped-state I_sw, traces
 results/hitmap/         plain wire vs long zipper            (hitmap.py)        } voltage-only criterion,
 results/narrow_baseline/ plain strips                         (narrow_baseline.py)} from 29 Oct 2026
 results/checks/         symmetry, edge-band and delay checks (checks.py)          }
+results/fluxtrap/       flux-trapping scan, trapped states, traces (fluxtrap.py)  }
 results/v1_voltage_or_collapse/  all results with the first criterion (23-29 Oct), see its README
 parked/edge_bank/       edge-bank strip: code + results, parked until the hole study is done
 archive/                unreliable and superseded early work, see archive/README.md
@@ -39,7 +42,15 @@ finished thresholds are appended to a CSV and skipped next time, so an interrupt
 .venv/bin/python narrow_baseline.py run  --width-nm 56 --mesh-xi 0.8 --compare hitmap_conserving_T150_m0.8.csv
 .venv/bin/python narrow_baseline.py scan --widths 30,56,100 --mesh-xi 0.8 --compare hitmap_conserving_T150_m0.8.csv
 .venv/bin/python hitmap.py selftest                              # hotspot-solver checks
+.venv/bin/python fluxtrap.py scan    --workers 9                 # every zipper site x 0.40-0.96 I_dep, 400 tau0
+.venv/bin/python fluxtrap.py scan    --geom Plain_Wire --biases 0.80:0.92:0.01   # control
+.venv/bin/python fluxtrap.py trapped --workers 6                 # I_sw of the trapped states, second photon
+.venv/bin/python fluxtrap.py trapped --mesh-xi 0.8 --from=-68,0@0.77 --no-second   # one state, finer mesh
+.venv/bin/python fluxtrap.py trace   --site=-68,0 --biases 0.70,0.77,0.80,0.85 --workers 4
 ```
+
+At 1.4 xi a 400 tau0 run takes ~16 s on one core. The laptop CPU (Core Ultra 7 155H) has 6 performance cores and 10
+efficiency cores; more than ~9 workers, or other jobs alongside, slow every run down sharply.
 
 Result files are tagged `<hotspot>_T<tmax>_m<mesh_xi>`, e.g. `summary_conserving_T150_m0.8.txt`.
 
@@ -94,20 +105,92 @@ are in λ = 175 nm units: multiply by 0.0851 to compare.
 | Plain wire vs long zipper, full grid | `results/hitmap/summary_conserving_T400_m1.4.txt` | plain i_50 0.845, i_95 0.850; zipper i_50 0.795, i_95 0.853, i_max 0.907; go / no-go 1/3 (C3 passes by 0.001, with one non-detecting probe per geometry) |
 | Width scan + zipper | `results/narrow_baseline/width_scan_summary_conserving_T400_m1.4.txt` | i_50 = 0.327 / 0.603 / 0.766 / 0.845 at 30 / 56 / 100 / 200 nm; zipper 0.795 |
 | Narrow-strip comparison | `results/narrow_baseline/narrow56nm_summary_conserving_T400_m1.4.txt` | 56 nm: i_50 0.603, i_95 0.614: beats the zipper on onset and plateau |
-| Flux trapping | `results/checks/fluxoid_Long_Zipper_-68_0_conserving_T500_m1.4.txt` | see below |
+| Flux trapping: zipper scan (42 sites × 0.40–0.96 I_dep), plain-wire control, trapped states | `results/fluxtrap/summary_{Long_Zipper,Plain_Wire}_conserving_T400_m1.4.txt` | zipper i_50 0.800 / 0.806 / 0.821 counting any trigger / sustained / prompt switches (plain wire 0.850 for all); sub-threshold photons leave 1–2 Φ0 from 0.64 I_dep; trapped flux lowers I_sw from 0.968 to 0.87–0.91 |
 
 All strips and the zipper switch at I_sw/I_dep = 0.968–0.971 with this window. The 30 nm strip agrees with a 0.8 ξ
 run within 0.006. Detection latency at threshold (t_trigger − t0): plain wire median 93 τ0, max 129 τ0; zipper median
 175 τ0, max 366 τ0, with 18 of 42 sites above 200 τ0.
 
-**The holes trap flux.** In the zipper's left channel (x ≤ −50 nm, y ≤ 30 nm) 11 sites share the same threshold,
-0.777 I_dep, and all switch 320–370 τ0 after the photon. A photon there pushes two flux quanta into the neighbouring
-hole within ~55 τ0, with only a 0.2 V0 voltage blip (below the detection thresholds). Below 0.777 I_dep the device then
-sits at zero voltage with the flux trapped for the rest of the run (500 τ0): no detection, but a different device
-state. Above it the trapped flux starts hopping between holes after ~150 τ0 and the voltage builds until the device
-switches. So the zipper's long-window onset (i_10 0.777 I_dep) is fluxoid-mediated delayed switching, not prompt
-hotspot detection, and a sub-threshold photon can leave the device with a much lower effective switching current.
-Deterministic TDGL has no thermal escape, so how long such flux stays trapped in a real device is not modelled.
+### Flux trapping (29 Oct 2026, `fluxtrap.py`, `results/fluxtrap/`)
+
+Every scan run records two things:
+- the fluxoid of each hole, read from the phase winding of ψ (`snspd/fluxoid.py`) at least every 8 τ0;
+- the phase slipped between the probes, |∫V dt|/2π. One vortex crossing the full width counts as 1.
+
+Each run gets one of five outcomes:
+- *clean*;
+- *trapped*: no trigger, flux left in a hole;
+- *transient*: the hitmap criterion fires, but the last 50 τ0 have < 1 phase slip, so the device is quiet again;
+- *direct*: the device stays resistive;
+- *via trap*: the device stays resistive, after ≥ 20 τ0 at zero voltage with flux trapped.
+
+A switch is *prompt* if the device stays resistive and has slipped 2 phases by t = 150 τ0, i.e. 130 τ0 after the photon.
+
+* **Sub-threshold photons leave flux behind.**
+  - Near the edges and in the left channel this starts at 0.64 I_dep, ~0.14 I_dep below the detection threshold. The
+    trapped area is 59 % of the unit cell at 0.70 I_dep and 85 % at 0.75.
+  - There is no voltage signal: a quantum entering a hole costs ~0.4 phase slip.
+  - The flux arrives 18–102 τ0 after the photon.
+  - The 319 trapped runs end in four states (holes numbered as in the summary), never more than two quanta:
+
+    | State | Runs | Where the photon lands |
+    |---|---|---|
+    | one quantum in the central left hole, [0 −1 0 0 0 0 0] | 180 | near the left edge |
+    | a vortex–antivortex pair split between the left and right columns, [0 1 0 0 0 −1 0] | 103 | centre channel (the current tears the pair apart) |
+    | one quantum in each of two left holes, [0 −1 −1 0 0 0 0] | 23 | at the top bridge |
+    | two quanta in the central left hole, [0 −2 0 0 0 0 0] | 10 | left channel, just below threshold |
+
+* **Trapped flux stays and lowers the switching current.**
+  - Each state was used as the initial condition, without a photon. It keeps its flux for 400 τ0 at zero bias, and
+    also just below its own switching current.
+  - That switching current is 0.909 I_dep for one quantum and 0.871–0.874 for two, against 0.968 for the empty device.
+    Producing the same state from different photons gives the same value.
+  - The exception is [0 −2]. At 0.775 I_dep its flux leaves the left hole (2 phase slips, no lasting voltage), and
+    two antivortices enter a right-column hole from the right edge, giving [0 0 0 0 0 2 0]. So it depins but does not
+    switch.
+* **The zipper's onset is flux-mediated.**
+  - At 0.78 I_dep, photons in the left channel and on the centre line (24 % of the area) fire the hitmap criterion
+    through a rearrangement like this one. The device is left quiet with new trapped flux: the hitmap counts these as detections, but they are
+    not sustained.
+  - From 0.79 the same sequence ends in a resistive state, after a zero-voltage dwell with the flux trapped. The
+    resistive onset comes 180–210 τ0 after the photon at 0.79, and 80–250 τ0 over all via-trap runs.
+  - At 0.80 I_dep, 45 % of the area switches and stays resistive, all of it via trapped flux.
+  - Prompt switching reaches 48 % of the area only at 0.82.
+  - Direct switching starts at 0.81–0.85 in the channels.
+  - The plain wire never traps flux, and every detection is prompt and sustained. Counting only prompt detections,
+    the zipper's onset gain shrinks from 0.05 to 0.03 I_dep, and its plateau (i_95) comes 0.008 I_dep after the plain
+    wire's.
+
+  Efficiency-curve points in units of I_dep. The scan grid is 0.01, so values can be up to 0.01 above the bisected
+  hitmap thresholds.
+
+  | | i_10 | i_50 | i_95 | i_max |
+  |---|---|---|---|---|
+  | zipper, any trigger (hitmap criterion) | 0.780 | 0.800 | 0.855 | 0.910 |
+  | zipper, sustained | 0.790 | 0.806 | 0.856 | 0.910 |
+  | zipper, prompt | 0.810 | 0.821 | 0.858 | 0.910 |
+  | zipper, direct (no trapped dwell) | 0.825 | 0.834 | 0.859 | 0.910 |
+  | plain wire, all four | 0.840 | 0.850 | 0.850 | 0.850 |
+
+* **A trapped state changes the response to the next photon.** I measured the photon threshold at four sites,
+  starting from a trapped state instead of the empty device:
+  - [0 −2] lowers it by 0.09–0.15 I_dep away from the trap, down to 0.63 at (68, 61).
+  - One or two quanta shift it by −0.07 to +0.09. The sign depends on the side of the hole: one quantum in the
+    central left hole raises the left-channel threshold by 0.045 and lowers the others by 0.01–0.04.
+  - So the zipper's response depends on what it absorbed before.
+* **Mesh.** At 0.8 ξ, the (−68, 0) photon at 0.77 I_dep leaves the same [0 −2] state.
+  - Its depinning current is 0.795 I_dep, against 0.775 at 1.4 ξ. The rearrangement is the same, mirrored to the
+    lower right-column hole.
+  - The 12 nm bridges are only 2.4 ξ wide, so the trapping thresholds depend more on the mesh than the photon
+    thresholds do (≤ 0.007).
+  - The zipper's long-window onset may therefore sit ~0.02 I_dep higher at 0.8 ξ.
+* **Limits.**
+  - The TDGL here is deterministic, without thermal noise, so a trapped vortex never escapes by activation.
+  - Rough estimate for a real device: the pinning barrier of a hole is of order ε0 d = Φ0²/(2πμ0Λ) ≈ 0.04 eV
+    ≈ 500 K × k_B (Λ = 80 µm). So at zero bias the flux should also stay in a real device at 1–2 K. Near the
+    depinning current the barrier vanishes.
+  - The hotspot's heat and the readout circuit are not modelled. "Sustained" means the TDGL state keeps slipping
+    phase over the last 50 τ0 of 400; it does not mean a latched hotspot.
 
 ### First criterion (voltage or channel collapse), 150 τ0 window
 
@@ -153,15 +236,19 @@ layout has a symmetry other than `strip` or `zipper`, add its map rule to `snspd
 
 ## Next steps for the hole study
 
-0. **Flux trapping** (new, 29 Oct). Map which absorption sites leave flux in a hole below threshold, how much, and
-   what the trapped state's own switching current is; separate prompt detection (voltage within ~100–150 τ0 of the
-   photon) from fluxoid-mediated delayed switching in the efficiency curves. Then 0.8 ξ spot checks of the 400 τ0
-   critical grid.
-   Also worth a check: 0.5 ξ mesh at the 12 nm bridges, and a longer strip with more hole periods (end effects).
+0. **Flux trapping, follow-up.** The first map is done (see above).
+   - Decide which detection counts for the thesis: any trigger, sustained, or prompt. Then make `sim.detect`
+     require it (e.g. ≥ 1 phase slip in the last 50 τ0), so the hitmap no longer counts flux rearrangements.
+   - Check the mesh on the trapping thresholds themselves: a 0.8 ξ scan of a few left-channel and centre sites at
+     0.62–0.84 I_dep, and 0.5 ξ at the 12 nm bridges.
+   - Photon sequences at sub-threshold bias: does accumulated flux reach a state that switches? Does a switching
+     event clear the trapped flux?
+   - A longer strip with more hole periods (end effects).
 1. Hole-length sweep of the zipper (channel length / width from 2 to ~6): separates "current bypasses the short
    channel" from "detection needs the whole width to switch" as the reason the 56 nm channels do not act as narrow
    strips.
 2. Re-run the column geometries of the archived cascade scripts (2-channel, aligned 3-channel, short zipper) with the
    current protocol (conserving hotspot, 0.8 ξ, full grid).
 3. Hotspot with an energy sink (loss time 5–20 τ0 and ∞) on the zipper and the 56 nm strip.
-4. Detection criterion: record "vortex crossed" and "sustained collapse" separately; repeat key thresholds at 250 τ0.
+4. Detection criterion: `fluxtrap.py` now separates sustained from transient switching (item 0). Still to do: repeat
+   the key thresholds at 250 τ0.

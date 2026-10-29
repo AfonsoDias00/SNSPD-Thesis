@@ -24,6 +24,7 @@ import os
 import tempfile
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from contextlib import contextmanager
 from dataclasses import dataclass, replace
 from typing import NamedTuple, Optional
 
@@ -153,42 +154,56 @@ class Trigger(NamedTuple):
     t: Optional[float] = None        # when it fired [tau0]
 
 
-def run_simulation(device, current_uA, eps_func, cfg: SimConfig, t0: float = hs_mod.HOTSPOT.t0_tau0) -> Trigger:
-    """One TDGL run at a fixed current: did it count as switching / detection, by which branch, and when."""
+@contextmanager
+def solved(device, current_uA, eps_func, cfg: SimConfig, seed=None):
+    """tdgl.solve at a fixed current for cfg.tmax; yields the Solution and deletes its file afterwards.  seed: a
+    Solution of the same device to start from (default: the uniform superconducting state)."""
     h5_path = temp_h5(cfg)
     kw = {} if eps_func is None else {"disorder_epsilon": eps_func}
     sol = None
     try:
-        sol = tdgl.solve(device, solver_options(cfg, cfg.tmax, h5_path),
+        sol = tdgl.solve(device, solver_options(cfg, cfg.tmax, h5_path), seed_solution=seed,
                          terminal_currents=dict(source=current_uA, drain=-current_uA), **kw)
-        t = np.asarray(sol.dynamics.time)
-        v = np.abs(np.asarray(sol.dynamics.voltage()))
-        post = t > t0 + 4.0
-        times = {}
-        if post.any() and v[post].max() > V_POST_MAX:
-            times["V_peak"] = float(t[post][np.argmax(v[post] > V_POST_MAX)])
-        t_tr = trailing_mean_time(t, v)
-        if t_tr is not None:
-            times["V_trail"] = t_tr
-        if not times:
-            return Trigger(False)
-        branch = min(times, key=times.get)
-        return Trigger(True, branch, times[branch])
+        yield sol
     finally:
         path = getattr(sol, "path", None) or h5_path
         if path and os.path.exists(path):
             os.remove(path)
 
 
-def bisect(device, lo, hi, eps_func, cfg: SimConfig, tol_uA: float):
+def detect(sol, t0: float = hs_mod.HOTSPOT.t0_tau0) -> Trigger:
+    """Apply the detection criterion to a finished run: did it switch, by which branch first, and when."""
+    t = np.asarray(sol.dynamics.time)
+    v = np.abs(np.asarray(sol.dynamics.voltage()))
+    post = t > t0 + 4.0
+    times = {}
+    if post.any() and v[post].max() > V_POST_MAX:
+        times["V_peak"] = float(t[post][np.argmax(v[post] > V_POST_MAX)])
+    t_tr = trailing_mean_time(t, v)
+    if t_tr is not None:
+        times["V_trail"] = t_tr
+    if not times:
+        return Trigger(False)
+    branch = min(times, key=times.get)
+    return Trigger(True, branch, times[branch])
+
+
+def run_simulation(device, current_uA, eps_func, cfg: SimConfig, t0: float = hs_mod.HOTSPOT.t0_tau0,
+                   seed=None) -> Trigger:
+    """One TDGL run at a fixed current: did it count as switching / detection, by which branch, and when."""
+    with solved(device, current_uA, eps_func, cfg, seed) as sol:
+        return detect(sol, t0)
+
+
+def bisect(device, lo, hi, eps_func, cfg: SimConfig, tol_uA: float, seed=None):
     """Lowest switching current in [lo, hi] to tol_uA. Returns (I, flag, n_runs, trigger), where trigger describes
     the switching run at I (empty if it never switched); flag 'at_wall' = never switched below hi, 'below_bracket' =
-    switched even at lo."""
+    switched even at lo.  seed: initial state of every run (see solved)."""
     lo0, hi0, n, trig = lo, hi, 0, Trigger(False)
     while hi - lo > tol_uA:
         mid = 0.5 * (lo + hi)
         n += 1
-        r = run_simulation(device, mid, eps_func, cfg)
+        r = run_simulation(device, mid, eps_func, cfg, seed=seed)
         if r.switched:
             hi, trig = mid, r
         else:
