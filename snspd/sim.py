@@ -2,19 +2,27 @@
 Device construction, one TDGL run with the detection criterion, threshold bisection, the current-crowding run and a
 process-pool task runner.
 
-Detection criterion: voltage only.  A run "switched" if either holds:
+Detection criterion: sustained switching.  A run "switched" if the probe voltage triggers, by either
   1. peak |V| after t0 + 4 tau0 exceeds V_POST_MAX
-  2. a V_TRAIL_WIN-long trailing mean of |V| ending at t >= V_TRAIL_START exceeds V_TRAIL_MEAN
+  2. a V_TRAIL_WIN-long trailing mean of |V| ending at t >= V_TRAIL_START exceeds V_TRAIL_MEAN,
+and the device is still resistive at the end of the window: at least SUSTAIN_SLIPS phase slips between the probes in
+the last SUSTAIN_WIN tau0 (|int V dt| / 2 pi; one vortex crossing the full width slips 1), and again at the end of a
+SETTLE tau0 continuation from the final state (no photon; the hotspot has relaxed by then).  The continuation is needed
+because near threshold a photon can trigger a flux rearrangement between holes (1-6 slips over up to ~100 tau0, then
+quiet again) so late that it falls in the last SUSTAIN_WIN tau0 of the window.
 Voltages are pyTDGL's normalised probe voltage (units of V0); the probes sit at y = +/- L/3, so any resistive belt
-between them counts, wherever it forms.  Until 29 Oct 2026 a third branch also counted a collapse of the supercurrent
-through one monitored cross-section; it fired on local channel blocking without any voltage (a photon inside the
-zipper's monitored channel "detected" at 0.724 vs 0.801 at its glide image) and was removed.  Results made with it are
-in results/v1_voltage_or_collapse/.
+between them counts, wherever it forms.
+
+History.  Until 29 Oct 2026 a third branch also counted a collapse of the supercurrent through one monitored
+cross-section; it fired on local channel blocking without any voltage (a photon inside the zipper's monitored channel
+"detected" at 0.724 vs 0.801 at its glide image) and was removed: results in results/v1_voltage_or_collapse/.  Until
+29 Oct the voltage trigger alone counted; in the hole geometries it also fires on flux that a photon pushes from hole
+to hole without the device staying resistive (fluxtrap.py): results in results/v2_voltage_trigger/.
 
 Thresholds come from bisection to TOL_REL * I_dep(strip width) (0.34 uA for 200 nm, 0.0034 in i):
   I_sw   in ISW_BRACKET * I_dep(narrowest free width), no photon
   I_det  in [hit_lo_frac, 1] * I_sw
-Each threshold also records which branch fired earliest in the switching run at the threshold ("V_peak" or
+Each threshold also records which voltage branch fired earliest in the switching run at the threshold ("V_peak" or
 "V_trail") and when (t_trigger, tau0 after t = 0; the photon arrives at t0): a latency figure of merit.
 """
 from __future__ import annotations
@@ -47,6 +55,9 @@ V_POST_MAX = 0.45        # peak |V| after t0 + 4 tau0
 V_TRAIL_MEAN = 0.18      # trailing-mean |V| ...
 V_TRAIL_WIN = 25.0       # ... over this many tau0 ...
 V_TRAIL_START = 55.0     # ... for windows ending at t >= this
+SUSTAIN_WIN = 50.0       # sustained: at least SUSTAIN_SLIPS phase slips between the probes ...
+SUSTAIN_SLIPS = 1.0      # ... in the last SUSTAIN_WIN tau0 of the window ...
+SETTLE = 150.0           # ... and of a continuation this long [tau0]
 TOL_REL = 0.003376       # bisection tolerance [fraction of I_dep(strip width)]
 ISW_BRACKET = (0.70, 1.20)   # dark-switching bracket [fraction of I_dep(narrowest free width)]
 CROWD_TIME = 40.0        # steady-state run length for the current-crowding proxy [tau0]
@@ -148,10 +159,20 @@ def trailing_mean_time(t, v) -> Optional[float]:
     return float(tg[ends[hit[0]] - 1]) if hit.size else None
 
 
+def phase_slips(t, v, t0):
+    """|int_t0^t V dt| / 2 pi on the solver time grid (signed V in V0, t in tau0): the phase slipped between the
+    probes since t0, in units of 2 pi."""
+    t, v = np.asarray(t), np.asarray(v)
+    dv = 0.5 * (v[1:] + v[:-1]) * np.diff(t) * (t[1:] > t0)
+    return np.abs(np.concatenate([[0.0], np.cumsum(dv)])) / (2 * np.pi)
+
+
 class Trigger(NamedTuple):
-    switched: bool
-    branch: str = ""                 # "V_peak" or "V_trail": the branch that fired earliest
+    switched: bool                   # the criterion: a voltage trigger and sustained phase slips
+    branch: str = ""                 # "V_peak" or "V_trail": the voltage branch that fired earliest ("" = none)
     t: Optional[float] = None        # when it fired [tau0]
+    slips_last: float = 0.0          # phase slips in the last SUSTAIN_WIN tau0 of the window
+    slips_settled: Optional[float] = None   # ... and of the SETTLE continuation (None: not run)
 
 
 @contextmanager
@@ -172,9 +193,13 @@ def solved(device, current_uA, eps_func, cfg: SimConfig, seed=None):
 
 
 def detect(sol, t0: float = hs_mod.HOTSPOT.t0_tau0) -> Trigger:
-    """Apply the detection criterion to a finished run: did it switch, by which branch first, and when."""
+    """Apply the in-window part of the detection criterion to a finished run: which voltage branch fired first and
+    when (also reported when the device did not stay resistive), and the phase slips at the end of the window.  A
+    switch still needs settle()."""
     t = np.asarray(sol.dynamics.time)
-    v = np.abs(np.asarray(sol.dynamics.voltage()))
+    vs = np.asarray(sol.dynamics.voltage())
+    v = np.abs(vs)
+    last = float(phase_slips(t, vs, t[-1] - SUSTAIN_WIN)[-1])
     post = t > t0 + 4.0
     times = {}
     if post.any() and v[post].max() > V_POST_MAX:
@@ -183,16 +208,27 @@ def detect(sol, t0: float = hs_mod.HOTSPOT.t0_tau0) -> Trigger:
     if t_tr is not None:
         times["V_trail"] = t_tr
     if not times:
-        return Trigger(False)
+        return Trigger(False, slips_last=last)
     branch = min(times, key=times.get)
-    return Trigger(True, branch, times[branch])
+    return Trigger(last >= SUSTAIN_SLIPS, branch, times[branch], last)
+
+
+def settle(device, current_uA, sol, trig: Trigger, cfg: SimConfig) -> Trigger:
+    """Confirm a switch found by detect(): continue from the final state of `sol` for SETTLE tau0 at the same current,
+    without the photon, and require SUSTAIN_SLIPS phase slips in its last SUSTAIN_WIN tau0 as well."""
+    if not trig.switched:
+        return trig
+    with solved(device, current_uA, None, replace(cfg, tmax=SETTLE), seed=sol) as ext:
+        t = np.asarray(ext.dynamics.time)
+        later = float(phase_slips(t, np.asarray(ext.dynamics.voltage()), t[-1] - SUSTAIN_WIN)[-1])
+    return trig._replace(switched=later >= SUSTAIN_SLIPS, slips_settled=later)
 
 
 def run_simulation(device, current_uA, eps_func, cfg: SimConfig, t0: float = hs_mod.HOTSPOT.t0_tau0,
                    seed=None) -> Trigger:
     """One TDGL run at a fixed current: did it count as switching / detection, by which branch, and when."""
     with solved(device, current_uA, eps_func, cfg, seed) as sol:
-        return detect(sol, t0)
+        return settle(device, current_uA, sol, detect(sol, t0), cfg)
 
 
 def bisect(device, lo, hi, eps_func, cfg: SimConfig, tol_uA: float, seed=None):

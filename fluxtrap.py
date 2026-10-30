@@ -8,16 +8,17 @@ snspd/fluxoid.py) and a circulating current that adds to the transport current o
 such a photon the device is no longer the one the photon found.
 
   scan     every hit site of a geometry (default: the long zipper, full grid) at fixed biases, in units of I_dep of
-           the narrowest cross-section, over the full window: did the device switch (the hitmap criterion), when, the
-           phase slipped between the probes since the photon (|int V dt| / 2 pi: one vortex crossing the full width
+           the narrowest cross-section, over the full window: did the voltage trigger fire and when, did the device
+           stay resistive (both together: the detection criterion of snspd/sim.py), the phase slipped between the probes since the photon (|int V dt| / 2 pi: one vortex crossing the full width
            slips 1; a vortex that stops in a hole slips only the fraction of the width it crossed, ~0.3-0.4 here) and
            the fluxoid of every hole on every saved frame.  Each run is one of
-             clean      no switch, no flux in the holes at the end of the window
-             trapped    no switch, flux left in the holes
-             transient  the criterion fired but the device did not stay resistive (< 1 slip in the last
-                        SUSTAIN_WIN tau0): e.g. on the voltage of vortices entering a hole
-             direct     switched and stayed resistive, without first sitting in a zero-voltage trapped state
-             via_trap   switched and stayed resistive after >= DWELL_MIN tau0 in a zero-voltage trapped state
+             clean      no trigger, no flux in the holes at the end of the window
+             trapped    no trigger, flux left in the holes
+             transient  the voltage trigger fired but the device did not stay resistive (< sim.SUSTAIN_SLIPS slips
+                        in the last sim.SUSTAIN_WIN tau0 of the window or of the sim.SETTLE continuation), e.g. on flux
+                        moving between holes: not a detection
+             direct     switched (detected), without first sitting in a zero-voltage trapped state
+             via_trap   switched (detected) after >= DWELL_MIN tau0 in a zero-voltage trapped state
                         (max |V| < V_QUIET) before the resistive onset (ONSET_SLIPS slips since the photon)
   trapped  the most common trapped states from `scan`, regenerated and used as the initial state of new runs: their
            own switching current (no photon) and what happens at it (a sustained switch, or flux that only moves to
@@ -58,14 +59,13 @@ V_QUIET = 0.05           # max |V| between two frames for the device to count as
 DWELL_MIN = 20.0         # zero-voltage trapped time before a switch for it to count as via_trap [tau0]
 PROMPT_T = 150.0         # "prompt" by latency: resistive onset by this time (130 tau0 after the photon) [tau0]
 ONSET_SLIPS = 2.0        # resistive onset: this many phase slips since the photon (beyond any trapping)
-SUSTAIN_WIN = 50.0       # a switch is sustained if >= 1 phase slip happens in the last SUSTAIN_WIN tau0
 SAVE_EVERY = 40          # solver steps between saved frames (<= 8 tau0 at dt_max = 0.2)
 PROBE_SITES = ((-68.0, 0.0), (-18.0, 0.0), (0.0, 0.0), (68.0, 61.0))   # second-photon sites [nm]
 SCAN_FIELDS = ["Geometry", "x_nm", "y_nm", "bias", "I_uA", "tmax", "hotspot", "mesh_xi", "outcome", "branch",
-               "t_trigger", "slips", "slips_last", "t_onset", "n_end", "n_abs", "t_trap", "dwell", "history", "wall_s"]
+               "t_trigger", "slips", "slips_last", "slips_settled", "t_onset", "n_end", "n_abs", "t_trap", "dwell", "history", "wall_s"]
 OUTCOMES = ("clean", "trapped", "transient", "direct", "via_trap")
-SWITCHED = ("transient", "direct", "via_trap")
-SUSTAINED = ("direct", "via_trap")
+FIRED = ("transient", "direct", "via_trap")       # the voltage trigger fired
+SUSTAINED = ("direct", "via_trap")                # ... and the device stayed resistive: detected
 
 
 def parse_biases(text):
@@ -100,23 +100,15 @@ def meter_for(device):
     return _METERS[id(device)]
 
 
-def phase_slips(t, v, t0):
-    """|int_t0^t V dt| / 2 pi on the solver time grid (V in V0, t in tau0: a 2 pi phase slip is int V dt = 2 pi)."""
-    t, v = np.asarray(t), np.asarray(v)
-    dv = 0.5 * (v[1:] + v[:-1]) * np.diff(t) * (t[1:] > t0)
-    return np.abs(np.concatenate([[0.0], np.cumsum(dv)])) / (2 * np.pi)
-
-
 def classify(trig, frames, t, v, t0):
     """Outcome, phase slips, resistive onset, flux state before the onset (or at the end), first trapping time,
     zero-voltage trapped time before the onset, n history."""
     from snspd.fluxoid import PSI_LOOP_MIN
-    sl = phase_slips(t, v, t0)
+    sl = sim.phase_slips(t, v, t0)
     cum = sl[-1]
-    last = abs(cum - np.interp(t[-1] - SUSTAIN_WIN, t, sl)) if t[-1] > t0 + SUSTAIN_WIN else 0.0
     k = np.flatnonzero(sl >= ONSET_SLIPS)
     t_onset = float(t[k[0]]) if k.size else None
-    sustained = trig.switched and last >= 1.0
+    sustained = trig.switched
     t_end = t_onset if sustained and t_onset is not None else np.inf
     valid = [(t, n, vmax) for t, n, floor, vmax in frames if floor >= PSI_LOOP_MIN and t <= t_end]
     n_end, t_trap, dwell, hist, prev = (), None, 0.0, [], None
@@ -133,11 +125,12 @@ def classify(trig, frames, t, v, t0):
         n_end, t_prev = n, t
     if sustained:
         outcome = "via_trap" if dwell >= DWELL_MIN else "direct"
-    elif trig.switched:
+    elif trig.branch:
         outcome = "transient"
     else:
         outcome = "trapped" if any(n_end) else "clean"
-    return dict(outcome=outcome, slips=float(cum), slips_last=float(last), t_onset=t_onset, n_end=n_end,
+    return dict(outcome=outcome, slips=float(cum), slips_last=float(trig.slips_last),
+                slips_settled=trig.slips_settled, t_onset=t_onset, n_end=n_end,
                 t_trap=t_trap, dwell=dwell, history=" ".join(hist), frames=frames)
 
 
@@ -147,7 +140,7 @@ def observed_run(device, I, eps, cfg, seed=None):
     from snspd.fluxoid import frames
     from snspd.hotspot import HOTSPOT
     with sim.solved(device, I, eps, cfg, seed) as sol:
-        trig = sim.detect(sol)
+        trig = sim.settle(device, I, sol, sim.detect(sol), cfg)
         rec = classify(trig, frames(sol, meter_for(device)), sol.dynamics.time, sol.dynamics.voltage(),
                        HOTSPOT.t0_tau0 if eps is not None else 0.0)
     return trig, rec, sol
@@ -198,7 +191,8 @@ def cmd_scan(cfg, a):
             Geometry=g.key, x_nm=t["x_nm"], y_nm=t["y_nm"], bias=t["bias"], I_uA=round(t["I"], 4), tmax=cfg.tmax,
             hotspot=cfg.hotspot, mesh_xi=cfg.mesh_xi, outcome=res["outcome"], branch=trig["branch"],
             t_trigger="" if trig["t"] is None else round(trig["t"], 2), slips=round(res["slips"], 3),
-            slips_last=round(res["slips_last"], 3), t_onset="" if res["t_onset"] is None else round(res["t_onset"], 1),
+            slips_last=round(res["slips_last"], 3),
+            slips_settled="" if res["slips_settled"] is None else round(res["slips_settled"], 3), t_onset="" if res["t_onset"] is None else round(res["t_onset"], 1),
             n_end=fmt_n(res["n_end"]),
             n_abs=sum(abs(v) for v in res["n_end"]), t_trap="" if res["t_trap"] is None else round(res["t_trap"], 1),
             dwell=round(res["dwell"], 1), history=res["history"], wall_s=round(r["wall_s"], 1)), SCAN_FIELDS)
@@ -226,11 +220,11 @@ def site_summary(rows, b_max):
     def first(pred):
         return next((float(r["bias"]) for r in rows if pred(r)), none)
 
-    sw = lambda r: r["outcome"] in SWITCHED
+    fired = lambda r: r["outcome"] in FIRED
     sus = lambda r: r["outcome"] in SUSTAINED
     s = dict(
         i_trap=first(lambda r: r["outcome"] != "clean"),
-        i_det=first(sw),
+        i_fire=first(fired),
         i_sust=first(sus),
         i_direct=first(lambda r: r["outcome"] == "direct"),
         i_prompt=first(lambda r: sus(r) and r["t_onset"] != "" and float(r["t_onset"]) <= PROMPT_T),
@@ -301,7 +295,8 @@ def trapped_task(task):
         for label, I in (("hold_zero", 0.0), ("hold_below", I_sw - tol), ("at_isw", I_sw)):
             _, h, _ = observed_run(dev, I, None, cfg, seed)
             res[label] = dict(i=I / i_dep, outcome=h["outcome"], n_end=fmt_n(h["n_end"]), history=h["history"],
-                              slips=round(h["slips"], 2), slips_last=round(h["slips_last"], 2))
+                              slips=round(h["slips"], 2), slips_last=round(h["slips_last"], 2),
+                              slips_settled=None if h["slips_settled"] is None else round(h["slips_settled"], 2))
         res["second"] = second_photon(ctx, cfg, seed, I_sw, tol, i_dep) if task["second"] else {}
         return dict(ok=True, task=task, res=res, wall_s=time.time() - t_start)
     except Exception as exc:
@@ -384,7 +379,7 @@ def trace_task(task):
         trig, rec, sol = observed_run(ctx["device"], task["I"], eps, cfg)
         t, v = np.asarray(sol.dynamics.time), np.asarray(sol.dynamics.voltage())
         tg = np.arange(0.0, t[-1], 0.25)
-        slips = np.interp(tg, t, phase_slips(t, v, task["t0"]))
+        slips = np.interp(tg, t, sim.phase_slips(t, v, task["t0"]))
         return dict(ok=True, task=task, res=dict(trig=trig._asdict(), t=tg, v=np.abs(np.interp(tg, t, v)), slip_series=slips, **rec),
                     wall_s=time.time() - t_start)
     except Exception as exc:
@@ -412,7 +407,7 @@ def cmd_trace(cfg, a):
             L.append(f"bias {b:.3f}  FAILED {r['error']}")
             continue
         q, tr = r["res"], r["res"]["trig"]
-        L.append(f"bias {b:.3f}: {q['outcome']}" + (f", {tr['branch']} at t = {tr['t']:.1f}" if tr["switched"] else "")
+        L.append(f"bias {b:.3f}: {q['outcome']}" + (f", {tr['branch']} at t = {tr['t']:.1f}" if tr["branch"] else "")
                  + f", ends [{fmt_n(q['n_end'])}], {q['slips']:.2f} phase slips by t = {q['t'][-1]:.0f}")
         L += [f"  t = {tm:6.1f}   [{fmt_n(n)}]   {fl:.2f}   {vm:.3f}   {np.interp(tm, q['t'], q['slip_series']):.2f}"
               for tm, n, fl, vm in q["frames"]]
@@ -454,56 +449,57 @@ def report_scan(cfg, a, g, scan, i_dep):
     ref = hitmap_ref(cfg, g, a.film)
     complete = all(len(rows) == len(biases) for rows in scan.values())
     L = [f"{len(scan)} sites x {len(biases)} biases {biases[0]:.2f}..{b_max:.2f}" + ("" if complete else "   (INCOMPLETE)"),
-         f"outcome per run: clean / trapped (no switch, flux left) / transient (criterion fired, < 1 slip in the last "
-         f"{SUSTAIN_WIN:g} tau0) / direct (sustained switch) / via_trap (sustained, after >= {DWELL_MIN:g} tau0 trapped at "
-         f"|V| < {V_QUIET:g} before {ONSET_SLIPS:g} slips)",
+         f"outcome per run: clean / trapped (no trigger, flux left) / transient (voltage trigger, < {sim.SUSTAIN_SLIPS:g} "
+         f"slip in the last {sim.SUSTAIN_WIN:g} tau0) / direct (sustained switch) / via_trap (sustained, after >= "
+         f"{DWELL_MIN:g} tau0 trapped at |V| < {V_QUIET:g} before {ONSET_SLIPS:g} slips)",
          "",
-         "Per site, lowest scanned bias at which the photon: leaves flux or switches (i_trap); fires the hitmap criterion "
-         "(i_det, compare 'hitmap'); switches and stays resistive (i_sust); does so without a trapped dwell (i_direct); "
-         f"does so with the resistive onset by t = {PROMPT_T:g} tau0 (i_prompt).  '>' = not in the range.",
-         f"{'site':>12}{'i_trap':>8}{'i_det':>8}{'hitmap':>8}{'i_sust':>8}{'i_direct':>10}{'i_prompt':>10}   state just below i_sust"]
+         "Per site, lowest scanned bias at which the photon: leaves flux or fires the voltage trigger (i_trap); fires the "
+         "voltage trigger (i_fire: the detection criterion until 29 Oct 2026); switches and stays resistive (i_sust: "
+         "the detection criterion, compare 'hitmap'); does so without a trapped dwell (i_direct); does so with the "
+         f"resistive onset by t = {PROMPT_T:g} tau0 (i_prompt).  '>' = not in the range.",
+         f"{'site':>12}{'i_trap':>8}{'i_fire':>8}{'i_sust':>8}{'hitmap':>8}{'i_direct':>10}{'i_prompt':>10}   state just below i_sust"]
     fm = lambda v, s: f">{b_max:.2f}" if v >= s["none"] - 1e-9 else f"{v:.2f}"
     for site in sorted(summ, key=lambda s: (s[1], s[0])):
         s = summ[site]
         h = ref.get(site)
-        L.append(f"{f'({site[0]:g},{site[1]:g})':>12}{fm(s['i_trap'], s):>8}{fm(s['i_det'], s):>8}"
-                 f"{'' if h is None else f'{h:.3f}':>8}{fm(s['i_sust'], s):>8}{fm(s['i_direct'], s):>10}"
+        L.append(f"{f'({site[0]:g},{site[1]:g})':>12}{fm(s['i_trap'], s):>8}{fm(s['i_fire'], s):>8}"
+                 f"{fm(s['i_sust'], s):>8}{'' if h is None else f'{h:.3f}':>8}{fm(s['i_direct'], s):>10}"
                  f"{fm(s['i_prompt'], s):>10}   "
                  f"{s['outcome_below']:<8} [{fmt_n(s['n_below'])}]" + ("   non-monotonic" if s["nonmono"] else ""))
 
-    # consistency with the hitmap: the scan's i_det must be the first grid bias at or above the hitmap threshold
+    # consistency with the hitmap: the scan's i_sust must be the first grid bias at or above the hitmap threshold
     # (the hitmap threshold h is the top of a bisection bracket: the true one lies in (h - tol, h])
     tol_i = sim.scales(g, a.film)[0] / i_dep
     off = []
     for site, s in summ.items():
         h = ref.get(site)
-        if h is None or s["i_det"] >= s["none"] - 1e-9:
+        if h is None or s["i_sust"] >= s["none"] - 1e-9:
             continue
-        k = biases.index(s["i_det"])
+        k = biases.index(s["i_sust"])
         prev = biases[k - 1] if k else -np.inf
-        if not (s["i_det"] >= h - tol_i - 1e-9 and prev < h + 1e-9):
-            off.append(f"({site[0]:g},{site[1]:g}) scan {s['i_det']:.2f} vs hitmap {h:.3f}")
+        if not (s["i_sust"] >= h - tol_i - 1e-9 and prev < h + 1e-9):
+            off.append(f"({site[0]:g},{site[1]:g}) scan {s['i_sust']:.2f} vs hitmap {h:.3f}")
     L += ["", f"Check against the hitmap thresholds: {len(summ) - len(off)} of {len(summ)} sites switch first at the "
-              f"grid bias just above the hitmap i_det" + ("" if not off else ";  differ: " + ", ".join(off))]
+              f"grid bias just above the hitmap threshold" + ("" if not off else ";  differ: " + ", ".join(off))]
 
     # area fractions from the threshold maps
     maps = {}
-    for k in ("i_trap", "i_det", "i_sust", "i_direct", "i_prompt"):
+    for k in ("i_trap", "i_fire", "i_sust", "i_direct", "i_prompt"):
         X, Y, Z = an.unit_map(g, [(x, y, summ[(x, y)][k]) for x, y in summ])
         maps[k] = Z
-    fin = np.isfinite(maps["i_det"])
+    fin = np.isfinite(maps["i_fire"])
     L += ["", "Area fractions of the unit cell (thresholds interpolated as in hitmap.py; grid resolution "
               f"{min(np.diff(biases)):.2f}):",
-          "  detected = hitmap criterion; sustained = stays resistive; silent trap = flux left, criterion not fired",
-          f"{'bias':>6}{'detected':>10}{'sustained':>11}{'direct':>9}{'prompt':>9}{'silent trap':>13}"]
+          "  fired = voltage trigger; sustained = stays resistive (detected); silent trap = flux left, no trigger",
+          f"{'bias':>6}{'fired':>10}{'sustained':>11}{'direct':>9}{'prompt':>9}{'silent trap':>13}"]
     frac = lambda k, b: (maps[k][fin] <= b + 1e-9).mean() * 100
     for b in [v for v in (0.70, 0.75, 0.78, 0.80, 0.82, 0.85, 0.88, 0.90, 0.95) if biases[0] <= v <= b_max]:
-        sil = ((maps["i_trap"][fin] <= b + 1e-9) & (maps["i_det"][fin] > b + 1e-9)).mean() * 100
-        L.append(f"{b:>6.2f}{frac('i_det', b):>9.0f}%{frac('i_sust', b):>10.0f}%{frac('i_direct', b):>8.0f}%"
+        sil = ((maps["i_trap"][fin] <= b + 1e-9) & (maps["i_fire"][fin] > b + 1e-9)).mean() * 100
+        L.append(f"{b:>6.2f}{frac('i_fire', b):>9.0f}%{frac('i_sust', b):>10.0f}%{frac('i_direct', b):>8.0f}%"
                  f"{frac('i_prompt', b):>8.0f}%{sil:>12.0f}%")
     L += ["", "Efficiency-curve points for each definition of a detection (grid biases: up to one step above the "
               "bisected thresholds):", f"{'':>11}{'i_10':>7}{'i_50':>7}{'i_95':>7}{'i_max':>7}"]
-    for k, lab in (("i_det", "detected"), ("i_sust", "sustained"), ("i_prompt", "prompt"), ("i_direct", "direct")):
+    for k, lab in (("i_fire", "fired"), ("i_sust", "sustained"), ("i_prompt", "prompt"), ("i_direct", "direct")):
         m = an.metrics(an.pixel_values(maps[k]))
         L.append(f"{lab:>11}{m['i_10']:>7.3f}{m['i_50']:>7.3f}{m['i_95']:>7.3f}{m['i_max']:>7.3f}")
 
@@ -534,7 +530,9 @@ def report_trapped(cfg, g):
                 if h:
                     # (total slips are not shown: from a seed they include the phase relaxing to the new current)
                     L.append(f"      held at i = {h['i']:.3f} for {cfg.tmax:g} tau0: {h['outcome']}, "
-                             f"{h.get('slips_last', '?')} slips in the last {SUSTAIN_WIN:g}, ends [{h['n_end']}]   "
+                             f"{h.get('slips_last', '?')} slips in the last {sim.SUSTAIN_WIN:g}"
+                             + ("" if h.get("slips_settled") is None else f" ({h['slips_settled']} after settling)")
+                             + f", ends [{h['n_end']}]   "
                              f"{h['history']}")
             if v["second"]:
                 L.append(f"      second photon:   {'site':>10}{'with trap':>11}{'pristine':>10}{'change':>9}")
@@ -630,7 +628,7 @@ def fig_trace(g, res, path, title):
         av.set_ylim(0, 60)
         tr = q["trig"]
         av.set_title(f"I = {b:.3f} I_dep: {q['outcome'].replace('_', ' ')}"
-                     + (f" (t = {tr['t']:.0f})" if tr["switched"] else ""), fontsize=9.5)
+                     + (f" ({tr['branch']} at t = {tr['t']:.0f})" if tr["branch"] else ""), fontsize=9.5)
         fr = [f for f in q["frames"] if f[2] >= PSI_LOOP_MIN]
         t = np.array([f[0] for f in fr])
         n = np.array([f[1] for f in fr])
@@ -638,7 +636,7 @@ def fig_trace(g, res, path, title):
             if n[:, h].any():
                 c = g.holes[h]
                 an_.step(t, n[:, h], where="post", color=cols[h % len(cols)], label=f"hole {h} ({c.cx_nm:g},{c.cy_nm:g})")
-        if tr["switched"]:
+        if tr["branch"]:
             for ax in (av, an_, asl):
                 ax.axvline(tr["t"], color=pl.INK2, ls="--", lw=1.0)
         asl.set_xlabel("t [tau0]   (photon at 20)")
@@ -657,7 +655,7 @@ def main(argv=None):
     ap.add_argument("command", choices=["scan", "trapped", "report", "trace"])
     ap.add_argument("--geom", default="Long_Zipper")
     ap.add_argument("--grid", choices=["full", "critical"], default="full")
-    ap.add_argument("--biases", default="0.40:0.70:0.02,0.71:0.96:0.01", help="units of I_dep")
+    ap.add_argument("--biases", default="0.56:0.70:0.02,0.71:0.96:0.01", help="units of I_dep (nothing happens below ~0.64)")
     ap.add_argument("--site", default="-68,0", help="trace: photon site x,y [nm] (use --site=-68,0)")
     ap.add_argument("--max-states", type=int, default=5, help="trapped: most common trapped states to study")
     ap.add_argument("--from", dest="from_", action="append", default=[], metavar="X,Y@BIAS",

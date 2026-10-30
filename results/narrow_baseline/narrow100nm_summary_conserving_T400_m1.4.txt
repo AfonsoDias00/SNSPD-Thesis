@@ -3,22 +3,29 @@ NARROW-STRIP BASELINE   hotspot=conserving   T=400 tau0   mesh=1.4 xi   narrow w
 film: xi = 5 nm, lambda = 600 nm, d = 9 nm, gamma = 1, u = 5.79, rho_n = not set
 units: K0 = 5.238 uA/nm, j_dep = K0/(6 sqrt 3) = 0.504 uA/nm, Pearl length = 80.00 um, tau0 = n/a (set rho_n)
 ==============================================================================
-                                 Plain 100 nm
-I_sw [uA]                                48.8
-narrowest free width [nm]                 100
-I_sw / I_dep(free width)                0.968
-i_10                                    0.778
-i_50                                    0.791
-i_90                                    0.800
-i_95                                    0.801
-i_99                                    0.803
-i_max (100 % point)                     0.803
-i_50  in units of I_dep                 0.766
-i_95  in units of I_dep                 0.775
-window below the wall: 1 - i_95          0.199
-  (photon-level sites used)                 7
+                                   Plain wire    Long zipper   Plain 100 nm
+I_sw [uA]                                97.7           84.5           48.8
+narrowest free width [nm]                 200            173            100
+I_sw / I_dep(free width)                0.970          0.968          0.968
+i_10                                    0.866          0.814          0.852
+i_50                                    0.871          0.832          0.852
+i_90                                    0.875          0.865          0.852
+i_95                                    0.877          0.882          0.852
+i_99                                    0.877          0.912          0.852
+i_max (100 % point)                     0.877          0.937          0.852
+i_50  in units of I_dep                 0.845          0.805          0.825
+i_95  in units of I_dep                 0.850          0.853          0.825
+window below the wall: 1 - i_95          0.123          0.118          0.148
+  (photon-level sites used)                 8             42              7
 ------------------------------------------------------------------------------
 selectivity  median[i_det(f) - i_det(1)] over probe sites
-  f = 0.35                              0.170
-  f = 0.6                               0.104
+  f = 0.35                              0.118          0.118          0.109
+  f = 0.6                               0.066          0.055          0.027
+------------------------------------------------------------------------------
+zipper minus narrow strip  (positive = the narrow strip turns on / saturates at the lower bias)
+  onset    i_50: -0.021      i_10: -0.038
+  plateau  i_95: +0.029      i_99: +0.059
+  RESULT: the narrow strip does NOT dominate the zipper on both measures.
+  Plain wire: flagged rows ['at_wall'] -- those thresholds are bounds, not values
+  Long zipper: flagged rows ['at_wall'] -- those thresholds are bounds, not values
 ==============================================================================
