@@ -683,7 +683,7 @@ def main(argv=None):
                     help="trapped: place this fluxoid state (one integer per hole) instead of generating it with a "
                          "photon (repeatable; use --place=\"0 -1 0\")")
     ap.add_argument("--no-second", action="store_true", help="trapped: skip the second-photon thresholds")
-    ap.add_argument("--hotspot", choices=["conserving", "legacy"], default="conserving")
+    ap.add_argument("--hotspot", choices=["conserving", "legacy", "kinetic"], default="conserving")
     ap.add_argument("--tmax", type=float, default=400.0)
     ap.add_argument("--mesh-xi", type=float, default=sim.SimConfig.mesh_xi)
     ap.add_argument("--workers", type=int, default=1)

@@ -165,7 +165,7 @@ def main(argv=None):
     ap.add_argument("--site", default="0,0", help="delay: photon site x,y [nm]")
     ap.add_argument("--biases", default="0.76,0.78,0.80,0.82,0.84", help="delay: biases in units of I_sw")
     ap.add_argument("--isw-tmax", type=float, default=150.0, help="delay: window of the stored I_sw used as unit")
-    ap.add_argument("--hotspot", choices=["conserving", "legacy"], default=sim.SimConfig.hotspot)
+    ap.add_argument("--hotspot", choices=["conserving", "legacy", "kinetic"], default=sim.SimConfig.hotspot)
     ap.add_argument("--tmax", type=float, default=sim.SimConfig.tmax)
     ap.add_argument("--mesh-xi", type=float, default=sim.SimConfig.mesh_xi)
     ap.add_argument("--hit-lo-frac", type=float, default=sim.SimConfig.hit_lo_frac)

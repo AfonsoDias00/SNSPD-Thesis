@@ -133,7 +133,7 @@ def cmd_report(cfg, a):
     P("=" * 78)
     P(f"NARROW-STRIP BASELINE   hotspot={cfg.hotspot}   T={cfg.tmax:g} tau0   mesh={cfg.mesh_xi:g} xi   "
       f"narrow width={a.width_nm:g} nm")
-    for line in a.film.describe():
+    for line in a.film.describe() + hsm.HOTSPOT.describe(a.film, cfg.hotspot):
         P(line)
     P("=" * 78)
     P(f"{'':<30}" + "".join(f"{c['g'].label:>15}" for c in cols))
@@ -228,8 +228,9 @@ def parse_args(argv=None):
     ap.add_argument("command", choices=["run", "report", "scan"])
     ap.add_argument("--width-nm", type=float, default=56.0)
     ap.add_argument("--widths", default="30,56,100", help="scan: comma-separated widths [nm]")
-    ap.add_argument("--hotspot", choices=["conserving", "legacy"], default=sim.SimConfig.hotspot)
+    ap.add_argument("--hotspot", choices=list(hsm.MODELS), default=sim.SimConfig.hotspot)
     ap.add_argument("--tmax", type=float, default=sim.SimConfig.tmax)
+    ap.add_argument("--criterion", choices=["sustained", "trigger"], default="sustained")
     ap.add_argument("--mesh-xi", type=float, default=sim.SimConfig.mesh_xi)
     ap.add_argument("--hit-lo-frac", type=float, default=sim.SimConfig.hit_lo_frac)
     ap.add_argument("--energies", default="0.6,0.35")
@@ -241,7 +242,8 @@ def parse_args(argv=None):
     a.energies = tuple(float(s) for s in a.energies.split(",") if s)
     a.widths = [float(s) for s in a.widths.split(",") if s]
     a.film = Film(rho_uohm_cm=a.rho_uohm_cm)
-    cfg = sim.SimConfig(tmax=a.tmax, hotspot=a.hotspot, mesh_xi=a.mesh_xi, hit_lo_frac=a.hit_lo_frac, out_dir=a.out)
+    cfg = sim.SimConfig(tmax=a.tmax, hotspot=a.hotspot, mesh_xi=a.mesh_xi, hit_lo_frac=a.hit_lo_frac,
+                        sustained=a.criterion == "sustained", out_dir=a.out)
     return a, cfg
 
 

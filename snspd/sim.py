@@ -67,7 +67,7 @@ CROWD_TIME = 40.0        # steady-state run length for the current-crowding prox
 class SimConfig:
     tmax: float = 150.0          # solver window [tau0]
     mesh_xi: float = 1.4         # max mesh edge [xi]
-    hotspot: str = "conserving"  # "conserving" or "legacy"
+    hotspot: str = "conserving"  # "conserving", "legacy" or "kinetic" (snspd.hotspot.MODELS)
     save_every: int = 120
     dt_max: float = 0.20
     hit_lo_frac: float = 0.30    # lower photon-threshold bracket [fraction of I_sw]
@@ -105,8 +105,29 @@ def make_device(geom: Geometry, mesh_xi: float, film: Film = FILM):
     device = tdgl.Device("snspd", layer=film.layer(), film=tdgl.Polygon("film", points=box(W, L)),
                          holes=holes or None, terminals=terminals, probe_points=[(0, probe_y), (0, -probe_y)],
                          length_units="um")
-    device.make_mesh(max_edge_length=film.xi_nm * 1e-3 * mesh_xi, smooth=50)
+    pinned = pinned_mesh_path(geom, mesh_xi)
+    if pinned:
+        d = np.load(pinned)
+        device._create_dimensionless_mesh(np.asarray(d["points"], float), np.asarray(d["triangles"], int))
+    else:
+        device.make_mesh(max_edge_length=film.xi_nm * 1e-3 * mesh_xi, smooth=50)
     return device
+
+
+def pinned_mesh_path(geom: Geometry, mesh_xi: float) -> Optional[str]:
+    """A stored mesh to use instead of generating one, for reproducing results on another machine.
+
+    Meshes of geometries with holes depend on the shapely / GEOS version (Polygon.resample uses GEOS segmentize and
+    interpolate, and Triangle's refinement amplifies last-bit differences in the hole outlines): on 4 Nov 2026 a
+    source-built GEOS 3.13.1 gave the long zipper 10 543 nodes instead of 10 710, and the (-68, 0) threshold moved
+    from 68.80 to 72.03 uA.  Plain strips were identical.  Set SNSPD_MESH_DIR to a folder of
+    mesh_<geometry key>_m<mesh_xi>.npz files (points in um, triangles), e.g. extracted from the crowding .npz files
+    with `python -m snspd.sim pin-meshes`; geometries without a file there are meshed as usual."""
+    d = os.environ.get("SNSPD_MESH_DIR")
+    if not d:
+        return None
+    p = os.path.join(d, f"mesh_{geom.key}_m{mesh_xi:g}.npz")
+    return p if os.path.exists(p) else None
 
 
 _CTX = {}   # per-process cache: (geometry, mesh, film, hotspot params) -> device, hotspot solver
@@ -374,3 +395,31 @@ def execute(tasks, workers, on_result, fn=task_fn):
 
 def with_out_dir(cfg: SimConfig, out_dir: str) -> SimConfig:
     return replace(cfg, out_dir=out_dir)
+
+
+# ==============================================================================
+# Pinned meshes (see pinned_mesh_path)
+# ==============================================================================
+def pin_meshes(out_dir: str = "meshes", result_dirs=("results/hitmap", "results/slots")):
+    """Write mesh_<key>_m<mesh_xi>.npz for every geometry whose crowding run stored its mesh, from the conserving
+    files (the crowding run has no photon, so its mesh is the production mesh of that tag)."""
+    import glob
+    import re
+    os.makedirs(out_dir, exist_ok=True)
+    for d in result_dirs:
+        for f in sorted(glob.glob(os.path.join(d, "crowd_*_0.80_conserving_T*_m*.npz"))):
+            m = re.match(r"crowd_(.+)_0\.80_conserving_T[0-9.]+_m([0-9.]+)(_trigger)?\.npz", os.path.basename(f))
+            if not m or m.group(3):
+                continue
+            dst = os.path.join(out_dir, f"mesh_{m.group(1)}_m{m.group(2)}.npz")
+            if os.path.exists(dst):
+                continue
+            src = np.load(f)
+            np.savez_compressed(dst, points=src["points"], triangles=src["triangles"])
+            log(f"{f} -> {dst}  ({len(src['points'])} nodes)")
+
+
+if __name__ == "__main__":
+    import sys
+    if sys.argv[1:2] == ["pin-meshes"]:
+        pin_meshes(*sys.argv[2:3])

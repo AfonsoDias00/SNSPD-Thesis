@@ -181,7 +181,7 @@ def cmd_report(cfg, a, geoms):
     P(f"SUMMARY   hotspot={cfg.hotspot}   T={cfg.tmax:g} tau0   mesh={cfg.mesh_xi:g} xi   grid={a.grid}")
     if a.grid == "critical":
         P("NOTE: critical grid -> the maps are interpolated from few points; quantiles are indicative only.")
-    for line in a.film.describe() + hsm.HOTSPOT.describe(a.film):
+    for line in a.film.describe() + hsm.HOTSPOT.describe(a.film, cfg.hotspot):
         P(line)
     P("=" * 78)
     P(f"{'':<30}" + "".join(f"{g.label:>14}" for g in geoms))
@@ -336,7 +336,7 @@ def parse_args(argv=None):
     ap.add_argument("command", choices=["selftest", "plan", "run", "report"])
     ap.add_argument("--geoms", default="Plain_Wire,Long_Zipper", help=f"comma separated, from {list(geo.GEOMETRIES)}")
     ap.add_argument("--tmax", type=float, default=sim.SimConfig.tmax)
-    ap.add_argument("--hotspot", choices=["conserving", "legacy"], default=sim.SimConfig.hotspot)
+    ap.add_argument("--hotspot", choices=list(hsm.MODELS), default=sim.SimConfig.hotspot)
     ap.add_argument("--criterion", choices=["sustained", "trigger"], default="sustained")
     ap.add_argument("--mesh-xi", type=float, default=sim.SimConfig.mesh_xi)
     ap.add_argument("--save-every", type=int, default=sim.SimConfig.save_every)

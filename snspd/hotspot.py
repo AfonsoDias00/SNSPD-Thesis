@@ -9,10 +9,22 @@ conserving (default)
 legacy
     epsilon = 1 + A f (r0^2/r_t^2) exp(-(t - t0)/t_relax) exp(-|r - r_hit|^2 / r_t^2),  r_t^2 = r0^2 + 4 D (t - t0).
     Free-space Gaussian: energy that would sit outside the film or inside a hole is lost.
+kinetic
+    The same conserving diffusion of n(r, t), but the suppression s = 1 - epsilon follows the local energy density
+    e = f n exp(-(t - t0)/t_esc) with a delay and saturates:
+        ds/dt = (s_eq(e) - s) / t_rise,   s = 0 at t0,   s_eq(e) = s_max tanh(|A| e / s_max).
+    For weak density s_eq ~ |A| e, the same energy calibration as the conserving model (f = 1 is the same photon); the
+    differences are only in time and saturation:
+      * t_rise: suppression builds up over the quasiparticle/phonon thermalisation time instead of instantly
+        (tau_th = 1.4-1.8 ps in NbN, Simon et al., arXiv:2501.13791);
+      * t_esc: energy leaves to the substrate on ~15 ps (tau_esc in the same paper) instead of t_relax = 35 tau0;
+      * s_max = 1.25: epsilon cannot go below -0.25, the value for |Delta| -> 0 at T = 0.2 Tc in the mapping
+        alpha = (1 - T/Tc - eps_qp)/(1 - T/Tc) of that paper.  The conserving model's core reaches -1.5.
+    The result is a back-loaded hotspot: weaker in the first picoseconds, broader and longer-lived afterwards.
 
-f scales the amplitude as a proxy for photon energy (f = 1 is the reference photon).  Hotspot picture: Semenov et
-al., Physica C 351, 349 (2001); epsilon-suppression in TDGL: Zotova & Vodolazov, PRB 85, 024509 (2012).
-Neither model has an energy sink other than exp(-t/t_relax) and neither solves a heat equation.
+f scales the amplitude as a proxy for photon energy (f = 1 is the reference photon); in the kinetic model it scales
+the energy density, so the response saturates.  Hotspot picture: Semenov et al., Physica C 351, 349 (2001);
+epsilon-suppression in TDGL: Zotova & Vodolazov, PRB 85, 024509 (2012).  No model here solves a heat equation.
 """
 from __future__ import annotations
 
@@ -36,9 +48,19 @@ class HotspotParams:
     t0_tau0: float = 20.0             # photon arrival, after the bias transient has settled
     dt_tau0: float = 0.25             # diffusion time step
     eps_floor: float = -6.0           # numerical guard: epsilon is never pushed below this
+    # kinetic model only (see module docstring); t_relax is not used there
+    kin_s_max: float = 1.25           # saturated suppression: epsilon >= 1 - s_max = -0.25
+    kin_rise_tau0: float = 10.0       # build-up time of the suppression (~1.2-1.7 ps)
+    kin_esc_tau0: float = 100.0       # energy escape time to the substrate (~12-17 ps); np.inf = no loss
 
-    def describe(self, film: Film) -> list[str]:
+    def describe(self, film: Film, model: str = "conserving") -> list[str]:
         D_si, tr, t0 = film.cm2_per_s(self.D_nm2_per_tau0), film.ps(self.t_relax_tau0), film.ps(self.t0_tau0)
+        if model == "kinetic":
+            phys = "" if D_si is None else (f"  (= {D_si:.2f} cm^2/s, rise {film.ps(self.kin_rise_tau0):.2f} ps, "
+                                            f"escape {film.ps(self.kin_esc_tau0):.2f} ps)")
+            return [f"hotspot (kinetic): r0 = {self.r0_nm:g} nm, slope |A| = {abs(self.amp):g}, "
+                    f"s_max = {self.kin_s_max:g}, D = {self.D_nm2_per_tau0:g} nm^2/tau0, rise = "
+                    f"{self.kin_rise_tau0:g} tau0, escape = {self.kin_esc_tau0:g} tau0, t0 = {self.t0_tau0:g} tau0{phys}"]
         phys = "" if D_si is None else f"  (= {D_si:.2f} cm^2/s, {tr:.2f} ps, arrival {t0:.2f} ps)"
         return [f"hotspot: r0 = {self.r0_nm:g} nm, A = {self.amp:g}, D = {self.D_nm2_per_tau0:g} nm^2/tau0, "
                 f"t_relax = {self.t_relax_tau0:g} tau0, t0 = {self.t0_tau0:g} tau0{phys}"]
@@ -90,12 +112,12 @@ class HotspotSolver:
         return out
 
 
-def eps_conserving(mesh_points, snaps, amp, params: HotspotParams = HOTSPOT):
-    """Vectorized pyTDGL epsilon(r, t) from precomputed diffusion snapshots."""
+def _snapshot_interpolator(mesh_points, snaps, params: HotspotParams, transform):
+    """pyTDGL epsilon(r, t) = transform(value interpolated linearly in time from snaps, t - t0); 1 before t0."""
     mesh_points = np.asarray(mesh_points)
     K = snaps.shape[0]
     state = {"done": False, "idx": None}
-    t0, tr, dtp, floor = params.t0_tau0, params.t_relax_tau0, params.dt_tau0, params.eps_floor
+    t0, dtp = params.t0_tau0, params.dt_tau0
 
     def eps_func(r, *, t, vectorized=True):
         r = np.asarray(r)
@@ -109,12 +131,52 @@ def eps_conserving(mesh_points, snaps, amp, params: HotspotParams = HOTSPOT):
         s = min(dt / dtp, K - 1.0)
         k = min(int(s), K - 2)
         f = s - k
-        n = (1.0 - f) * snaps[k].astype(float) + f * snaps[k + 1].astype(float)
+        v = (1.0 - f) * snaps[k].astype(float) + f * snaps[k + 1].astype(float)
         if state["idx"] is not None:
-            n = n[state["idx"]]
-        return np.maximum(1.0 + amp * np.exp(-dt / tr) * np.maximum(n, 0.0), floor)
+            v = v[state["idx"]]
+        return transform(v, dt)
 
     return eps_func
+
+
+def eps_conserving(mesh_points, snaps, amp, params: HotspotParams = HOTSPOT):
+    """Vectorized pyTDGL epsilon(r, t) from precomputed diffusion snapshots."""
+    tr, floor = params.t_relax_tau0, params.eps_floor
+    return _snapshot_interpolator(
+        mesh_points, snaps, params,
+        lambda n, dt: np.maximum(1.0 + amp * np.exp(-dt / tr) * np.maximum(n, 0.0), floor))
+
+
+def kinetic_suppression(snaps, f, params: HotspotParams = HOTSPOT):
+    """Convert diffusion snapshots n_k (in place, float32) into epsilon_k of the kinetic model.
+
+    s_eq = s_max tanh(|A| e / s_max) with e = f n exp(-t/t_esc) at the snapshots, and ds/dt = (s_eq - s)/t_rise
+    integrated exactly for s_eq varying linearly over each step (first-order-hold exponential integrator; for
+    t_rise -> 0 it returns s = s_eq exactly).  Returns snaps (now epsilon)."""
+    dt, s_max, tau = params.dt_tau0, params.kin_s_max, params.kin_rise_tau0
+    gain = abs(params.amp) * f / s_max
+    q = np.exp(-dt / tau)
+    c = (tau / dt) * (1.0 - q)       # weight of the change of s_eq within the step
+    esc = params.kin_esc_tau0
+
+    def s_eq(k):
+        loss = np.exp(-k * dt / esc) if np.isfinite(esc) else 1.0
+        return s_max * np.tanh(gain * np.maximum(snaps[k].astype(float), 0.0) * loss)
+
+    s = np.zeros(snaps.shape[1])     # no suppression at t0: it builds up from there
+    eq_prev = s_eq(0)
+    snaps[0] = 1.0
+    for k in range(1, snaps.shape[0]):
+        eq = s_eq(k)
+        s = eq + (s - eq_prev) * q - (eq - eq_prev) * c
+        snaps[k] = 1.0 - s
+        eq_prev = eq
+    return snaps
+
+
+def eps_kinetic(mesh_points, snaps, f, params: HotspotParams = HOTSPOT):
+    """Vectorized pyTDGL epsilon(r, t) of the kinetic model from precomputed diffusion snapshots (consumed)."""
+    return _snapshot_interpolator(mesh_points, kinetic_suppression(snaps, f, params), params, lambda e, dt: e)
 
 
 def eps_legacy(x0_um, y0_um, amp, params: HotspotParams = HOTSPOT):
@@ -139,9 +201,15 @@ def build_eps(hs: HotspotSolver, model: str, x_nm, y_nm, f, tmax, params: Hotspo
     x0, y0, amp = x_nm * 1e-3, y_nm * 1e-3, params.amp * f
     if model == "legacy":
         return eps_legacy(x0, y0, amp, params)
-    if model != "conserving":
+    if model not in MODELS:
         raise ValueError(model)
-    return eps_conserving(hs.P, hs.evolve(hs.initial_condition(x0, y0), tmax - params.t0_tau0), amp, params)
+    snaps = hs.evolve(hs.initial_condition(x0, y0), tmax - params.t0_tau0)
+    if model == "kinetic":
+        return eps_kinetic(hs.P, snaps, f, params)
+    return eps_conserving(hs.P, snaps, amp, params)
+
+
+MODELS = ("conserving", "legacy", "kinetic")
 
 
 def legacy_energy_retention(geom, x_nm, y_nm, dts=(0.0, 10.0, 30.0, 60.0, 100.0), params: HotspotParams = HOTSPOT):
