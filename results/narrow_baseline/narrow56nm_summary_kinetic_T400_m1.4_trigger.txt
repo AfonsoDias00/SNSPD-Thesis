@@ -1,0 +1,25 @@
+==============================================================================
+NARROW-STRIP BASELINE   hotspot=kinetic   T=400 tau0   mesh=1.4 xi   narrow width=56 nm
+film: xi = 5 nm, lambda = 600 nm, d = 9 nm, gamma = 1, u = 5.79, rho_n = not set
+units: K0 = 5.238 uA/nm, j_dep = K0/(6 sqrt 3) = 0.504 uA/nm, Pearl length = 80.00 um, tau0 = n/a (set rho_n)
+hotspot (kinetic): r0 = 14 nm, slope |A| = 2.5, s_max = 1.25, D = 10 nm^2/tau0, rise = 10 tau0, escape = 100 tau0, t0 = 20 tau0
+==============================================================================
+                                  Plain 56 nm
+I_sw [uA]                                27.4
+narrowest free width [nm]                  56
+I_sw / I_dep(free width)                0.970
+i_10                                    0.632
+i_50                                    0.637
+i_90                                    0.641
+i_95                                    0.642
+i_99                                    0.642
+i_max (100 % point)                     0.642
+i_50  in units of I_dep                 0.617
+i_95  in units of I_dep                 0.622
+window below the wall: 1 - i_95          0.358
+  (photon-level sites used)                 5
+------------------------------------------------------------------------------
+selectivity  median[i_det(f) - i_det(1)] over probe sites
+  f = 0.35                              0.254
+  f = 0.6                               0.150
+==============================================================================
