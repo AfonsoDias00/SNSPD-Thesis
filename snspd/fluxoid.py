@@ -53,6 +53,18 @@ class FluxoidMeter:
         return n, floor
 
 
+def winding_psi(device, n):
+    """exp(i theta) on the mesh sites, theta winding n[k] times 2 pi around hole k (positive counter-clockwise, as
+    FluxoidMeter counts): a starting order parameter that holds fluxoid n[k] in each hole, with no vortex in the
+    film.  The phase is centred on each hole's outline points; the solver relaxes the current distribution."""
+    xy = np.asarray(device.points)
+    theta = np.zeros(len(xy))
+    for k, hole in zip(n, device.holes):
+        cx, cy = np.asarray(hole.points).mean(axis=0)
+        theta += k * np.arctan2(xy[:, 1] - cy, xy[:, 0] - cx)
+    return np.exp(1j * theta)
+
+
 def _signed_area(xy):
     x, y = xy[:, 0], xy[:, 1]
     return 0.5 * float(np.dot(x, np.roll(y, -1)) - np.dot(y, np.roll(x, -1)))

@@ -45,10 +45,10 @@ from .units import FILM, Film
 try:
     import h5py
     import tdgl
-    from tdgl.geometry import box, ellipse
+    from tdgl.geometry import box
     _TDGL_ERR = None
 except ImportError as _exc:  # pragma: no cover  (analysis and reports work without the solver)
-    h5py = tdgl = box = ellipse = None
+    h5py = tdgl = box = None
     _TDGL_ERR = _exc
 
 V_POST_MAX = 0.45        # peak |V| after t0 + 4 tau0
@@ -71,11 +71,12 @@ class SimConfig:
     save_every: int = 120
     dt_max: float = 0.20
     hit_lo_frac: float = 0.30    # lower photon-threshold bracket [fraction of I_sw]
+    sustained: bool = True       # False: the voltage trigger alone counts (the lower bound on the threshold)
     out_dir: str = "results/hitmap"
 
     @property
     def tag(self) -> str:
-        return f"{self.hotspot}_T{self.tmax:g}_m{self.mesh_xi:g}"
+        return f"{self.hotspot}_T{self.tmax:g}_m{self.mesh_xi:g}" + ("" if self.sustained else "_trigger")
 
     def path(self, stem: str, ext: str) -> str:
         return os.path.join(self.out_dir, f"{stem}_{self.tag}.{ext}")
@@ -96,13 +97,13 @@ def log(*a):
 def make_device(geom: Geometry, mesh_xi: float, film: Film = FILM):
     need_tdgl()
     W, L = geom.width_nm * 1e-3, geom.length_nm * 1e-3
-    holes = [tdgl.Polygon(f"hole_{i}", points=ellipse(h.a_nm * 1e-3, h.b_nm * 1e-3, center=(h.cx_nm * 1e-3, h.cy_nm * 1e-3),
-                                                      points=geom.hole_points)).resample(geom.hole_points)
+    probe_y = L / 3 if geom.probe_y_nm is None else geom.probe_y_nm * 1e-3
+    holes = [tdgl.Polygon(f"hole_{i}", points=h.outline(geom.hole_points) * 1e-3).resample(geom.hole_points)
              for i, h in enumerate(geom.holes)]
     terminals = [tdgl.Polygon("source", points=box(W, L / 100, center=(0, L / 2))),
                  tdgl.Polygon("drain", points=box(W, L / 100, center=(0, -L / 2)))]
     device = tdgl.Device("snspd", layer=film.layer(), film=tdgl.Polygon("film", points=box(W, L)),
-                         holes=holes or None, terminals=terminals, probe_points=[(0, L / 3), (0, -L / 3)],
+                         holes=holes or None, terminals=terminals, probe_points=[(0, probe_y), (0, -probe_y)],
                          length_units="um")
     device.make_mesh(max_edge_length=film.xi_nm * 1e-3 * mesh_xi, smooth=50)
     return device
@@ -176,15 +177,21 @@ class Trigger(NamedTuple):
 
 
 @contextmanager
-def solved(device, current_uA, eps_func, cfg: SimConfig, seed=None):
+def solved(device, current_uA, eps_func, cfg: SimConfig, seed=None, phase=None):
     """tdgl.solve at a fixed current for cfg.tmax; yields the Solution and deletes its file afterwards.  seed: a
-    Solution of the same device to start from (default: the uniform superconducting state)."""
+    Solution of the same device to start from (default: the uniform superconducting state).  phase: a unit complex
+    array over the mesh sites multiplying the uniform start instead (e.g. fluxoid.winding_psi); not with a seed."""
+    if seed is not None and phase is not None:
+        raise ValueError("give a seed or a starting phase, not both")
     h5_path = temp_h5(cfg)
     kw = {} if eps_func is None else {"disorder_epsilon": eps_func}
     sol = None
     try:
-        sol = tdgl.solve(device, solver_options(cfg, cfg.tmax, h5_path), seed_solution=seed,
-                         terminal_currents=dict(source=current_uA, drain=-current_uA), **kw)
+        solver = tdgl.TDGLSolver(device, solver_options(cfg, cfg.tmax, h5_path), seed_solution=seed,
+                                 terminal_currents=dict(source=current_uA, drain=-current_uA), **kw)
+        if phase is not None:
+            solver.psi_init = solver.psi_init * phase      # keeps psi = 0 on the terminals
+        sol = solver.solve()
         yield sol
     finally:
         path = getattr(sol, "path", None) or h5_path
@@ -228,7 +235,8 @@ def run_simulation(device, current_uA, eps_func, cfg: SimConfig, t0: float = hs_
                    seed=None) -> Trigger:
     """One TDGL run at a fixed current: did it count as switching / detection, by which branch, and when."""
     with solved(device, current_uA, eps_func, cfg, seed) as sol:
-        return settle(device, current_uA, sol, detect(sol, t0), cfg)
+        trig = detect(sol, t0)
+        return settle(device, current_uA, sol, trig, cfg) if cfg.sustained else trig._replace(switched=bool(trig.branch))
 
 
 def bisect(device, lo, hi, eps_func, cfg: SimConfig, tol_uA: float, seed=None):

@@ -44,6 +44,12 @@ def _symmetrize_zipper(samples, half_period):
     return np.array(pts), np.array(vals)
 
 
+def _symmetrize_column(samples):
+    """x-mirror and y-mirror of a single centred hole column."""
+    pts = {(sx * x, sy * y): v for x, y, v in samples for sx in (1, -1) for sy in (1, -1)}
+    return np.array(list(pts)), np.array(list(pts.values()))
+
+
 def map_grid(geom: Geometry):
     xs = np.linspace(-geom.width_nm / 2, geom.width_nm / 2, 201)
     ys = np.linspace(-geom.cell_half_y_nm, geom.cell_half_y_nm, int(round(2 * geom.cell_half_y_nm)) + 1)
@@ -58,8 +64,9 @@ def unit_map(geom: Geometry, samples):
         vs = np.array([s[2] for s in samples])
         o = np.argsort(xs)
         return X, Y, np.interp(np.abs(X), xs[o], vs[o])
-    if geom.symmetry == "zipper":
-        pts, vals = _symmetrize_zipper(samples, geom.cell_half_y_nm)
+    if geom.symmetry in ("zipper", "column"):
+        pts, vals = (_symmetrize_zipper(samples, geom.cell_half_y_nm) if geom.symmetry == "zipper"
+                     else _symmetrize_column(samples))
         Z = griddata(pts, vals, (X, Y), method="linear")
         Z = np.where(np.isnan(Z), griddata(pts, vals, (X, Y), method="nearest"), Z)
         Z[geom.inside_hole(X, Y)] = np.nan

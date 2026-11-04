@@ -1,0 +1,221 @@
+{
+ "id": "1d",
+ "title": "plain-wire photon thresholds against known behaviour",
+ "wall_s": 0.0,
+ "checks": [
+  {
+   "id": "1d.1",
+   "name": "centre site (0,0): linearity of i_det(f) over the detected range f = 0.4-1",
+   "value": "max |residual| 0.0054",
+   "expected": "<= 3 x bisection tol = 0.0104 (linear in photon energy)",
+   "verdict": "PASS",
+   "note": "slope -0.202 I_dep per unit f; i_det stays within tol of its f = 1 value for f >= 1; i_det(f) = 0.2:1.000*, 0.3:1.000*, 0.35:1.000*, 0.4:0.992, 0.5:0.978, 0.6:0.959, 0.7:0.937, 0.8:0.915, 0.9:0.893, 1:0.869   (* = no detection below I_sw)"
+  },
+  {
+   "id": "1d.3",
+   "name": "centre site: i_det falls monotonically with f",
+   "value": "yes",
+   "expected": "monotonic within tol",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "1d.2",
+   "name": "edge site (-96,0): linearity of i_det(f) over the detected range f = 0.3-1",
+   "value": "max |residual| 0.0292",
+   "expected": "<= 3 x bisection tol = 0.0104 (linear in photon energy)",
+   "verdict": "FAIL",
+   "note": "slope -0.124 I_dep per unit f; i_det stays within tol of its f = 1 value for f >= 0.6; i_det(f) = 0.2:1.000*, 0.3:0.973, 0.35:0.954, 0.4:0.934, 0.5:0.891, 0.6:0.880, 0.7:0.880, 0.8:0.880, 0.9:0.877, 1:0.877   (* = no detection below I_sw)"
+  },
+  {
+   "id": "1d.4",
+   "name": "edge site: i_det falls monotonically with f",
+   "value": "yes",
+   "expected": "monotonic within tol",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "1d.5",
+   "name": "weak photons (f <= 0.6, where the edge detects): the edge is more sensitive than the centre",
+   "value": "f=0.3: centre-edge +0.027, f=0.35: centre-edge +0.046, f=0.4: centre-edge +0.057, f=0.5: centre-edge +0.088, f=0.6: centre-edge +0.079",
+   "expected": "centre - edge > tol at every such f",
+   "verdict": "PASS",
+   "note": "f = 0.2: neither site detects below I_sw"
+  },
+  {
+   "id": "1d.6",
+   "name": "strong photons: the profile across the width flattens",
+   "value": "|centre - edge| 0.0082 at f = 1 vs 0.0793 at f = 0.6",
+   "expected": "smaller at f = 1",
+   "verdict": "PASS",
+   "note": "all f: 0.2:+0.000, 0.3:+0.027, 0.35:+0.046, 0.4:+0.057, 0.5:+0.088, 0.6:+0.079, 0.7:+0.057, 0.8:+0.036, 0.9:+0.016, 1:-0.008"
+  },
+  {
+   "id": "1d.7",
+   "name": "width law i_det = 1 - d_hs/w at the centre, 30-100 nm strips, voltage-trigger bound",
+   "value": "d_hs = 20.2 nm, max |residual| 0.0050",
+   "expected": "max |residual| <= 3 x tol = 0.0104",
+   "verdict": "PASS",
+   "note": "(w, i_det, (1 - i) w): (30, 0.327, 20.2 nm), (56, 0.636, 20.4 nm), (100, 0.803, 19.7 nm), (200, 0.869, 26.2 nm)"
+  },
+  {
+   "id": "1d.8",
+   "name": "the 200 nm wire against that law",
+   "value": "0.869 vs 0.899 (-0.030)",
+   "expected": "on the law if detection is a normal belt of width d_hs",
+   "verdict": "INFO",
+   "note": "(1 - i) w = 26 nm instead of 20: the wide wire detects at lower bias than a d_hs belt would allow"
+  },
+  {
+   "id": "1d.9",
+   "name": "centre site: photon at t0 = 40 vs 20 tau0",
+   "value": "0.8660 vs 0.8688 (-0.0027)",
+   "expected": "|diff| <= tol = 0.0035",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "1d.10",
+   "name": "edge site: photon at t0 = 40 vs 20 tau0",
+   "value": "0.8770 vs 0.8770 (+0.0000)",
+   "expected": "|diff| <= tol = 0.0035",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "1d.11",
+   "name": "mirror: (58,0) vs (-58,0)",
+   "value": "0.8715 vs 0.8715 (+0.0000)",
+   "expected": "|diff| <= tol = 0.0035",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "1d.12",
+   "name": "mirror: (96,0) vs (-96,0)",
+   "value": "0.8770 vs 0.8770 (+0.0000)",
+   "expected": "|diff| <= tol = 0.0035",
+   "verdict": "PASS",
+   "note": ""
+  }
+ ],
+ "extra": {
+  "energy_centre": [
+   [
+    0.2,
+    1.0,
+    "at_wall"
+   ],
+   [
+    0.3,
+    1.0,
+    "at_wall"
+   ],
+   [
+    0.35,
+    1.0,
+    "at_wall"
+   ],
+   [
+    0.4,
+    0.991796875,
+    ""
+   ],
+   [
+    0.5,
+    0.978125,
+    ""
+   ],
+   [
+    0.6,
+    0.958984375,
+    ""
+   ],
+   [
+    0.7,
+    0.937109375,
+    ""
+   ],
+   [
+    0.8,
+    0.9152343749999998,
+    ""
+   ],
+   [
+    0.9,
+    0.8933593750000001,
+    ""
+   ],
+   [
+    1.0,
+    0.86875,
+    ""
+   ]
+  ],
+  "energy_edge": [
+   [
+    0.2,
+    1.0,
+    "at_wall"
+   ],
+   [
+    0.3,
+    0.9726562499999999,
+    ""
+   ],
+   [
+    0.35,
+    0.953515625,
+    ""
+   ],
+   [
+    0.4,
+    0.934375,
+    ""
+   ],
+   [
+    0.5,
+    0.890625,
+    ""
+   ],
+   [
+    0.6,
+    0.8796875,
+    ""
+   ],
+   [
+    0.7,
+    0.8796875,
+    ""
+   ],
+   [
+    0.8,
+    0.8796875,
+    ""
+   ],
+   [
+    0.9,
+    0.876953125,
+    ""
+   ],
+   [
+    1.0,
+    0.876953125,
+    ""
+   ]
+  ],
+  "spread_centre_minus_edge": {
+   "0.2": 0.0,
+   "0.3": 0.02734375000000011,
+   "0.35": 0.04648437500000002,
+   "0.4": 0.05742187500000007,
+   "0.5": 0.08750000000000002,
+   "0.6": 0.07929687500000004,
+   "0.7": 0.05742187500000007,
+   "0.8": 0.03554687499999987,
+   "0.9": 0.016406250000000067,
+   "1.0": -0.008203124999999978
+  }
+ }
+}

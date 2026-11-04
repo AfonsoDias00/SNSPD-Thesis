@@ -1,0 +1,152 @@
+{
+ "id": "2d",
+ "title": "fluxoid steps in the flux scans",
+ "wall_s": 405.0,
+ "checks": [
+  {
+   "id": "2d.1",
+   "name": "Long_Zipper scan, runs that end trapped (no trigger): changes of one quantum per hole between accepted states",
+   "value": "426 of 426",
+   "expected": "all",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "2d.2",
+   "name": "Long_Zipper scan, resistive runs (transient/direct/via_trap): changes of 2 or more quanta in one hole",
+   "value": "174 of 1610 (10.8 %)",
+   "expected": "0 if frames resolve every vortex",
+   "verdict": "FAIL",
+   "note": "per outcome: transient {1: 207, 2: 25, 3: 9}; direct {1: 897, 2: 131, 3: 3}; via_trap {1: 332, 2: 6}"
+  },
+  {
+   "id": "2d.3",
+   "name": "Slot_400 scan, runs that end trapped (no trigger): changes of one quantum per hole between accepted states",
+   "value": "33 of 33",
+   "expected": "all",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "2d.4",
+   "name": "Slot_400 scan, resistive runs (transient/direct/via_trap): changes of 2 or more quanta in one hole",
+   "value": "23 of 218 (10.6 %)",
+   "expected": "0 if frames resolve every vortex",
+   "verdict": "FAIL",
+   "note": "per outcome: transient {1: 171, 2: 17, 3: 3}; direct {1: 24, 2: 3}; via_trap {}"
+  },
+  {
+   "id": "2d.5",
+   "name": "trace of the zipper photon at (-68, 0), 4 biases: changes with a rejected frame between the two accepted states",
+   "value": "11 of 26",
+   "expected": "all (plan); not required, see 2a.5-2a.6",
+   "verdict": "INFO",
+   "note": "min |psi| on the loops at the frame before or at each change: median 0.07, min 0.01"
+  },
+  {
+   "id": "2d.6",
+   "name": "dense re-runs: every 5th frame reproduces the stored history",
+   "value": "yes",
+   "expected": "identical (deterministic solver; frames do not change the dynamics)",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "2d.7",
+   "name": "dense re-runs: jumps of 2+ quanta between accepted frames, production rate vs 5x",
+   "value": "10 -> 5; at 5x, 5 of 5 span rejected frames",
+   "expected": "every remaining jump spans rejected frames (a burst, winding undefined in between)",
+   "verdict": "PASS",
+   "note": "Long_Zipper (-96,0) @ 0.78: 1 jumps of 2+ at the production rate, 1 at 5x (1 bridged by rejected frames); Long_Zipper (0,0) @ 0.81: 5 jumps of 2+ at the production rate, 3 at 5x (3 bridged by rejected frames); Slot_400 (-42,0) @ 0.82: 4 jumps of 2+ at the production rate, 1 at 5x (1 bridged by rejected frames)"
+  },
+  {
+   "id": "2d.8",
+   "name": "zipper mesh (1.4 xi): committed sim.make_device vs the working tree",
+   "value": "10710 vs 10543 sites",
+   "expected": "identical (the outlines agree to ~1e-14 nm)",
+   "verdict": "FAIL",
+   "note": "stored zipper results (hitmap, flux scan, trapped states) reproduce bit for bit only with the committed construction (2d.6); zipper runs made now use another triangulation"
+  },
+  {
+   "id": "2d.9",
+   "name": "zipper on the working-tree mesh vs stored: I_sw and the f = 1 thresholds at (-96,0), (-68,0), (0,0)",
+   "value": "largest change 10.9 x the bisection tolerance (0.34 uA)",
+   "expected": "<= 2 x tol (same resolution, only the triangulation differs)",
+   "verdict": "FAIL",
+   "note": "I_sw: 84.34 vs 84.51 uA (-0.0020 I_dep); (-96,0): 72.50 vs 68.80 uA (+0.0423 I_dep); (-68,0): 72.03 vs 68.80 uA (+0.0370 I_dep); (0,0): 71.11 vs 71.11 uA (+0.0000 I_dep)"
+  }
+ ],
+ "extra": {
+  "Long_Zipper": {
+   "trapped": {
+    "1": 426
+   },
+   "transient": {
+    "1": 207,
+    "2": 25,
+    "3": 9
+   },
+   "direct": {
+    "1": 897,
+    "2": 131,
+    "3": 3
+   },
+   "via_trap": {
+    "1": 332,
+    "2": 6
+   }
+  },
+  "Slot_400": {
+   "trapped": {
+    "1": 33
+   },
+   "transient": {
+    "1": 171,
+    "2": 17,
+    "3": 3
+   },
+   "direct": {
+    "1": 24,
+    "2": 3
+   },
+   "via_trap": {}
+  },
+  "mesh_sites": {
+   "committed": 10710,
+   "working_tree": 10543
+  },
+  "working_tree_mesh": {
+   "isw": {
+    "I_sw": 84.3433970891571,
+    "flag": "",
+    "n_sims": 8,
+    "branch": "V_trail",
+    "t_trigger": 380.0
+   },
+   "(-96.0, 0.0)": {
+    "I_det": 72.49716097152061,
+    "flag": "",
+    "n_sims": 8,
+    "I_sw": 84.51399457517886,
+    "branch": "V_trail",
+    "t_trigger": 55.0
+   },
+   "(-68.0, 0.0)": {
+    "I_det": 72.0349750636876,
+    "flag": "",
+    "n_sims": 8,
+    "I_sw": 84.51399457517886,
+    "branch": "V_trail",
+    "t_trigger": 55.0
+   },
+   "(0.0, 0.0)": {
+    "I_det": 71.11060324802159,
+    "flag": "",
+    "n_sims": 8,
+    "I_sw": 84.51399457517886,
+    "branch": "V_trail",
+    "t_trigger": 104.25
+   }
+  }
+ }
+}

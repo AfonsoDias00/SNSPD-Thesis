@@ -1,0 +1,73 @@
+{
+ "id": "1b",
+ "title": "epsilon mapping",
+ "wall_s": 205.6,
+ "checks": [
+  {
+   "id": "1b.1",
+   "name": "pyTDGL 0.9 TDGLSolver given epsilon = -3 / 1.2",
+   "value": "accepted / rejected",
+   "expected": "accepted / rejected (only epsilon > 1 is checked, at t = 0)",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "1b.2",
+   "name": "uniform film at epsilon = -1 / -1.5 / -3: decay rate of |psi| over the discrete prediction -ln(1 + epsilon dt / u) / dt",
+   "value": "1.0000 / 1.0000 / 1.0000",
+   "expected": "1 within 1 % each (u = 5.79)",
+   "verdict": "PASS",
+   "note": "rates [1/tau0]: -1: 0.1758 (|eps|/u = 0.1727, dt = 0.200), -1.5: 0.2660 (|eps|/u = 0.2591, dt = 0.200), -3: 0.5470 (|eps|/u = 0.5181, dt = 0.200)"
+  },
+  {
+   "id": "1b.3",
+   "name": "rate ratio epsilon = -1.5 : -1 and -3 : -1",
+   "value": "1.513, 3.112",
+   "expected": "1.513, 3.112 if used as given (1, 1 if clipped to -1)",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "1b.4",
+   "name": "epsilon at the hotspot centre at t0, f = 1, over every production hit site",
+   "value": "-3.25 at Plain 30 nm (-13.0, 0.0) (deepest)",
+   "expected": "> eps_floor = -6: the floor never acts, epsilon is linear in f everywhere",
+   "verdict": "PASS",
+   "note": "per geometry, shallowest .. deepest: Plain wire -1.45 at (0.0, 0.0) .. -2.80 at (-96.0, 0.0); Long zipper -1.43 at (-68.0, 0.0) .. -2.80 at (-96.0, 15.0); Plain wire, 2 um -1.43 at (-58.0, 0.0) .. -2.82 at (-96.0, 0.0); Slot column, 110 nm -1.42 at (-42.0, 27.5) .. -2.81 at (-96.0, 75.0); Slot column, 200 nm -1.42 at (-58.0, 0.0) .. -2.80 at (-96.0, 100.0); Slot column, 400 nm -1.42 at (-58.0, 0.0) .. -2.80 at (-96.0, 0.0); Plain 30 nm -1.87 at (0.0, 0.0) .. -3.25 at (-13.0, 0.0); Plain 56 nm -1.49 at (0.0, 0.0) .. -3.24 at (-26.0, 0.0); Plain 100 nm -1.47 at (-29.0, 0.0) .. -3.23 at (-48.0, 0.0)"
+  },
+  {
+   "id": "1b.5",
+   "name": "min epsilon over 20-400 tau0 at Plain 30 nm (-13.0, 0.0)",
+   "value": "-3.247 at t = 20 tau0",
+   "expected": "at t0 = 20",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "1b.6",
+   "name": "photon energy factor below which the centre of an interior hotspot never goes normal (epsilon > 0)",
+   "value": "f < 0.40",
+   "expected": "1 / |A|",
+   "verdict": "INFO",
+   "note": "epsilon < -1 is outside the documented range but is physical in a two-temperature picture (T_e > 2 T_c - T at the core); it sets how fast psi collapses (rate |epsilon| / u) and the proximity length xi / sqrt|epsilon| at the hotspot edge, not the size of the normal core"
+  }
+ ],
+ "extra": {
+  "rates": {
+   "-1.0": 0.17576531329974882,
+   "-1.5": 0.2660203444257417,
+   "-3.0": 0.5469928086226956
+  },
+  "eps_by_geometry": [
+   "Plain wire -1.45 at (0.0, 0.0) .. -2.80 at (-96.0, 0.0)",
+   "Long zipper -1.43 at (-68.0, 0.0) .. -2.80 at (-96.0, 15.0)",
+   "Plain wire, 2 um -1.43 at (-58.0, 0.0) .. -2.82 at (-96.0, 0.0)",
+   "Slot column, 110 nm -1.42 at (-42.0, 27.5) .. -2.81 at (-96.0, 75.0)",
+   "Slot column, 200 nm -1.42 at (-58.0, 0.0) .. -2.80 at (-96.0, 100.0)",
+   "Slot column, 400 nm -1.42 at (-58.0, 0.0) .. -2.80 at (-96.0, 0.0)",
+   "Plain 30 nm -1.87 at (0.0, 0.0) .. -3.25 at (-13.0, 0.0)",
+   "Plain 56 nm -1.49 at (0.0, 0.0) .. -3.24 at (-26.0, 0.0)",
+   "Plain 100 nm -1.47 at (-29.0, 0.0) .. -3.23 at (-48.0, 0.0)"
+  ]
+ }
+}

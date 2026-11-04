@@ -28,10 +28,8 @@ def apply_style():
 
 
 def draw_holes(ax, geom):
-    th = np.linspace(0, 2 * np.pi, 120)
     for h in geom.holes:
-        ax.fill(h.cx_nm + h.a_nm * np.cos(th), h.cy_nm + h.b_nm * np.sin(th), facecolor=SURFACE, edgecolor=INK,
-                lw=0.9, zorder=3)
+        ax.fill(*h.outline(120).T, facecolor=SURFACE, edgecolor=INK, lw=0.9, zorder=3)
 
 
 def _panels(n, **kw):

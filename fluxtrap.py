@@ -20,7 +20,9 @@ such a photon the device is no longer the one the photon found.
              direct     switched (detected), without first sitting in a zero-voltage trapped state
              via_trap   switched (detected) after >= DWELL_MIN tau0 in a zero-voltage trapped state
                         (max |V| < V_QUIET) before the resistive onset (ONSET_SLIPS slips since the photon)
-  trapped  the most common trapped states from `scan`, regenerated and used as the initial state of new runs: their
+  trapped  the most common trapped states from `scan` (or states given with --from, or placed directly with --place:
+           the phase is wound around the holes and relaxed for PLACE_RELAX tau0 at zero bias, no photon),
+           regenerated and used as the initial state of new runs: their
            own switching current (no photon) and what happens at it (a sustained switch, or flux that only moves to
            another hole), whether they survive at zero bias, and the photon threshold at a few sites compared with the
            pristine device
@@ -33,7 +35,9 @@ Usage
   python fluxtrap.py trapped --workers 6
   python fluxtrap.py report
   python fluxtrap.py trapped --mesh-xi 0.8 --from=-68,0@0.77 --no-second      (mesh check of one trapped state)
+  python fluxtrap.py trapped --geom Slot_400 --hitmap-dir results/slots --place="0 -1 0" --no-second
   python fluxtrap.py trace   --site=-68,0 --biases 0.70,0.77,0.80 --workers 3
+  python fluxtrap.py scan    --geom Slot_400 --hitmap-dir results/slots --biases 0.76:0.86:0.02 --sites="-74,0;-42,190"
 
 Biases are "start:stop:step" ranges and single values, comma separated, in units of I_dep.  The window, mesh and
 hotspot default to the current hitmap production settings (400 tau0, 1.4 xi, conserving).
@@ -59,6 +63,7 @@ V_QUIET = 0.05           # max |V| between two frames for the device to count as
 DWELL_MIN = 20.0         # zero-voltage trapped time before a switch for it to count as via_trap [tau0]
 PROMPT_T = 150.0         # "prompt" by latency: resistive onset by this time (130 tau0 after the photon) [tau0]
 ONSET_SLIPS = 2.0        # resistive onset: this many phase slips since the photon (beyond any trapping)
+PLACE_RELAX = 50.0       # relaxation of a placed fluxoid state at zero bias before it is used [tau0]
 SAVE_EVERY = 40          # solver steps between saved frames (<= 8 tau0 at dt_max = 0.2)
 PROBE_SITES = ((-68.0, 0.0), (-18.0, 0.0), (0.0, 0.0), (68.0, 61.0))   # second-photon sites [nm]
 SCAN_FIELDS = ["Geometry", "x_nm", "y_nm", "bias", "I_uA", "tmax", "hotspot", "mesh_xi", "outcome", "branch",
@@ -134,12 +139,12 @@ def classify(trig, frames, t, v, t0):
                 t_trap=t_trap, dwell=dwell, history=" ".join(hist), frames=frames)
 
 
-def observed_run(device, I, eps, cfg, seed=None):
+def observed_run(device, I, eps, cfg, seed=None, phase=None):
     """One run: (Trigger, classification, final Solution with its last frame loaded -- usable as a seed).  Phase
-    slips count from the photon, or from t = 0 without one."""
+    slips count from the photon, or from t = 0 without one.  phase: see sim.solved."""
     from snspd.fluxoid import frames
     from snspd.hotspot import HOTSPOT
-    with sim.solved(device, I, eps, cfg, seed) as sol:
+    with sim.solved(device, I, eps, cfg, seed, phase) as sol:
         trig = sim.settle(device, I, sol, sim.detect(sol), cfg)
         rec = classify(trig, frames(sol, meter_for(device)), sol.dynamics.time, sol.dynamics.voltage(),
                        HOTSPOT.t0_tau0 if eps is not None else 0.0)
@@ -175,7 +180,7 @@ def cmd_scan(cfg, a):
     path = scan_path(cfg, g)
     have = {(round(float(r["x_nm"]), 2), round(float(r["y_nm"]), 2), round(float(r["bias"]), 4))
             for r in store.load_rows(path)}
-    sites = g.hit_grid(a.grid)
+    sites = a.sites or g.hit_grid(a.grid)
     tasks = [dict(geom=g, cfg=cfg, film=a.film, x_nm=x, y_nm=y, bias=b, I=b * i_dep)
              for b in a.biases for x, y in sites if (round(x, 2), round(y, 2), round(b, 4)) not in have]
     sim.log(f"-- scan {g.key}: {len(sites)} sites x {len(a.biases)} biases, {len(tasks)} runs to do  "
@@ -239,9 +244,9 @@ def site_summary(rows, b_max):
     return s
 
 
-def hitmap_ref(cfg, g, film):
-    """{site: i_det in units of I_dep} from results/hitmap at the same window, mesh and hotspot."""
-    hcfg = sim.with_out_dir(cfg, HITMAP_DIR)
+def hitmap_ref(cfg, g, film, hitmap_dir=HITMAP_DIR):
+    """{site: i_det in units of I_dep} from the hitmap results at the same window, mesh and hotspot."""
+    hcfg = sim.with_out_dir(cfg, hitmap_dir)
     i_dep = film.I_dep_uA(g.free_width_min_nm())
     return {(float(r["x_nm"]), float(r["y_nm"])): float(r["I_sw_uA" if r["flag"] == "at_wall" else "I_det_uA"]) / i_dep
             for r in store.load_rows(hcfg.path("hitmap", "csv"))
@@ -283,11 +288,16 @@ def trapped_task(task):
         if task["kind"] == "pristine":
             return dict(ok=True, task=task, res=second_photon(ctx, cfg, None, task["I_sw_pristine"], tol, i_dep),
                         wall_s=time.time() - t_start)
-        x, y = task["site"]
-        eps = hsm.build_eps(ctx["hs"], cfg.hotspot, x, y, 1.0, cfg.tmax)
-        trig, rec, seed = observed_run(dev, task["bias"] * i_dep, eps, cfg)
-        res = dict(regenerated=fmt_n(rec["n_end"]), regen_outcome=rec["outcome"])
-        if rec["outcome"] != "trapped":
+        if task["site"] is None:
+            from snspd.fluxoid import winding_psi
+            trig, rec, seed = observed_run(dev, 0.0, None, replace(cfg, tmax=PLACE_RELAX),
+                                           phase=winding_psi(dev, task["n"]))
+        else:
+            x, y = task["site"]
+            eps = hsm.build_eps(ctx["hs"], cfg.hotspot, x, y, 1.0, cfg.tmax)
+            trig, rec, seed = observed_run(dev, task["bias"] * i_dep, eps, cfg)
+        res = dict(regenerated=fmt_n(rec["n_end"]), regen_outcome=rec["outcome"], regen_history=rec["history"])
+        if rec["outcome"] != "trapped" or (task["site"] is None and tuple(rec["n_end"]) != tuple(task["n"])):
             return dict(ok=True, task=task, res=res, wall_s=time.time() - t_start)
         lo, hi = 0.30 * i_dep, 1.05 * i_dep
         I_sw, flag, n_runs, tr = sim.bisect(dev, lo, hi, None, cfg, tol, seed=seed)
@@ -323,20 +333,22 @@ def cmd_trapped(cfg, a):
     """States from the scan, or the ones given with --from (no scan needed, e.g. for a mesh check)."""
     sim.need_tdgl()
     g = geo.get(a.geom)
-    if a.from_:
+    if a.from_ or a.place:
         picks = [dict(n=(), count=0, site=tuple(float(v) for v in s.split("@")[0].split(",")),
                       bias=float(s.split("@")[1]), role="given") for s in a.from_]
+        picks += [dict(n=parse_n(s), count=0, site=None, bias=0.0, role="placed") for s in a.place]
     else:
         scan = load_scan(cfg, g)
         if not scan:
             raise SystemExit(f"no scan for {g.key} at {cfg.tag}; run `fluxtrap.py scan` first")
         picks = trapped_states(scan, g, a.max_states)
-    isw = store.load_json(sim.with_out_dir(cfg, HITMAP_DIR).path("isw", "json"), {}).get(g.key, {}).get("I_sw")
+    isw = store.load_json(sim.with_out_dir(cfg, a.hitmap_dir).path("isw", "json"), {}).get(g.key, {}).get("I_sw")
     if isw is None and not a.no_second:
-        raise SystemExit(f"no I_sw for {g.key} at {cfg.tag} in {HITMAP_DIR}/ (needed for the second photon)")
+        raise SystemExit(f"no I_sw for {g.key} at {cfg.tag} in {a.hitmap_dir}/ (needed for the second photon)")
     path = trapped_path(cfg, g)
     done = store.load_json(path, {})
-    key = lambda p: f"{fmt_n(p['n'])} @ ({p['site'][0]:g},{p['site'][1]:g}) {p['bias']:.3f}".strip()
+    key = lambda p: (f"{fmt_n(p['n'])} @ placed" if p["site"] is None
+                     else f"{fmt_n(p['n'])} @ ({p['site'][0]:g},{p['site'][1]:g}) {p['bias']:.3f}".strip())
     tasks = [dict(kind="state", geom=g, cfg=cfg, film=a.film, I_sw_pristine=isw, second=not a.no_second, **p)
              for p in picks if key(p) not in done]
     if "pristine" not in done and not a.no_second:
@@ -354,7 +366,8 @@ def cmd_trapped(cfg, a):
             store.save_json(path, done)
             sim.log(f"   pristine second-photon thresholds done ({r['wall_s']:.0f} s)")
             return
-        done[key(t)] = dict(n=fmt_n(t["n"]), count=t["count"], site=list(t["site"]), bias=t["bias"], role=t["role"],
+        done[key(t)] = dict(n=fmt_n(t["n"]), count=t["count"], site=t["site"] and list(t["site"]), bias=t["bias"],
+                            role=t["role"],
                             wall_s=round(r["wall_s"], 1), **r["res"])
         store.save_json(path, done)
         sim.log(f"   {key(t)}: i_sw = {r['res'].get('i_sw', float('nan')):.4f}  ({r['wall_s']:.0f} s)")
@@ -426,7 +439,7 @@ def cmd_trace(cfg, a):
 def cmd_report(cfg, a):
     g = geo.get(a.geom)
     i_dep = a.film.I_dep_uA(g.free_width_min_nm())
-    isw = store.load_json(sim.with_out_dir(cfg, HITMAP_DIR).path("isw", "json"), {}).get(g.key, {}).get("I_sw")
+    isw = store.load_json(sim.with_out_dir(cfg, a.hitmap_dir).path("isw", "json"), {}).get(g.key, {}).get("I_sw")
     L = [f"FLUX TRAPPING  {g.label}  {cfg.tag}   biases in units of I_dep = {i_dep:.2f} uA "
          f"(narrowest cross-section {g.free_width_min_nm():.0f} nm)" + ("" if isw is None else f",  dark I_sw = {isw / i_dep:.3f}"),
          "holes: " + ", ".join(f"{i}:({h.cx_nm:g},{h.cy_nm:g})" for i, h in enumerate(g.holes))]
@@ -446,7 +459,7 @@ def report_scan(cfg, a, g, scan, i_dep):
     biases = sorted({float(r["bias"]) for rows in scan.values() for r in rows})
     b_max = biases[-1]
     summ = {s: site_summary(rows, b_max) for s, rows in scan.items()}
-    ref = hitmap_ref(cfg, g, a.film)
+    ref = hitmap_ref(cfg, g, a.film, a.hitmap_dir)
     complete = all(len(rows) == len(biases) for rows in scan.values())
     L = [f"{len(scan)} sites x {len(biases)} biases {biases[0]:.2f}..{b_max:.2f}" + ("" if complete else "   (INCOMPLETE)"),
          f"outcome per run: clean / trapped (no trigger, flux left) / transient (voltage trigger, < {sim.SUSTAIN_SLIPS:g} "
@@ -488,8 +501,9 @@ def report_scan(cfg, a, g, scan, i_dep):
         X, Y, Z = an.unit_map(g, [(x, y, summ[(x, y)][k]) for x, y in summ])
         maps[k] = Z
     fin = np.isfinite(maps["i_fire"])
+    subset = len(scan) < len(g.hit_grid("full"))
     L += ["", "Area fractions of the unit cell (thresholds interpolated as in hitmap.py; grid resolution "
-              f"{min(np.diff(biases)):.2f}):",
+              f"{min(np.diff(biases)):.2f}" + ("; SUBSET of the sites, indicative only" if subset else "") + "):",
           "  fired = voltage trigger; sustained = stays resistive (detected); silent trap = flux left, no trigger",
           f"{'bias':>6}{'fired':>10}{'sustained':>11}{'direct':>9}{'prompt':>9}{'silent trap':>13}"]
     frac = lambda k, b: (maps[k][fin] <= b + 1e-9).mean() * 100
@@ -521,8 +535,10 @@ def report_trapped(cfg, g):
             if "i_sw" not in v:
                 L.append(f"  {k}: regenerated as {v['regen_outcome']} [{v['regenerated']}] -- skipped")
                 continue
-            L.append(f"  [{v['n'] or v['regenerated']}] from a photon at ({v['site'][0]:g},{v['site'][1]:g}) at "
-                     f"{v['bias']:.3f}  (regenerated [{v['regenerated']}], {v['count']} scan runs end in it)")
+            src = (f"placed, relaxed {PLACE_RELAX:g} tau0 at zero bias" if v["site"] is None else
+                   f"from a photon at ({v['site'][0]:g},{v['site'][1]:g}) at {v['bias']:.3f}")
+            L.append(f"  [{v['n'] or v['regenerated']}] {src}  (regenerated [{v['regenerated']}], {v['count']} scan "
+                     f"runs end in it)")
             L.append(f"      switching current of the trapped state  i_sw = {v['i_sw']:.4f}  {v['isw_flag']}  "
                      f"[{v['isw_branch']} at t = {v['isw_t_trigger']}]")
             for lab in ("at_isw", "hold_below", "hold_zero"):
@@ -656,11 +672,16 @@ def main(argv=None):
     ap.add_argument("--geom", default="Long_Zipper")
     ap.add_argument("--grid", choices=["full", "critical"], default="full")
     ap.add_argument("--biases", default="0.56:0.70:0.02,0.71:0.96:0.01", help="units of I_dep (nothing happens below ~0.64)")
+    ap.add_argument("--sites", default="", help="scan: only these sites, x,y;x,y [nm] (default: the whole --grid)")
+    ap.add_argument("--hitmap-dir", default=HITMAP_DIR, help="hitmap results to compare with")
     ap.add_argument("--site", default="-68,0", help="trace: photon site x,y [nm] (use --site=-68,0)")
     ap.add_argument("--max-states", type=int, default=5, help="trapped: most common trapped states to study")
     ap.add_argument("--from", dest="from_", action="append", default=[], metavar="X,Y@BIAS",
                     help="trapped: generate the state with a photon at (X, Y) nm at BIAS instead of taking it from "
                          "the scan (repeatable; use --from=-68,0@0.77)")
+    ap.add_argument("--place", action="append", default=[], metavar="N0 N1 ...",
+                    help="trapped: place this fluxoid state (one integer per hole) instead of generating it with a "
+                         "photon (repeatable; use --place=\"0 -1 0\")")
     ap.add_argument("--no-second", action="store_true", help="trapped: skip the second-photon thresholds")
     ap.add_argument("--hotspot", choices=["conserving", "legacy"], default="conserving")
     ap.add_argument("--tmax", type=float, default=400.0)
@@ -670,6 +691,7 @@ def main(argv=None):
     a = ap.parse_args(argv)
     a.film = Film()
     a.biases = parse_biases(a.biases)
+    a.sites = [tuple(float(v) for v in s.split(",")) for s in a.sites.split(";") if s]
     cfg = sim.SimConfig(tmax=a.tmax, hotspot=a.hotspot, mesh_xi=a.mesh_xi, out_dir=a.out)
     {"scan": cmd_scan, "trapped": cmd_trapped, "report": cmd_report, "trace": cmd_trace}[a.command](cfg, a)
 

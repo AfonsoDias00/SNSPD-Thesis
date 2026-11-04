@@ -3,6 +3,9 @@
 TDGL simulations (pyTDGL 0.9) of superconducting-nanowire single-photon detector strips with **internal holes**: does
 perforating the strip lower the bias needed to detect photons (the plateau) relative to the dark switching current?
 
+This file is the working manual: layout, commands, model settings, current numbers. For the full explanation and how
+the pieces fit together, start with `docs/report.md` (section 0).
+
 ## Layout
 
 ```
@@ -19,15 +22,17 @@ hitmap.py               photon-threshold maps: hole geometries vs the plain 200 
 narrow_baseline.py      plain strips of any width (control) and the width scan
 checks.py               tests of the map assumptions: symmetry, edge band, trigger delay
 fluxtrap.py             flux a photon leaves trapped in the holes: state scan, trapped-state I_sw, traces
+results/slots/          2 um strips with one column of 30 nm slots, 40 nm bridges (hitmap.py), both criteria
 results/hitmap/         plain wire vs long zipper            (hitmap.py)        } sustained-switching criterion,
 results/narrow_baseline/ plain strips                         (narrow_baseline.py)} from 29 Oct 2026
-results/checks/         symmetry, edge-band and delay checks (checks.py)          }
 results/fluxtrap/       flux-trapping scan, trapped states, traces (fluxtrap.py)  }
 results/v2_voltage_trigger/      results with the voltage trigger alone (28-29 Oct), see its README
 results/v1_voltage_or_collapse/  all results with the first criterion (23-29 Oct), see its README
 parked/edge_bank/       edge-bank strip: code + results, parked until the hole study is done
 archive/                unreliable and superseded early work, see archive/README.md
-docs/                   literature review
+docs/                   report.md (the full story, read this first), literature review
+validation/             tests against known answers (hotspot solver, epsilon, disc vs hole, photon thresholds, fluxoid
+                        meter, ring, single hole, scan statistics); results/validation/summary.txt
 tests/                  early single/two-hole tests (not maintained)
 ```
 
@@ -42,11 +47,17 @@ finished thresholds are appended to a CSV and skipped next time, so an interrupt
 .venv/bin/python hitmap.py report --mesh-xi 0.8                  # rebuild figures + summary from the CSV
 .venv/bin/python narrow_baseline.py run  --width-nm 56 --mesh-xi 0.8 --compare hitmap_conserving_T150_m0.8.csv
 .venv/bin/python narrow_baseline.py scan --widths 30,56,100 --mesh-xi 0.8 --compare hitmap_conserving_T150_m0.8.csv
+.venv/bin/python hitmap.py run --geoms Plain_Wire_2um,Slot_110,Slot_200,Slot_400 --tmax 400 --workers 9 --out results/slots
+.venv/bin/python hitmap.py run --geoms Plain_Wire_2um,Slot_110,Slot_200,Slot_400 --tmax 400 --workers 9 --out results/slots --criterion trigger
 .venv/bin/python hitmap.py selftest                              # hotspot-solver checks
+.venv/bin/python -m validation run quick                         # validation tests without long TDGL runs (1a 1b 2a), ~6 min
+.venv/bin/python -m validation run all --workers 6               # every group, ~40 min; results/validation/summary.txt
 .venv/bin/python fluxtrap.py scan    --workers 9                 # every zipper site x 0.56-0.96 I_dep, 400 tau0
 .venv/bin/python fluxtrap.py scan    --geom Plain_Wire --biases 0.80:0.92:0.01   # control
 .venv/bin/python fluxtrap.py trapped --workers 6                 # I_sw of the trapped states, second photon
 .venv/bin/python fluxtrap.py trapped --mesh-xi 0.8 --from=-68,0@0.77 --no-second   # one state, finer mesh
+.venv/bin/python fluxtrap.py scan    --geom Slot_400 --hitmap-dir results/slots --biases 0.76:0.86:0.02 --sites="-96,0;-74,0;-58,0;-42,0;-19,0;-74,190;-42,190;-74,200;-42,200;-74,210;-58,210;-74,220" --workers 9
+.venv/bin/python fluxtrap.py trapped --geom Slot_400 --hitmap-dir results/slots --place="0 -1 0" --no-second
 .venv/bin/python fluxtrap.py trace   --site=-68,0 --biases 0.70,0.77,0.80,0.85 --workers 4
 ```
 
@@ -119,6 +130,54 @@ runs reproduce the rescaled values within the bisection tolerance (plain I_sw 99
 are in λ = 175 nm units: multiply by 0.0851 to compare.
 
 ## Current results
+
+### Slot column, 2 µm strips (30 Oct 2026, `results/slots/`, `_trigger` files are the lower bound)
+
+The zipper's 16 nm holes and 12 nm bridges cannot be fabricated, and its 12 nm bridges are not mesh-converged. The new
+layouts (`snspd/geometry.py`) are one centred column of slots in a 200 nm × 2 µm strip:
+- slots 30 nm wide, with semicircular ends (a 400 nm long ellipse would have a ~1 nm tip radius);
+- 40 nm bridges, two 85 nm channels, narrowest free width 170 nm (I_dep = 85.7 µA);
+- lengths 110, 200 and 400 nm, with 7, 5 and 3 slots, so the channels are 1.3, 2.4 and 4.7 times as long as wide.
+
+The plain reference is rerun at 2 µm. Probes sit at y = ±750 nm, outside the hole arrays.
+
+| Device | I_sw [µA], lower / upper | i_50 lower / upper | i_95 lower / upper | i_max lower / upper | Go / no-go, lower / upper |
+|---|---|---|---|---|---|
+| Plain wire, 2 µm | 95.8 / 98.7 | 0.849 / 0.848 | 0.851 / 0.851 | 0.851 / 0.851 | reference |
+| Slot 110 nm | 83.5 / 83.5 | 0.826 / 0.837 | 0.914 / 0.914 | 0.973 / 0.973 | 0/3 / 0/3 |
+| Slot 200 nm | 83.5 / 83.5 | 0.812 / 0.837 | 0.872 / 0.875 | 0.963 / 0.971 | 0/3 / 0/3 |
+| Slot 400 nm | 82.5 / 83.5 | 0.787 / 0.835 | 0.849 / 0.860 | 0.954 / 0.973 | 1/3 / 0/3 |
+
+Thresholds are in units of I_dep (100.8 µA for the wire, 85.7 µA for the slots). The lower bound is the voltage trigger, the upper bound sustained switching.
+
+- **The plateau is not lowered.** Even the best case, Slot 400 at the lower bound, is 0.002 I_dep below the wire, within the bisection tolerance. The zipper's i_95 is 0.853.
+- **The tail sits in the bridges.** The highest thresholds, 0.98–1.0 I_sw, are at photon sites in the 40 nm bridges between slots, under both criteria. Shorter slots have more bridge area, which fits i_95 improving with length. Why bridges are insensitive (probably little current flows through them) was not checked directly.
+- **Onset depends on the bound.** The i_50 gain over the wire is 0.011–0.013 I_dep at the upper bound and 0.023 / 0.037 / 0.062 at the lower bound for 110 / 200 / 400 nm. The gap between the bounds grows with length, the opposite of what was expected. A reduced flux scan explains the extra lower-bound events (below).
+- **Peak current is higher than the wire's.** At i_95 it is 475–501 µA/µm against 452, so C2 fails everywhere. Slot 400 at the lower bound passes C3 only (selectivity +0.022).
+- **Caveats.** The go / no-go tests use thresholds in units of I_sw. The wire's I_sw falls to 95.8 µA under the trigger, which inflates the lower-bound gains in those units: Slot 400's i_95 gain is +0.013 in I_sw but +0.002 in I_dep. The slots have no 0.8 ξ mesh check yet.
+
+**Flux scan of Slot 400 (`results/fluxtrap/`, 12 sites × 0.76–0.86 I_dep, 72 runs; a subset, so its area fractions are indicative).** The onset gain at the lower bound is flux entering the slots, not a resistive switch.
+
+| Bias [I_dep] | What most sites do | Phase slips | Ends |
+|---|---|---|---|
+| 0.76–0.80 | Flux enters a slot silently, then the second or third quantum fires the trigger | 0.6–2.5 | Quiet, 1–4 quanta left in the slots |
+| 0.80–0.84 | Burst: the slot fills to 4–5 quanta, empties and refills with the opposite sign | 5–14 | Quiet, 2–3 quanta left |
+| 0.84–0.86 | Sustained switching, with no zero-voltage dwell first | 80–1100 | Resistive |
+
+All 24 transient runs end with flux in a slot and no voltage. All 19 sustained runs are direct, with none via a trapped state, unlike the zipper. Sustained onset agrees with the hitmap at 12 of 12 sites. At the 0.84–0.86 onset, 4 runs near the slot ends sit in a slower resistive state (13–26 slips per 50 τ0, against about 190), whose stability was not studied. A [0 −1 0] state placed directly (`fluxtrap.py trapped --place`, phase wound around the slot and relaxed 50 τ0) matches the one a photon at (−96, 0) leaves at 0.76: same fluxoid, kept for 400 τ0 at zero bias, and the same switching current, 0.962 I_dep against 0.973 for the empty device. So the upper bound, i_50 = 0.835 and a gain of 0.013, is the better reading unless heat makes the bursts latch. A burst dissipates about 5–13 eV, 6–16 times a 1550 nm photon, so a heat model is what decides this.
+
+**Mesh coarser towards the terminals: tested, not used.** On the plain 2 µm wire, with the mesh edge growing from 1.4 ξ
+at |y| = 700 nm to the value below at the terminals:
+
+| Edge at the terminals | Nodes | I_sw [µA] | i_det at x = −96 / 0 nm [I_dep] | Run time |
+|---|---|---|---|---|
+| 1.4 ξ (uniform) | 27 757 | 98.7 | 0.853 / 0.843 | 100 % |
+| 2 ξ | 25 277 (−9 %) | 97.9 (−0.8 %) | 0.855 / 0.841 | ~95 % |
+| 3 ξ | 23 302 (−16 %) | 96.2 (−2.6 %) | 0.857 / 0.844 | ~91 % |
+
+Photon thresholds stay within about the bisection tolerance (0.003), but the dark switching current falls, probably
+because a coarse lattice carries less current than the continuum, which would make the leads the weak point (the
+location was not checked). The time saved does not justify that. The 2 µm thresholds also agree with the 0.8 µm strip (0.850 / 0.842).
 
 ### Two criteria as bounds, 400 τ0 window, 1.4 ξ mesh (29 Oct 2026)
 
@@ -252,7 +311,7 @@ A switch is *prompt* if the device stays resistive and has slipped 2 phases by t
 * **Mesh.** At 0.8 ξ, the (−68, 0) photon at 0.77 I_dep leaves the same [0 −2] state.
   - It switches at 0.845 I_dep, against 0.786 at 1.4 ξ. At 0.841 its flux already moves to the right column
     ([0 0 0 0 1 −1 0]) without switching. With the trigger alone the two meshes gave 0.795 and 0.775.
-  - The 12 nm bridges are only 2.4 ξ wide: about 2 mesh cells at 1.4 ξ and 3 at 0.8 ξ. The thresholds that depend on
+  - The 12 nm bridges are only 2.4 ξ wide: about 3 mean mesh edges at 1.4 ξ (4.1 nm) and 5 at 0.8 ξ (2.3 nm). The thresholds that depend on
     flux crossing a bridge are therefore not converged. They move by 0.02 (trigger) to 0.06 (sustained) between the
     two meshes. The photon thresholds of plain strips agree within 0.007.
   - The zipper's via-trap onset (0.79–0.81) is exactly this kind of quantity, so it may sit higher on a finer mesh.
@@ -313,7 +372,7 @@ layout has a symmetry other than `strip` or `zipper`, add its map rule to `snspd
    Vodolazov, PRB 85, 024509 (2012)). T(r, t) then sets the local ε = 1 − T/T_c each step. Detection becomes "the
    resistive state latches", and the voltage-trigger / sustained bounds reduce to one threshold. This decides the
    narrow-strip comparison.
-1. **Mesh at the bridges.** 0.5 ξ (2.5 nm, ~5 cells across a 12 nm bridge) for the [0 −2] switching current and a
+1. **Mesh at the bridges.** 0.5 ξ (~8 mean edges across a 12 nm bridge) for the [0 −2] switching current and a
    few left-channel and centre sites at 0.76–0.84 I_dep. If 0.5 ξ is too costly on the full strip, use one hole
    period with periodic-like long leads.
 2. **Flux trapping, follow-up.** The first map is done (see above).

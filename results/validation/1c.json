@@ -1,0 +1,92 @@
+{
+ "id": "1c",
+ "title": "frozen normal disc vs a real hole",
+ "wall_s": 102.9,
+ "checks": [
+  {
+   "id": "1c.1",
+   "name": "R = 20 nm: disc (epsilon = -1) vs hole, dark I_sw",
+   "value": "67.79 vs 74.59 uA: the disc acts as a hole +7.3 nm larger in radius",
+   "expected": "0 to 2 xi = 10 nm larger (proximity effect only)",
+   "verdict": "PASS",
+   "note": "GL flat-interface estimate: 2.9 nm; flags: disc '', hole ''"
+  },
+  {
+   "id": "1c.2",
+   "name": "R = 20 nm: disc (epsilon = -3) vs hole, dark I_sw",
+   "value": "67.03 vs 74.59 uA: the disc acts as a hole +8.1 nm larger in radius",
+   "expected": "0 to 2 xi = 10 nm larger (proximity effect only)",
+   "verdict": "PASS",
+   "note": "GL flat-interface estimate: 4.4 nm; flags: disc '', hole ''"
+  },
+  {
+   "id": "1c.3",
+   "name": "R = 20 nm hole: i_sw = I_sw / I_sw(plain) against the free-width fraction (w - 2R)/w",
+   "value": "0.763 vs 0.800 (0.954 of it)",
+   "expected": "within 10 % of (w - 2R)/w (plan: free width, small crowding penalty)",
+   "verdict": "PASS",
+   "note": "I_sw / I_dep(free width) = 0.925 vs 0.970 for the plain wire"
+  },
+  {
+   "id": "1c.4",
+   "name": "R = 40 nm: disc (epsilon = -1) vs hole, dark I_sw",
+   "value": "52.54 vs 58.21 uA: the disc acts as a hole +5.8 nm larger in radius",
+   "expected": "0 to 2 xi = 10 nm larger (proximity effect only)",
+   "verdict": "PASS",
+   "note": "GL flat-interface estimate: 2.9 nm; flags: disc '', hole ''"
+  },
+  {
+   "id": "1c.5",
+   "name": "R = 40 nm hole: i_sw = I_sw / I_sw(plain) against the free-width fraction (w - 2R)/w",
+   "value": "0.596 vs 0.600 (0.993 of it)",
+   "expected": "within 10 % of (w - 2R)/w (plan: free width, small crowding penalty)",
+   "verdict": "PASS",
+   "note": "I_sw / I_dep(free width) = 0.963 vs 0.970 for the plain wire"
+  }
+ ],
+ "extra": {
+  "isw": {
+   "hole_20_None": {
+    "I_sw": 74.59431679622307,
+    "flag": "",
+    "n": 8,
+    "branch": "V_trail",
+    "t": 240.75,
+    "wall_s": 77.5
+   },
+   "disc_20_-1.0": {
+    "I_sw": 67.79010546683787,
+    "flag": "",
+    "n": 8,
+    "branch": "V_trail",
+    "t": 340.25,
+    "wall_s": 95.8
+   },
+   "disc_20_-3.0": {
+    "I_sw": 67.03408198579507,
+    "flag": "",
+    "n": 8,
+    "branch": "V_trail",
+    "t": 321.0,
+    "wall_s": 94.3
+   },
+   "hole_40_None": {
+    "I_sw": 58.21380804029572,
+    "flag": "",
+    "n": 8,
+    "branch": "V_trail",
+    "t": 237.25,
+    "wall_s": 74.4
+   },
+   "disc_40_-1.0": {
+    "I_sw": 52.543631932474696,
+    "flag": "",
+    "n": 8,
+    "branch": "V_trail",
+    "t": 312.75,
+    "wall_s": 87.8
+   }
+  },
+  "I_sw_plain": 97.73178541397048
+ }
+}

@@ -1,0 +1,30 @@
+{
+ "Slot_400": {
+  "I_sw": 83.50484104476718,
+  "flag": "",
+  "n_sims": 7,
+  "branch": "V_peak",
+  "t_trigger": 24.09340817981465
+ },
+ "Slot_200": {
+  "I_sw": 83.50484104476718,
+  "flag": "",
+  "n_sims": 7,
+  "branch": "V_peak",
+  "t_trigger": 24.033775978145883
+ },
+ "Slot_110": {
+  "I_sw": 83.50484104476718,
+  "flag": "",
+  "n_sims": 7,
+  "branch": "V_peak",
+  "t_trigger": 244.70737903750282
+ },
+ "Plain_Wire_2um": {
+  "I_sw": 98.71619098824496,
+  "flag": "",
+  "n_sims": 8,
+  "branch": "V_peak",
+  "t_trigger": 24.046240710611297
+ }
+}

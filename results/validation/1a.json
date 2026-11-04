@@ -1,0 +1,145 @@
+{
+ "id": "1a",
+ "title": "hotspot diffusion solver",
+ "wall_s": 133.4,
+ "checks": [
+  {
+   "id": "1a.1",
+   "name": "Plain wire: integral n dA / pi r0^2 over 380 tau0, sites ((-96.0, 0.0), (0.0, 0.0))",
+   "value": "max |deviation| 6.9e-09",
+   "expected": "< 1e-5 (float32 snapshots)",
+   "verdict": "PASS",
+   "note": "most negative n / n(0) peak: 0.0e+00"
+  },
+  {
+   "id": "1a.2",
+   "name": "Long zipper: integral n dA / pi r0^2 over 380 tau0, sites ((-36.0, 61.0), (-68.0, 0.0), (-96.0, 0.0))",
+   "value": "max |deviation| 7.1e-09",
+   "expected": "< 1e-5 (float32 snapshots)",
+   "verdict": "PASS",
+   "note": "most negative n / n(0) peak: -9.3e-19"
+  },
+  {
+   "id": "1a.3",
+   "name": "Slot column, 400 nm: integral n dA / pi r0^2 over 380 tau0, sites ((0.0, 220.0), (-96.0, 0.0))",
+   "value": "max |deviation| 5.6e-09",
+   "expected": "< 1e-5 (float32 snapshots)",
+   "verdict": "PASS",
+   "note": "most negative n / n(0) peak: 0.0e+00"
+  },
+  {
+   "id": "1a.4",
+   "name": "free space (600 nm square, 1.4 xi): profile vs (r0^2/s^2) exp(-r^2/s^2)",
+   "value": "rel. L2 error 0.0045 (max over t = 10, 50, 100, 200)",
+   "expected": "< 0.03",
+   "verdict": "PASS",
+   "note": "t = 0 (interpolated Gaussian): 0.0002; per t: 10: 0.0045, 50: 0.0017, 100: 0.0010, 200: 0.0005; peak / exact: 10: 1.007, 50: 1.003, 100: 1.002, 200: 1.001"
+  },
+  {
+   "id": "1a.5",
+   "name": "free space: d<r^2>/dt over 4D (a wrong D or tau0 unit shows here)",
+   "value": "1.0000",
+   "expected": "1 within 1 %",
+   "verdict": "PASS",
+   "note": "intercept 196.0 nm^2 vs r0^2 = 196"
+  },
+  {
+   "id": "1a.6",
+   "name": "source 0 nm from an insulating wall vs the exact truncated-Gaussian + image solution",
+   "value": "rel. L2 error 0.0047",
+   "expected": "< 0.03",
+   "verdict": "PASS",
+   "note": "t = 10: 0.0047, t = 50: 0.0016, t = 100: 0.0009"
+  },
+  {
+   "id": "1a.7",
+   "name": "source 4 nm from an insulating wall vs the exact truncated-Gaussian + image solution",
+   "value": "rel. L2 error 0.0039",
+   "expected": "< 0.03",
+   "verdict": "PASS",
+   "note": "t = 10: 0.0039, t = 50: 0.0015, t = 100: 0.0008"
+  },
+  {
+   "id": "1a.8",
+   "name": "source 42 nm from an insulating wall vs the exact truncated-Gaussian + image solution",
+   "value": "rel. L2 error 0.0042",
+   "expected": "< 0.03",
+   "verdict": "PASS",
+   "note": "t = 10: 0.0042, t = 50: 0.0014, t = 100: 0.0007;  without the image term at t = 100: 0.329"
+  },
+  {
+   "id": "1a.9",
+   "name": "200 nm strip, edge source: decay rate of the first width mode over D (pi/w)^2 = 2.47e-03 / tau0 (fit 0-380 tau0)",
+   "value": "0.9997",
+   "expected": "1 within 2 %",
+   "verdict": "PASS",
+   "note": "1/rate = 405 tau0"
+  },
+  {
+   "id": "1a.10",
+   "name": "56 nm strip, edge source: decay rate of the first width mode over D (pi/w)^2 = 3.15e-02 / tau0 (fit 0-150 tau0)",
+   "value": "0.9971",
+   "expected": "1 within 2 %",
+   "verdict": "PASS",
+   "note": "1/rate = 32 tau0"
+  },
+  {
+   "id": "1a.11",
+   "name": "56 nm strip, centre source: peak over the 1-D value sqrt(pi) r0^2 / (w s), t >= 100 tau0",
+   "value": "1.0012, 1.0006, 1.0003",
+   "expected": "1 within 1 % (peak ~ t^-1/2)",
+   "verdict": "PASS",
+   "note": "200 nm wire, same ratio at t = 50/100/200/380 tau0: 2.414, 1.745, 1.266, 1.045 (still 2-D early in the window)"
+  },
+  {
+   "id": "1a.12",
+   "name": "Crank-Nicolson: error at t = 20 tau0 vs dt = 1/128, order for dt = 1 -> 0.125",
+   "value": "2.00, 2.00, 2.00",
+   "expected": "2 (error falls ~4x per halving), within 1.8-2.2",
+   "verdict": "PASS",
+   "note": "dt 1: 3.6e-04, dt 0.5: 9.1e-05, dt 0.25: 2.3e-05, dt 0.125: 5.6e-06 (production dt = 0.25)"
+  },
+  {
+   "id": "1a.13",
+   "name": "P1 mesh convergence: error vs the exact solution at t = 20 tau0, order in the mean edge for 2.8 -> 0.35 xi",
+   "value": "1.72, 1.78, 2.13",
+   "expected": "2, within 1.5-2.5",
+   "verdict": "PASS",
+   "note": "2.8 xi (7.4 nm): 1.1e-02, 1.4 xi (4.1 nm): 4.3e-03, 0.7 xi (1.7 nm): 8.7e-04, 0.35 xi (0.8 nm): 1.9e-04"
+  }
+ ],
+ "extra": {
+  "free_errors": {
+   "10.0": 0.004467209267623616,
+   "50.0": 0.0016974101141672311,
+   "100.0": 0.0009518832129046293,
+   "200.0": 0.0004958293141583237
+  },
+  "strip_1d_ratio": {
+   "56.0": {
+    "50.0": 1.0034558724222356,
+    "100.0": 1.0011674174356175,
+    "200.0": 1.0006059769117077,
+    "380.0": 1.00032281470374
+   },
+   "200.0": {
+    "50.0": 2.4135004226717656,
+    "100.0": 1.7445798850429826,
+    "200.0": 1.2663310950793207,
+    "380.0": 1.0451834480139977
+   }
+  },
+  "dt_errors": [
+   0.0003625183183486051,
+   9.061302443261337e-05,
+   2.2636657250707307e-05,
+   5.642568238508589e-06
+  ],
+  "mesh_errors": [
+   0.01149450357203134,
+   0.004284215504004959,
+   0.0008650053204208704,
+   0.000192674860914498
+  ]
+ }
+}

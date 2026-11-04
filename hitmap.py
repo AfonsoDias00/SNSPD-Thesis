@@ -20,6 +20,7 @@ Options
   --mesh-xi 1.4                    max mesh edge in xi (0.8 for the final numbers)
   --tmax 150                       solver window in tau0
   --hotspot {conserving,legacy}
+  --criterion {sustained,trigger}  trigger = the voltage trigger alone, the lower bound on the threshold
   --energies 0.6,0.35              hotspot energy factors at the probe sites
   --workers 4                      parallel processes (~1.8 GB each at 0.8 xi)
   --rho-uohm-cm 150                film resistivity, only to quote times in ps
@@ -336,6 +337,7 @@ def parse_args(argv=None):
     ap.add_argument("--geoms", default="Plain_Wire,Long_Zipper", help=f"comma separated, from {list(geo.GEOMETRIES)}")
     ap.add_argument("--tmax", type=float, default=sim.SimConfig.tmax)
     ap.add_argument("--hotspot", choices=["conserving", "legacy"], default=sim.SimConfig.hotspot)
+    ap.add_argument("--criterion", choices=["sustained", "trigger"], default="sustained")
     ap.add_argument("--mesh-xi", type=float, default=sim.SimConfig.mesh_xi)
     ap.add_argument("--save-every", type=int, default=sim.SimConfig.save_every)
     ap.add_argument("--hit-lo-frac", type=float, default=sim.SimConfig.hit_lo_frac)
@@ -354,7 +356,7 @@ def parse_args(argv=None):
     a.crowd_biases = tuple(float(x) for x in a.crowd_biases.split(",") if x)
     a.film = Film(rho_uohm_cm=a.rho_uohm_cm)
     cfg = sim.SimConfig(tmax=a.tmax, hotspot=a.hotspot, mesh_xi=a.mesh_xi, save_every=a.save_every,
-                        hit_lo_frac=a.hit_lo_frac, out_dir=a.out)
+                        hit_lo_frac=a.hit_lo_frac, sustained=a.criterion == "sustained", out_dir=a.out)
     geoms = [geo.get(k) for k in a.geoms.split(",") if k]
     return a, cfg, geoms
 
