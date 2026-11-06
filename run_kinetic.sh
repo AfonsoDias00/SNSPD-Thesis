@@ -8,6 +8,11 @@ W=${WORKERS:-2}
 COMMON="--hotspot kinetic --tmax 400 --mesh-xi 1.4 --workers $W"
 step() { echo; echo "######## $(date +%H:%M:%S)  $*"; }
 
+# The thresholds must be computed on the production meshes of the conserving runs (their dark I_sw and crowding
+# maps are reused).  On some machines the long zipper meshes differently (10 543 instead of 10 710 nodes), so the
+# meshes are pinned from the stored crowding files (snspd.sim.pinned_mesh_path).
+export SNSPD_MESH_DIR=${SNSPD_MESH_DIR:-meshes}
+$PY -m snspd.sim pin-meshes "$SNSPD_MESH_DIR"
 bash results/kinetic_reused_dark_results.sh > /dev/null
 
 step "1. plain 200 nm wire vs long zipper, full grid, sustained (upper bound)"

@@ -1,0 +1,140 @@
+FACTORIAL CHECK: gamma (1 -> 10) x hotspot times (NbN -> NbTiN), kinetic hotspot f = 1, 400 tau0, 1.4 xi
+thresholds in I_dep of the narrowest free width; corners: base (gamma 1, NbN times), times (gamma 1, NbTiN times), g10 (gamma 10, NbN times), nbtin (gamma 10, NbTiN times)
+effects: d_times = times - base, d_gamma = g10 - base, both = nbtin - base, interaction = nbtin - times - g10 + base
+
+--- trigger ---
+site                   base  times    g10  nbtin   d_times d_gamma   both interact
+30 nm (0,0)           0.377  0.294  0.650      -    -0.082 +0.274       -      -
+30 nm (-13,0)         0.390  0.294  0.658      -    -0.096 +0.269       -      -
+56 nm (0,0)           0.620  0.524  0.827      -    -0.095 +0.207       -      -
+100 nm (0,0)          0.774  0.708  0.911      -    -0.066 +0.137       -      -
+100 nm (-36,0)        0.732  0.666  0.887      -    -0.066 +0.155       -      -
+plain (0,0)           0.848  0.789  0.979      -    -0.058 +0.131       -      -
+plain (-96,0)         0.832  0.784  0.927      -    -0.048 +0.095       -      -
+zipper (0,0)          0.756  0.740  0.919      -    -0.016 +0.163       -      -
+zipper (-68,0)        0.772  0.735  0.875      -    -0.037 +0.103       -      -
+zipper (-96,0)        0.774  0.753  0.878      -    -0.021 +0.104       -      -
+zipper (-42,58)       0.857  0.803  0.984      -    -0.053 +0.127       -      -
+zipper (-36,61)       0.891  0.835  0.984      -    -0.056 +0.093       -      -
+Slot 400 (-58,0)      0.762  0.691  0.887      -    -0.071 +0.126       -      -
+Slot 400 (-28,200)    0.807  0.754  0.887      -    -0.053 +0.081       -      -
+
+--- sustained ---
+site                   base  times    g10  nbtin   d_times d_gamma   both interact
+30 nm (0,0)           0.775  0.677  0.680      -    -0.098 -0.095       -      -
+30 nm (-13,0)         0.778  0.674  0.683      -    -0.104 -0.094       -      -
+56 nm (0,0)           0.801  0.738  0.827      -    -0.064 +0.025       -      -
+100 nm (0,0)          0.819  0.774  0.911      -    -0.045 +0.092       -      -
+100 nm (-36,0)        0.817  0.774  0.887      -    -0.042 +0.070       -      -
+plain (0,0)           0.848  0.813  0.979  0.910    -0.034 +0.131  +0.063 -0.034
+plain (-96,0)         0.832  0.810  0.927  0.877    -0.021 +0.095  +0.046 -0.028
+zipper (0,0)          0.803  0.790  0.919  0.843    -0.013 +0.115  +0.039 -0.063
+zipper (-68,0)        0.817  0.803  0.886  0.832    -0.013 +0.069  +0.015 -0.041
+zipper (-96,0)        0.817  0.803  0.889  0.834    -0.013 +0.072  +0.018 -0.041
+zipper (-42,58)       0.857  0.809  0.984  0.911    -0.048 +0.127  +0.054 -0.026
+zipper (-36,61)       0.891  0.835  0.984  0.927    -0.056 +0.093  +0.036 -0.001
+Slot 400 (-58,0)      0.808  0.798  0.904      -    -0.011 +0.096       -      -
+Slot 400 (-28,200)    0.830  0.819  0.942      -    -0.011 +0.113       -      -
+
+--- gap between the bounds (sustained - trigger) ---
+site                         base  nbtin-times          g10        nbtin
+30 nm (0,0)                 0.398        0.383        0.030            -
+30 nm (-13,0)               0.388        0.380        0.025            -
+56 nm (0,0)                 0.182        0.214        0.000            -
+100 nm (0,0)                0.045        0.066        0.000            -
+100 nm (-36,0)              0.085        0.108        0.000            -
+plain (0,0)                 0.000        0.024        0.000            -
+plain (-96,0)               0.000        0.026        0.000            -
+zipper (0,0)                0.048        0.050        0.000            -
+zipper (-68,0)              0.045        0.069        0.011            -
+zipper (-96,0)              0.042        0.050        0.011            -
+zipper (-42,58)             0.000        0.005        0.000            -
+zipper (-36,61)             0.000        0.000        0.000            -
+Slot 400 (-58,0)            0.046        0.107        0.017            -
+Slot 400 (-28,200)          0.023        0.065        0.055            -
+
+--- run at threshold: trigger time after t0 [tau0] and phase slipped [2 pi]; highest run below threshold: bias, branch ('-' = no voltage trigger), slips ---
+  base        30 nm (0,0)         trigger    at   0.377 t   71.8 slips    1.01   below: 0.374 -          0.01
+  base        30 nm (0,0)         sustained  at   0.775 t   12.5 slips  241.54   below: 0.772 V_peak   234.57
+  base        30 nm (-13,0)       trigger    at   0.390 t   71.0 slips    1.01   below: 0.387 -          0.01
+  base        30 nm (-13,0)       sustained  at   0.778 t   13.5 slips  247.92   below: 0.775 V_peak   240.99
+  base        56 nm (0,0)         trigger    at   0.620 t   73.0 slips    1.02   below: 0.617 -          0.02
+  base        56 nm (0,0)         sustained  at   0.801 t   21.2 slips  183.25   below: 0.799 V_peak   175.48
+  base        100 nm (0,0)        trigger    at   0.774 t   96.6 slips    4.06   below: 0.772 -          0.05
+  base        100 nm (0,0)        sustained  at   0.819 t   39.6 slips  119.85   below: 0.817 V_peak   110.51
+  base        100 nm (-36,0)      trigger    at   0.732 t  112.0 slips    3.04   below: 0.730 -          2.03
+  base        100 nm (-36,0)      sustained  at   0.817 t   36.5 slips  123.77   below: 0.814 V_trail  115.32
+  base        plain (0,0)         trigger    at   0.848 t  102.2 slips   55.58   below: 0.845 -          0.11
+  base        plain (0,0)         sustained  at   0.848 t  102.2 slips   55.58   below: 0.845 -          0.11
+  base        plain (-96,0)       trigger    at   0.832 t  167.2 slips   29.24   below: 0.829 -          5.32
+  base        plain (-96,0)       sustained  at   0.832 t  167.2 slips   29.24   below: 0.829 -          5.32
+  base        zipper (0,0)        trigger    at   0.756 t  249.2 slips    1.99   below: 0.753 -          1.98
+  base        zipper (0,0)        sustained  at   0.803 t   98.0 slips  103.82   below: 0.801 V_trail   91.91
+  base        zipper (-68,0)      trigger    at   0.772 t   51.5 slips    1.18   below: 0.769 -          0.92
+  base        zipper (-68,0)      sustained  at   0.817 t   38.0 slips  101.67   below: 0.814 V_trail   96.76
+  base        zipper (-96,0)      trigger    at   0.774 t  300.2 slips    2.91   below: 0.772 -          1.19
+  base        zipper (-96,0)      sustained  at   0.817 t   45.0 slips  100.58   below: 0.814 V_trail   90.52
+  base        zipper (-42,58)     trigger    at   0.857 t  156.8 slips  135.96   below: 0.854 -          0.96
+  base        zipper (-42,58)     sustained  at   0.857 t  156.8 slips  135.96   below: 0.854 -          0.96
+  base        zipper (-36,61)     trigger    at   0.891 t  172.6 slips   86.12   below: 0.888 -          0.14
+  base        zipper (-36,61)     sustained  at   0.891 t  172.6 slips   86.12   below: 0.888 -          0.14
+  base        Slot 400 (-58,0)    trigger    at   0.762 t   80.2 slips     1.2   below: 0.759 -          1.19
+  base        Slot 400 (-58,0)    sustained  at   0.808 t   41.7 slips   593.8   below: 0.806 V_peak    15.94
+  base        Slot 400 (-28,200)  trigger    at   0.807 t   77.8 slips    1.93   below: 0.804 -          1.92
+  base        Slot 400 (-28,200)  sustained  at   0.830 t   57.5 slips   13.89   below: 0.827 V_trail   11.28
+  nbtin-times 30 nm (0,0)         trigger    at   0.294 t   55.5 slips    3.11   below: (none)   [below_bracket]
+  nbtin-times 30 nm (0,0)         sustained  at   0.677 t   15.3 slips  248.02   below: 0.674 V_peak   244.48
+  nbtin-times 30 nm (-13,0)       trigger    at   0.294 t   64.3 slips    2.11   below: (none)   [below_bracket]
+  nbtin-times 30 nm (-13,0)       sustained  at   0.674 t   17.2 slips  243.86   below: 0.671 V_peak   240.07
+  nbtin-times 56 nm (0,0)         trigger    at   0.524 t   85.3 slips    2.13   below: 0.521 -          0.12
+  nbtin-times 56 nm (0,0)         sustained  at   0.738 t   23.5 slips  207.92   below: 0.735 V_peak    203.1
+  nbtin-times 100 nm (0,0)        trigger    at   0.708 t   81.5 slips   12.14   below: 0.706 -          0.13
+  nbtin-times 100 nm (0,0)        sustained  at   0.774 t   41.1 slips  145.37   below: 0.772 V_peak    140.0
+  nbtin-times 100 nm (-36,0)      trigger    at   0.666 t  142.2 slips    3.11   below: 0.663 -          1.11
+  nbtin-times 100 nm (-36,0)      sustained  at   0.774 t   39.8 slips  147.58   below: 0.772 V_trail  142.01
+  nbtin-times plain (0,0)         trigger    at   0.789 t  129.8 slips   16.96   below: 0.787 -          0.13
+  nbtin-times plain (0,0)         sustained  at   0.813 t   75.2 slips   81.42   below: 0.810 V_trail   73.92
+  nbtin-times plain (-96,0)       trigger    at   0.784 t  210.0 slips    8.63   below: 0.781 -          4.37
+  nbtin-times plain (-96,0)       sustained  at   0.810 t   85.8 slips    88.1   below: 0.808 V_trail   70.48
+  nbtin-times zipper (0,0)        trigger    at   0.740 t  183.5 slips    2.58   below: 0.737 -          2.05
+  nbtin-times zipper (0,0)        sustained  at   0.790 t   48.5 slips  126.26   below: 0.788 V_trail  126.73
+  nbtin-times zipper (-68,0)      trigger    at   0.735 t   52.5 slips    0.91   below: 0.732 -          0.91
+  nbtin-times zipper (-68,0)      sustained  at   0.803 t   35.8 slips  141.91   below: 0.801 V_trail  132.55
+  nbtin-times zipper (-96,0)      trigger    at   0.753 t   59.0 slips    0.94   below: 0.751 -          0.94
+  nbtin-times zipper (-96,0)      sustained  at   0.803 t   44.0 slips  134.41   below: 0.801 V_trail  124.89
+  nbtin-times zipper (-42,58)     trigger    at   0.803 t   81.5 slips    0.95   below: 0.801 -          0.94
+  nbtin-times zipper (-42,58)     sustained  at   0.809 t   75.2 slips  117.57   below: 0.806 V_trail   36.73
+  nbtin-times zipper (-36,61)     trigger    at   0.835 t  107.9 slips  157.48   below: 0.833 -          0.16
+  nbtin-times zipper (-36,61)     sustained  at   0.835 t  107.9 slips  157.48   below: 0.833 -          0.16
+  nbtin-times Slot 400 (-58,0)    trigger    at   0.691 t   92.8 slips    1.17   below: 0.688 -          1.17
+  nbtin-times Slot 400 (-58,0)    sustained  at   0.798 t   37.2 slips  137.65   below: 0.795 V_peak   122.06
+  nbtin-times Slot 400 (-28,200)  trigger    at   0.754 t   81.8 slips    1.87   below: 0.751 -          1.86
+  nbtin-times Slot 400 (-28,200)  sustained  at   0.819 t   49.5 slips   90.05   below: 0.816 V_trail   78.35
+  g10         30 nm (0,0)         trigger    at   0.650 t  163.6 slips   11.22   below: 0.647 -          0.04
+  g10         30 nm (0,0)         sustained  at   0.680 t   91.1 slips    27.8   below: 0.678 V_peak    27.19
+  g10         30 nm (-13,0)       trigger    at   0.658 t  151.5 slips   14.35   below: 0.656 -          0.04
+  g10         30 nm (-13,0)       sustained  at   0.683 t   96.4 slips   27.45   below: 0.680 V_peak    26.44
+  g10         56 nm (0,0)         trigger    at   0.827 t  173.8 slips   29.39   below: 0.824 -          0.04
+  g10         56 nm (0,0)         sustained  at   0.827 t  173.8 slips   29.39   below: 0.824 -          0.04
+  g10         100 nm (0,0)        trigger    at   0.911 t  205.1 slips   29.05   below: 0.908 -           0.1
+  g10         100 nm (0,0)        sustained  at   0.911 t  205.1 slips   29.05   below: 0.908 -           0.1
+  g10         100 nm (-36,0)      trigger    at   0.887 t  182.5 slips   23.45   below: 0.884 -          0.04
+  g10         100 nm (-36,0)      sustained  at   0.887 t  182.5 slips   23.45   below: 0.884 -          0.04
+  g10         plain (0,0)         trigger    at   0.979 t  371.2 slips    4.07   below: 0.976 -          2.46
+  g10         plain (0,0)         sustained  at   0.979 t  371.2 slips    4.07   below: 0.976 -          2.46
+  g10         plain (-96,0)       trigger    at   0.927 t  272.5 slips   19.05   below: 0.924 -          1.14
+  g10         plain (-96,0)       sustained  at   0.927 t  272.5 slips   19.05   below: 0.924 -          1.14
+  g10         zipper (0,0)        trigger    at   0.919 t  348.5 slips    2.73   below: 0.916 -          0.68
+  g10         zipper (0,0)        sustained  at   0.919 t  348.5 slips    2.73   below: 0.916 -          0.68
+  g10         zipper (-68,0)      trigger    at   0.875 t  349.8 slips    3.08   below: 0.873 -          2.89
+  g10         zipper (-68,0)      sustained  at   0.886 t  296.2 slips    6.76   below: 0.883 V_trail    4.22
+  g10         zipper (-96,0)      trigger    at   0.878 t  360.8 slips    3.06   below: 0.875 -          2.48
+  g10         zipper (-96,0)      sustained  at   0.889 t  300.0 slips    6.63   below: 0.886 V_trail    4.12
+  g10         zipper (-42,58)     trigger    at   0.984 t  342.2 slips    9.71   below: 0.981 -          2.66
+  g10         zipper (-42,58)     sustained  at   0.984 t  342.2 slips    9.71   below: 0.981 -          2.66
+  g10         zipper (-36,61)     trigger    at   0.984 t  362.2 slips    6.26   below: 0.981 -          2.27
+  g10         zipper (-36,61)     sustained  at   0.984 t  362.2 slips    6.26   below: 0.981 -          2.27
+  g10         Slot 400 (-58,0)    trigger    at   0.887 t      - slips           below: 0.885 -          0.02   [at_wall]
+  g10         Slot 400 (-58,0)    sustained  at   0.904 t  207.7 slips   24.96   below: 0.901 -          0.04
+  g10         Slot 400 (-28,200)  trigger    at   0.887 t      - slips           below: 0.885 -          0.01   [at_wall]
+  g10         Slot 400 (-28,200)  sustained  at   0.942 t   35.0 slips   16.49   below: 0.940 V_trail    4.21

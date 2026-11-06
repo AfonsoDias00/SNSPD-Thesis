@@ -1,0 +1,34 @@
+{
+ "Slot_110": {
+  "I_sw": 85.51539098966526,
+  "flag": "",
+  "n_sims": 7,
+  "branch": "V_trail",
+  "t_trigger": 55.0,
+  "note": "copied from the sustained dark I_sw on 6 Nov 2026: at gamma 10 the bias-on transient of the 2 um strips (probes 1.5 um apart) can fire the trailing-mean branch without any switching, and for every 0.8 um geometry the trigger and sustained dark I_sw agree at gamma 10"
+ },
+ "Slot_200": {
+  "I_sw": 85.51539098966526,
+  "flag": "",
+  "n_sims": 7,
+  "branch": "V_trail",
+  "t_trigger": 55.0,
+  "note": "copied from the sustained dark I_sw on 6 Nov 2026: at gamma 10 the bias-on transient of the 2 um strips (probes 1.5 um apart) can fire the trailing-mean branch without any switching, and for every 0.8 um geometry the trigger and sustained dark I_sw agree at gamma 10"
+ },
+ "Slot_400": {
+  "I_sw": 85.51539098966526,
+  "flag": "",
+  "n_sims": 7,
+  "branch": "V_trail",
+  "t_trigger": 55.0,
+  "note": "copied from the sustained dark I_sw on 6 Nov 2026: at gamma 10 the bias-on transient of the 2 um strips (probes 1.5 um apart) can fire the trailing-mean branch without any switching, and for every 0.8 um geometry the trigger and sustained dark I_sw agree at gamma 10"
+ },
+ "Plain_Wire_2um": {
+  "I_sw": 100.68500213679394,
+  "flag": "",
+  "n_sims": 8,
+  "branch": "V_trail",
+  "t_trigger": 55.0,
+  "note": "copied from the sustained dark I_sw on 6 Nov 2026: at gamma 10 the bias-on transient of the 2 um strips (probes 1.5 um apart) can fire the trailing-mean branch without any switching, and for every 0.8 um geometry the trigger and sustained dark I_sw agree at gamma 10"
+ }
+}

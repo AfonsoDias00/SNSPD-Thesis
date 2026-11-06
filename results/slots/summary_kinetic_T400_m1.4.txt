@@ -1,0 +1,64 @@
+==============================================================================
+SUMMARY   hotspot=kinetic   T=400 tau0   mesh=1.4 xi   grid=critical
+NOTE: critical grid -> the maps are interpolated from few points; quantiles are indicative only.
+film: xi = 5 nm, lambda = 600 nm, d = 9 nm, gamma = 1, u = 5.79, rho_n = not set
+units: K0 = 5.238 uA/nm, j_dep = K0/(6 sqrt 3) = 0.504 uA/nm, Pearl length = 80.00 um, tau0 = n/a (set rho_n)
+hotspot (kinetic): r0 = 14 nm, slope |A| = 2.5, s_max = 1.25, D = 10 nm^2/tau0, rise = 10 tau0, escape = 100 tau0, t0 = 20 tau0
+==============================================================================
+                              Plain wire, 2 umSlot column, 110 nmSlot column, 200 nmSlot column, 400 nm
+I_sw [uA]                               98.7          83.5          83.5          83.5
+narrowest free width [nm]                200           170           170           170
+I_sw / I_dep(free width)               0.979         0.973         0.973         0.973
+i_10                                   0.848         0.839         0.847         0.830
+i_50                                   0.850         0.855         0.857         0.843
+i_90                                   0.863         0.890         0.875         0.869
+i_95                                   0.864         0.920         0.903         0.869
+i_99                                   0.866         0.954         0.949         0.935
+i_max (100 % point)                    0.866         0.978         0.978         0.978
+10-90 % width                          0.015         0.051         0.028         0.038
+i_10  in units of I_dep                0.830         0.816         0.824         0.808
+i_50  in units of I_dep                0.832         0.833         0.835         0.821
+i_95  in units of I_dep                0.846         0.896         0.879         0.846
+i_max  in units of I_dep               0.848         0.952         0.952         0.952
+  (samples used)                           3             7             7             7
+onset gain  ref - Slot_110      i_10: +0.009   i_50: -0.006   (positive = holes turn on earlier)
+plateau gain ref - Slot_110     i_90: -0.027   i_95: -0.056   i_99: -0.089
+Slot_110 area above 0.87/0.90   33.8 % / 8.1 %   (the tail that sets i_95 / i_99)
+onset gain  ref - Slot_200      i_10: +0.001   i_50: -0.008   (positive = holes turn on earlier)
+plateau gain ref - Slot_200     i_90: -0.013   i_95: -0.039   i_99: -0.083
+Slot_200 area above 0.87/0.90   29.6 % / 5.3 %   (the tail that sets i_95 / i_99)
+onset gain  ref - Slot_400      i_10: +0.017   i_50: +0.006   (positive = holes turn on earlier)
+plateau gain ref - Slot_400     i_90: -0.006   i_95: -0.004   i_99: -0.070
+Slot_400 area above 0.87/0.90   4.1 % / 2.5 %   (the tail that sets i_95 / i_99)
+------------------------------------------------------------------------------
+current crowding (steady state; K_peak = max of K averaged over discs of 1.5 xi, >= 1.5 xi from all walls)
+K_peak / K_uniform @ top bias           1.05          1.28          1.29          1.29
+  (single-node max, noisy)              1.44          1.92          1.77          1.84
+K_peak at own i_95 [uA/um]               450           493           489           473
+K_peak at own I_sw [uA/um]               520           530           534           537
+  linearity Plain wire, 2 um: K/I changes by -0.1 % from bias 0.80 to 0.95
+  linearity Slot column, 110 nm: K/I changes by -1.3 % from bias 0.80 to 0.95
+  linearity Slot column, 200 nm: K/I changes by -1.6 % from bias 0.80 to 0.95
+  linearity Slot column, 400 nm: K/I changes by -1.3 % from bias 0.80 to 0.95
+------------------------------------------------------------------------------
+selectivity  median[i_det(f) - i_det(1)] over probe sites (larger = weak seeds need more bias)
+  f = 0.35                             0.109         0.101         0.085         0.096
+  f = 0.6                              0.068         0.030         0.027         0.038
+  Slot column, 110 nm: no detection below I_sw at 1 (site, f) pairs -> counted as i_det = 1
+  Slot column, 400 nm: no detection below I_sw at 1 (site, f) pairs -> counted as i_det = 1
+------------------------------------------------------------------------------
+GO / NO-GO vs Plain wire, 2 um   (margins: --go-margin 0.03, --sel-margin 0.01)
+  Slot column, 110 nm  C1 detection : ref i_95 - i_95 = -0.056   need >= 0.030   -> FAIL
+  Slot column, 110 nm  C2 stress    : K_peak@i_95 493 vs ref 450 uA/um   need <= ref   -> FAIL
+  Slot column, 110 nm  C3 selectivity: - ref at f = 0.35: -0.008   need >= 0.010   -> FAIL
+  Slot column, 110 nm  OVERALL: NO-GO / not shown   [0/3 criteria passed]
+  Slot column, 200 nm  C1 detection : ref i_95 - i_95 = -0.039   need >= 0.030   -> FAIL
+  Slot column, 200 nm  C2 stress    : K_peak@i_95 489 vs ref 450 uA/um   need <= ref   -> FAIL
+  Slot column, 200 nm  C3 selectivity: - ref at f = 0.35: -0.025   need >= 0.010   -> FAIL
+  Slot column, 200 nm  OVERALL: NO-GO / not shown   [0/3 criteria passed]
+  Slot column, 400 nm  C1 detection : ref i_95 - i_95 = -0.004   need >= 0.030   -> FAIL
+  Slot column, 400 nm  C2 stress    : K_peak@i_95 473 vs ref 450 uA/um   need <= ref   -> FAIL
+  Slot column, 400 nm  C3 selectivity: - ref at f = 0.35: -0.014   need >= 0.010   -> FAIL
+  Slot column, 400 nm  OVERALL: NO-GO / not shown   [0/3 criteria passed]
+------------------------------------------------------------------------------
+caveats: deterministic TDGL; one photon energy (plus probes); sparse sampling near the edge is extrapolated; K_peak at hole tips depends on the mesh.

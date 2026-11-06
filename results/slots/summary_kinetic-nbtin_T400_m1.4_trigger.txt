@@ -1,0 +1,56 @@
+==============================================================================
+SUMMARY   hotspot=kinetic   T=400 tau0   mesh=1.4 xi   grid=critical
+NOTE: critical grid -> the maps are interpolated from few points; quantiles are indicative only.
+film: xi = 5 nm, lambda = 600 nm, d = 9 nm, gamma = 10, u = 5.79, rho_n = not set
+units: K0 = 5.238 uA/nm, j_dep = K0/(6 sqrt 3) = 0.504 uA/nm, Pearl length = 80.00 um, tau0 = n/a (set rho_n)
+hotspot (kinetic): r0 = 14 nm, slope |A| = 2.5, s_max = 1.25, D = 7.1 nm^2/tau0, rise = 10 tau0, escape = 530 tau0, t0 = 20 tau0
+protocol: gamma = 10; NbTiN hotspot times: D 7.1 nm^2/tau0, escape 530 tau0; photon into the settled state
+==============================================================================
+                              Plain wire, 2 umSlot column, 110 nmSlot column, 200 nmSlot column, 400 nm
+I_sw [uA]                              100.7          85.5          85.5          85.5
+narrowest free width [nm]                200           170           170           170
+I_sw / I_dep(free width)               0.999         0.997         0.997         0.997
+i_10                                   0.881         0.858         0.843         0.813
+i_50                                   0.889         0.887         0.871         0.844
+i_90                                   0.908         0.913         0.904         0.896
+i_95                                   0.910         0.922         0.905         0.896
+i_99                                   0.912         0.933         0.922         0.908
+i_max (100 % point)                    0.912         0.937         0.929         0.923
+10-90 % width                          0.027         0.055         0.061         0.083
+i_10  in units of I_dep                0.880         0.855         0.841         0.810
+i_50  in units of I_dep                0.888         0.884         0.868         0.841
+i_95  in units of I_dep                0.909         0.919         0.902         0.893
+i_max  in units of I_dep               0.911         0.934         0.926         0.921
+  (samples used)                           3             7             7             7
+onset gain  ref - Slot_110      i_10: +0.023   i_50: +0.002   (positive = holes turn on earlier)
+plateau gain ref - Slot_110     i_90: -0.005   i_95: -0.012   i_99: -0.021
+Slot_110 area above 0.87/0.90   72.8 % / 36.1 %   (the tail that sets i_95 / i_99)
+onset gain  ref - Slot_200      i_10: +0.037   i_50: +0.018   (positive = holes turn on earlier)
+plateau gain ref - Slot_200     i_90: +0.003   i_95: +0.005   i_99: -0.010
+Slot_200 area above 0.87/0.90   50.8 % / 24.6 %   (the tail that sets i_95 / i_99)
+onset gain  ref - Slot_400      i_10: +0.068   i_50: +0.045   (positive = holes turn on earlier)
+plateau gain ref - Slot_400     i_90: +0.012   i_95: +0.014   i_99: +0.004
+Slot_400 area above 0.87/0.90   22.4 % / 1.9 %   (the tail that sets i_95 / i_99)
+------------------------------------------------------------------------------
+current crowding (steady state; K_peak = max of K averaged over discs of 1.5 xi, >= 1.5 xi from all walls)
+K_peak / K_uniform @ top bias           1.05          1.28          1.29          1.29
+  (single-node max, noisy)              1.44          1.92          1.77          1.85
+K_peak at own i_95 [uA/um]               483           504           500           497
+K_peak at own I_sw [uA/um]               530           542           545           549
+  linearity Plain wire, 2 um: K/I changes by -0.1 % from bias 0.80 to 0.95
+  linearity Slot column, 110 nm: K/I changes by -1.3 % from bias 0.80 to 0.95
+  linearity Slot column, 200 nm: K/I changes by -1.6 % from bias 0.80 to 0.95
+  linearity Slot column, 400 nm: K/I changes by -1.1 % from bias 0.80 to 0.95
+------------------------------------------------------------------------------
+GO / NO-GO vs Plain wire, 2 um   (margins: --go-margin 0.03, --sel-margin 0.01)
+  Slot column, 110 nm  C1 detection : ref i_95 - i_95 = -0.012   need >= 0.030   -> FAIL
+  Slot column, 110 nm  C2 stress    : K_peak@i_95 504 vs ref 483 uA/um   need <= ref   -> FAIL
+  Slot column, 110 nm  OVERALL: NO-GO / not shown   [0/2 criteria passed]
+  Slot column, 200 nm  C1 detection : ref i_95 - i_95 = +0.005   need >= 0.030   -> FAIL
+  Slot column, 200 nm  C2 stress    : K_peak@i_95 500 vs ref 483 uA/um   need <= ref   -> FAIL
+  Slot column, 200 nm  OVERALL: NO-GO / not shown   [0/2 criteria passed]
+  Slot column, 400 nm  C1 detection : ref i_95 - i_95 = +0.014   need >= 0.030   -> FAIL
+  Slot column, 400 nm  C2 stress    : K_peak@i_95 497 vs ref 483 uA/um   need <= ref   -> FAIL
+  Slot column, 400 nm  OVERALL: NO-GO / not shown   [0/2 criteria passed]
+------------------------------------------------------------------------------
+caveats: deterministic TDGL; one photon energy (plus probes); sparse sampling near the edge is extrapolated; K_peak at hole tips depends on the mesh.

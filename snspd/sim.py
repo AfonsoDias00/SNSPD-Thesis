@@ -32,7 +32,7 @@ import os
 import tempfile
 import time
 from concurrent.futures import ProcessPoolExecutor, as_completed
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from dataclasses import dataclass, replace
 from typing import NamedTuple, Optional
 
@@ -61,22 +61,61 @@ SETTLE = 150.0           # ... and of a continuation this long [tau0]
 TOL_REL = 0.003376       # bisection tolerance [fraction of I_dep(strip width)]
 ISW_BRACKET = (0.70, 1.20)   # dark-switching bracket [fraction of I_dep(narrowest free width)]
 CROWD_TIME = 40.0        # steady-state run length for the current-crowding proxy [tau0]
+START_SETTLE = 100.0     # gamma = 1 dark run that prepares the settled start of a photon run [tau0]
+SETTLE_TRIES = 3         # ... repeated (continuing) up to this many times until stationary
+
+
+# ==============================================================================
+# Parameter sets
+# ==============================================================================
+@dataclass(frozen=True)
+class ParamSet:
+    """Film, hotspot parameters and start protocol of one family of results (SimConfig.preset)."""
+    film: Film
+    params: hs_mod.HotspotParams
+    settled_start: bool          # photon runs start from the steady current-carrying state (settled_state)
+    note: str
+
+
+PRESETS = {
+    # every result up to 5 Nov 2026: gamma = 1, the kinetic hotspot with the NbN times of Simon et al.
+    "": ParamSet(FILM, hs_mod.HOTSPOT, False,
+                 "gamma = 1; hotspot times of NbN (Simon et al.): D 10 nm^2/tau0, escape 100 tau0; bias on at t = 0"),
+    # 6 Nov 2026: the GTDGL inelastic parameter at pyTDGL's default and Simon et al.'s value (gamma = 2 tau_E Delta0 /
+    # hbar = 12-18 for the measured tau_EP(T_c) = 2.9-4.0 ps of 9 nm NbTiN), and the hotspot times measured on 9 nm
+    # NbTiN (Sidorova et al. 2021/22): D = 0.472 cm^2/s = 7.1 nm^2/tau0, energy escape 80 ps = 530 tau0 (tau0 = 0.15 ps).
+    # xi 5 nm, lambda 600 nm, d 9 nm, u 5.79, r0, |A|, s_max and t_rise (unmeasured for NbTiN) are unchanged.
+    "nbtin": ParamSet(replace(FILM, gamma=10.0),
+                      replace(hs_mod.HOTSPOT, D_nm2_per_tau0=7.1, kin_esc_tau0=530.0), True,
+                      "gamma = 10; NbTiN hotspot times: D 7.1 nm^2/tau0, escape 530 tau0; photon into the settled state"),
+    # the two other corners of the 2 x 2 (gamma, hotspot times) check, factorial_check.py
+    "nbtin-times": ParamSet(FILM, replace(hs_mod.HOTSPOT, D_nm2_per_tau0=7.1, kin_esc_tau0=530.0), False,
+                            "gamma = 1; NbTiN hotspot times: D 7.1 nm^2/tau0, escape 530 tau0; bias on at t = 0"),
+    "g10": ParamSet(replace(FILM, gamma=10.0), hs_mod.HOTSPOT, True,
+                    "gamma = 10; hotspot times of NbN: D 10 nm^2/tau0, escape 100 tau0; photon into the settled state"),
+}
 
 
 @dataclass(frozen=True)
 class SimConfig:
     tmax: float = 150.0          # solver window [tau0]
     mesh_xi: float = 1.4         # max mesh edge [xi]
-    hotspot: str = "conserving"  # "conserving", "legacy" or "kinetic" (snspd.hotspot.MODELS)
+    hotspot: str = "kinetic"     # snspd.hotspot.MODELS; every result before 4 Nov 2026 is "conserving"
     save_every: int = 120
     dt_max: float = 0.20
     hit_lo_frac: float = 0.30    # lower photon-threshold bracket [fraction of I_sw]
     sustained: bool = True       # False: the voltage trigger alone counts (the lower bound on the threshold)
     out_dir: str = "results/hitmap"
+    preset: str = ""             # PRESETS key: film, hotspot parameters and start protocol ("" = the gamma = 1 results)
 
     @property
     def tag(self) -> str:
-        return f"{self.hotspot}_T{self.tmax:g}_m{self.mesh_xi:g}" + ("" if self.sustained else "_trigger")
+        model = self.hotspot + (f"-{self.preset}" if self.preset else "")
+        return f"{model}_T{self.tmax:g}_m{self.mesh_xi:g}" + ("" if self.sustained else "_trigger")
+
+    @property
+    def pset(self) -> ParamSet:
+        return PRESETS[self.preset]
 
     def path(self, stem: str, ext: str) -> str:
         return os.path.join(self.out_dir, f"{stem}_{self.tag}.{ext}")
@@ -153,8 +192,10 @@ def temp_h5(cfg: SimConfig) -> str:
 
 
 def solver_options(cfg: SimConfig, solve_time: float, h5_path: str):
+    """SNSPD_NO_PROGRESS=1 turns pyTDGL's progress bar off (long background runs: the bars fill the logs)."""
+    quiet = {"progress_interval": 10 ** 9} if os.environ.get("SNSPD_NO_PROGRESS") else {}
     return tdgl.SolverOptions(solve_time=solve_time, dt_init=1e-3, dt_max=cfg.dt_max, save_every=cfg.save_every,
-                              field_units="mT", current_units="uA", output_file=h5_path)
+                              field_units="mT", current_units="uA", output_file=h5_path, **quiet)
 
 
 def saved_steps_and_times(sol):
@@ -198,12 +239,13 @@ class Trigger(NamedTuple):
 
 
 @contextmanager
-def solved(device, current_uA, eps_func, cfg: SimConfig, seed=None, phase=None):
+def solved(device, current_uA, eps_func, cfg: SimConfig, seed=None, phase=None, init=None):
     """tdgl.solve at a fixed current for cfg.tmax; yields the Solution and deletes its file afterwards.  seed: a
     Solution of the same device to start from (default: the uniform superconducting state).  phase: a unit complex
-    array over the mesh sites multiplying the uniform start instead (e.g. fluxoid.winding_psi); not with a seed."""
-    if seed is not None and phase is not None:
-        raise ValueError("give a seed or a starting phase, not both")
+    array over the mesh sites multiplying the uniform start instead (e.g. fluxoid.winding_psi).  init: (psi, mu) over
+    the mesh sites to start from (settled_state).  At most one of the three."""
+    if sum(v is not None for v in (seed, phase, init)) > 1:
+        raise ValueError("give at most one of seed, phase and init")
     h5_path = temp_h5(cfg)
     kw = {} if eps_func is None else {"disorder_epsilon": eps_func}
     sol = None
@@ -212,6 +254,8 @@ def solved(device, current_uA, eps_func, cfg: SimConfig, seed=None, phase=None):
                                  terminal_currents=dict(source=current_uA, drain=-current_uA), **kw)
         if phase is not None:
             solver.psi_init = solver.psi_init * phase      # keeps psi = 0 on the terminals
+        if init is not None:
+            solver.psi_init, solver.mu_init = np.array(init[0]), np.array(init[1])
         sol = solver.solve()
         yield sol
     finally:
@@ -252,10 +296,53 @@ def settle(device, current_uA, sol, trig: Trigger, cfg: SimConfig) -> Trigger:
     return trig._replace(switched=later >= SUSTAIN_SLIPS, slips_settled=later)
 
 
+_GAMMA1 = {}   # per-process cache: id(device) -> a gamma = 1 copy of it (same mesh) for settled_state
+
+
+def settled_state(device, current_uA, cfg: SimConfig):
+    """(psi, mu) of the steady current-carrying state at current_uA, or None if there is none (the device switches).
+
+    The bias is switched on at t = 0 on the uniform state.  At gamma = 1 the strip has settled by the photon's t0 =
+    20 tau0, but |psi| relaxes as u sqrt(1 + gamma^2 |psi|^2), so at gamma = 10 it takes ~200 tau0 (plain wire at 0.80
+    I_dep: <|psi|^2> 0.953 at t0, 0.874 settled) and the photon would meet a condensate that is still stronger than
+    the steady state.  The steady state is a stationary GL solution and does not depend on gamma, so it is prepared
+    by a START_SETTLE tau0 dark run of a gamma = 1 copy of the device (checked on 6 Nov 2026: under gamma = 10 dynamics
+    it stays put, <|psi|^2> unchanged to 1e-4 and |V| <= 0.011 over 200 tau0, for the plain wire and the long zipper
+    at 0.80 I_dep).  Returns None if the state is still slipping phase (near or above the gamma = 1 dark I_sw) after
+    SETTLE_TRIES x START_SETTLE tau0; the caller then starts from the uniform state.
+
+    Stationarity is judged on the last quarter of the latest stretch.  Until 6 Nov 2026 it was judged on the second
+    half of a single 100 tau0 run.  On the 2 um devices above ~0.92 I_dep the supercurrent phase between the probes
+    still builds up there (Slot 400 at 0.93 I_dep: 0.07 x 2 pi over 50-100 tau0, stationary from ~120 tau0), so
+    those runs fell back to the uniform start, whose bias-on transient fires V_trail at 55 tau0.  That affected the
+    slot bridge-centre sites (thresholds >= 0.92) of the first nbtin maps.  The 0.8 um devices settle to 0.94 I_dep."""
+    d1 = _GAMMA1.get(id(device))
+    if d1 is None:
+        L = device.layer
+        d1 = device.copy(with_mesh=True)
+        d1.layer = tdgl.Layer(coherence_length=L.coherence_length, london_lambda=L.london_lambda,
+                              thickness=L.thickness, conductivity=L.conductivity, u=L.u, gamma=1.0)
+        _GAMMA1[id(device)] = d1
+    sub = replace(cfg, tmax=START_SETTLE)
+    seed = None
+    with ExitStack() as stack:
+        for _ in range(SETTLE_TRIES):
+            sol = stack.enter_context(solved(d1, current_uA, None, sub, seed=seed))
+            t, v = np.asarray(sol.dynamics.time), np.asarray(sol.dynamics.voltage())
+            if phase_slips(t, v, t[-1] - 0.25 * START_SETTLE)[-1] <= 0.02 and abs(v[-1]) <= 0.01:
+                return np.array(sol.tdgl_data.psi), np.array(sol.tdgl_data.mu)
+            seed = sol
+    return None
+
+
 def run_simulation(device, current_uA, eps_func, cfg: SimConfig, t0: float = hs_mod.HOTSPOT.t0_tau0,
                    seed=None) -> Trigger:
-    """One TDGL run at a fixed current: did it count as switching / detection, by which branch, and when."""
-    with solved(device, current_uA, eps_func, cfg, seed) as sol:
+    """One TDGL run at a fixed current: did it count as switching / detection, by which branch, and when.  With a
+    preset that asks for it, a photon run starts from the settled state at that current (settled_state)."""
+    init = None
+    if seed is None and eps_func is not None and cfg.pset.settled_start:
+        init = settled_state(device, current_uA, cfg)
+    with solved(device, current_uA, eps_func, cfg, seed, init=init) as sol:
         trig = detect(sol, t0)
         return settle(device, current_uA, sol, trig, cfg) if cfg.sustained else trig._replace(switched=bool(trig.branch))
 
@@ -345,7 +432,9 @@ def task_fn(task):
     t_start = time.time()
     try:
         geom, cfg = task["geom"], task["cfg"]
-        film, params = task.get("film", FILM), task.get("params", hs_mod.HOTSPOT)
+        film, params = task.get("film", cfg.pset.film), task.get("params", cfg.pset.params)
+        if replace(film, rho_uohm_cm=None) != replace(cfg.pset.film, rho_uohm_cm=None):
+            raise ValueError(f"task film {film} does not match preset {cfg.preset!r}")
         ctx = context(geom, cfg.mesh_xi, film, params)
         tol, (lo, hi) = scales(geom, film)
         kind = task["kind"]

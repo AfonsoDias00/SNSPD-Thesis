@@ -1,0 +1,36 @@
+MESH TEST (preset 'gamma 1', kinetic f = 1, 400 tau0): thresholds [I_dep] against the 1.4 xi production values
+s/run: wall time per bisection run under the same machine load (1.4 xi: factorial_check base corner)
+
+dark I_sw / I_dep (production 1.4 xi: plain 0.970, zipper 0.968, Slot 400 0.973):
+  U2.5    Long_Zipper   0.913   3391 nodes
+  U2.5    Plain_Wire    0.919   3487 nodes
+  U2.0    Long_Zipper   0.956   7153 nodes
+  U2.0    Plain_Wire    0.960   8130 nodes
+  G2.0/4  Slot_400      0.825   8527 nodes
+  G1.4/4  Slot_400      0.829   14449 nodes
+
+site                criterion    1.4 xi            U2.0            U2.5          G1.4/4          G2.0/4     s/run at 1.4 xi
+plain (0,0)         trigger       0.848  0.842 (-0.006)  0.813 (-0.035)                                     31  vs  55 / 42
+plain (0,0)         sustained     0.848  0.842 (-0.006)  0.813 (-0.035)                                     36  vs  67 / 35
+plain (-96,0)       trigger       0.832  0.826 (-0.006)  0.783 (-0.049)                                     42  vs  78 / 44
+plain (-96,0)       sustained     0.832  0.826 (-0.006)  0.788 (-0.044)                                     54  vs  94 / 39
+zipper (0,0)        trigger       0.756  0.757 (+0.001)  0.738 (-0.018)                                     37  vs  64 / 35
+zipper (0,0)        sustained     0.804  0.791 (-0.013)  0.773 (-0.031)                                     56  vs  89 / 43
+zipper (-68,0)      trigger       0.772  0.762 (-0.010)  0.731 (-0.041)                                     35  vs  46 / 31
+zipper (-68,0)      sustained     0.817  0.807 (-0.010)  0.768 (-0.049)                                     56  vs  65 / 37
+zipper (-42,58)     trigger       0.856  0.846 (-0.010)  0.821 (-0.035)                                     40  vs  51 / 24
+zipper (-42,58)     sustained     0.856  0.846 (-0.010)  0.823 (-0.033)                                     41  vs  67 / 31
+zipper (-36,61)     trigger       0.891  0.883 (-0.008)  0.843 (-0.048)                                     40  vs  52 / 24
+zipper (-36,61)     sustained     0.891  0.883 (-0.008)  0.843 (-0.048)                                     46  vs  50 / 34
+Slot 400 (-58,0)    trigger       0.762                                  0.763 (+0.001)  0.746 (-0.016)     91  vs  97 / 47
+Slot 400 (-58,0)    sustained     0.808                                  0.806 (-0.002)  0.798 (-0.010)     125  vs  146 / 86
+Slot 400 (-28,200)  trigger       0.807                                  0.808 (+0.001)  0.791 (-0.016)     104  vs  106 / 51
+Slot 400 (-28,200)  sustained     0.830                                  0.824 (-0.006)  0.818 (-0.012)     100  vs  138 / 78
+
+differences that carry the conclusions (zipper - plain at matching sites, I_dep):
+  trigger   1.4   (0,0) - (0,0): -0.092   (-68,0) - (-96,0): -0.060   (-36,61) - (0,0): +0.043
+  trigger   U2.0  (0,0) - (0,0): -0.085   (-68,0) - (-96,0): -0.064   (-36,61) - (0,0): +0.041
+  trigger   U2.5  (0,0) - (0,0): -0.075   (-68,0) - (-96,0): -0.052   (-36,61) - (0,0): +0.030
+  sustained 1.4   (0,0) - (0,0): -0.044   (-68,0) - (-96,0): -0.015   (-36,61) - (0,0): +0.043
+  sustained U2.0  (0,0) - (0,0): -0.050   (-68,0) - (-96,0): -0.019   (-36,61) - (0,0): +0.041
+  sustained U2.5  (0,0) - (0,0): -0.040   (-68,0) - (-96,0): -0.020   (-36,61) - (0,0): +0.030

@@ -23,7 +23,7 @@ from snspd.units import FILM
 
 OUT_DIR = "results/validation"
 XI = FILM.xi_nm
-CFG = sim.SimConfig(tmax=400.0, mesh_xi=1.4, out_dir=OUT_DIR)      # production window, mesh and criterion
+CFG = sim.SimConfig(tmax=400.0, mesh_xi=1.4, hotspot="conserving", out_dir=OUT_DIR)   # the stored results checked here
 
 
 @dataclass

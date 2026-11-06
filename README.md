@@ -12,20 +12,32 @@ the pieces fit together, start with `docs/report.md` (section 0).
 snspd/                  shared library, imported by every current script
   units.py              film parameters and the unit system (K0, j_dep, tau0, Pearl length)
   geometry.py           strips and hole layouts, photon-hit grids, unit cells  <- add new hole layouts here
-  hotspot.py            photon hotspot models (energy-conserving FEM diffusion; legacy free-space Gaussian)
+  hotspot.py            photon hotspot models: kinetic (default, after Simon et al. 2025), energy-conserving FEM
+                        diffusion (all results before 4 Nov 2026), legacy free-space Gaussian
   sim.py                device, detection criterion, bisection, current crowding, process-pool runner
   fluxoid.py            fluxoid (trapped flux quanta) of every hole from the phase winding of psi
   analysis.py           threshold maps, efficiency curves, quantiles, selectivity
   store.py              resumable CSV / JSON results
   plotting.py           figure style and standard figures
+  thermal.py            electro-thermal TDGL (prototype, 5 Nov 2026): local temperature with Joule heating, diffusion,
+                        escape and optional electron-phonon split, fed back into epsilon each step
 hitmap.py               photon-threshold maps: hole geometries vs the plain 200 nm wire, go / no-go
 narrow_baseline.py      plain strips of any width (control) and the width scan
 checks.py               tests of the map assumptions: symmetry, edge band, trigger delay
-fluxtrap.py             flux a photon leaves trapped in the holes: state scan, trapped-state I_sw, traces
+fluxtrap.py             flux a photon leaves trapped in the holes: state scan, trapped-state I_sw, traces, and
+                        `compare` of the two hotspot models; simple figures by default (--detailed for the old ones)
+compare_hotspots.py     two hotspot models side by side: thresholds site by site, or the epsilon(r, t) fields
+hotspot_sensitivity.py  kinetic-hotspot thresholds under other time constants and the times measured on 9 nm NbTiN
+thermal_check.py        thresholds with Joule heat (snspd/thermal.py) at 14 sites, against the two bounds
+presentation_figures.py figures for docs/presentation_outline.md from stored results (no simulation)
+run_kinetic.sh          the kinetic-hotspot rerun of the main comparisons (resumable)
+run_flux_kinetic.sh     the kinetic-hotspot flux scans: zipper, Slot 400, plain wire (resumable)
+meshes/                 pinned production meshes (not in git; `python -m snspd.sim pin-meshes` rebuilds them)
 results/slots/          2 um strips with one column of 30 nm slots, 40 nm bridges (hitmap.py), both criteria
 results/hitmap/         plain wire vs long zipper            (hitmap.py)        } sustained-switching criterion,
 results/narrow_baseline/ plain strips                         (narrow_baseline.py)} from 29 Oct 2026
-results/fluxtrap/       flux-trapping scan, trapped states, traces (fluxtrap.py)  }
+results/fluxtrap/       flux-trapping scan, trapped states, traces (fluxtrap.py)  }  both hotspot models
+results/thermal/        electro-thermal check (thermal_check.py)
 results/v2_voltage_trigger/      results with the voltage trigger alone (28-29 Oct), see its README
 results/v1_voltage_or_collapse/  all results with the first criterion (23-29 Oct), see its README
 parked/edge_bank/       edge-bank strip: code + results, parked until the hole study is done
@@ -59,12 +71,32 @@ finished thresholds are appended to a CSV and skipped next time, so an interrupt
 .venv/bin/python fluxtrap.py scan    --geom Slot_400 --hitmap-dir results/slots --biases 0.76:0.86:0.02 --sites="-96,0;-74,0;-58,0;-42,0;-19,0;-74,190;-42,190;-74,200;-42,200;-74,210;-58,210;-74,220" --workers 9
 .venv/bin/python fluxtrap.py trapped --geom Slot_400 --hitmap-dir results/slots --place="0 -1 0" --no-second
 .venv/bin/python fluxtrap.py trace   --site=-68,0 --biases 0.70,0.77,0.80,0.85 --workers 4
+.venv/bin/python fluxtrap.py compare [--geom Slot_400 --hitmap-dir results/slots]   # conserving vs kinetic scans
+WORKERS=9 bash run_flux_kinetic.sh                               # the kinetic flux scans (sets SNSPD_MESH_DIR)
+.venv/bin/python thermal_check.py run --workers 3                # thresholds with heat; then `report`
+.venv/bin/python hotspot_sensitivity.py run --variants NbTiN --workers 4   # measured NbTiN times; `table` to print
 ```
 
 At 1.4 xi a 400 tau0 run takes ~16 s on one core. The laptop CPU (Core Ultra 7 155H) has 6 performance cores and 10
 efficiency cores; more than ~9 workers, or other jobs alongside, slow every run down sharply.
 
 Result files are tagged `<hotspot>_T<tmax>_m<mesh_xi>`, e.g. `summary_conserving_T150_m0.8.txt`.
+
+**Hotspot model.** Since 4 Nov 2026 the default is `--hotspot kinetic`. Every result before that date, and the
+commands above as they were run then, used `--hotspot conserving`; add that flag to reproduce or extend them. The
+validation suite checks the stored conserving results and keeps that model (`validation/common.py`).
+
+**Pinned meshes.** The long zipper meshes differently on some machines (10 543 instead of the production 10 710
+nodes at 1.4 ξ; plain strips and slot columns are identical), and flux-mediated zipper thresholds move by ~0.04
+I_dep with the mesh. To extend stored results, use the production meshes:
+
+```bash
+.venv/bin/python -m snspd.sim pin-meshes meshes                  # extract them from the stored crowding files
+SNSPD_MESH_DIR=meshes .venv/bin/python hitmap.py run --tmax 400 --mesh-xi 1.4 --workers 9
+WORKERS=9 bash run_kinetic.sh                                    # the kinetic rerun; sets SNSPD_MESH_DIR itself
+.venv/bin/python compare_hotspots.py [--criterion trigger]      # conserving vs kinetic thresholds, site by site
+.venv/bin/python compare_hotspots.py --profiles results/hotspot_profiles_conserving_vs_kinetic.png
+```
 
 ## Model and units
 
@@ -100,8 +132,17 @@ Result files are tagged `<hotspot>_T<tmax>_m<mesh_xi>`, e.g. `summary_conserving
   temperature (~0.2–0.3 T_c). GL is therefore used outside its formal range: currents in units of I_dep (GL
   depairing current) are the more trustworthy output, absolute values less so.
 * **Bisection tolerance** is a fraction of I_dep (0.34 %), not fixed µA, so it stays correct if λ changes.
-* **Hotspot** (`snspd/hotspot.py`): r0 = 14 nm, A = −2.5, D = 10 nm²/τ0, t_relax = 35 τ0, photon at 20 τ0, window
-  150 τ0; energy-conserving diffusion with reflecting walls.
+* **Hotspot** (`snspd/hotspot.py`). Both models share the energy transport: the photon's energy starts as a Gaussian
+  of radius r0 = 14 nm and diffuses with D = 10 nm²/τ0 inside the film, reflected at edges and hole walls. Photon
+  at t0 = 20 τ0.
+  - **kinetic** (default, after Simon et al., PRB 112, 174512 (2025), arXiv:2501.13791): the suppression
+    s = 1 − ε builds up over t_rise = 10 τ0 (the paper's thermalisation time τ_th ≈ 1.4–1.8 ps), energy escapes to
+    the substrate over t_esc = 100 τ0 (τ_esc = 15 ps), and ε ≥ −0.25. For f = 1 no normal core forms (ε ≥ 0.43 at
+    the centre of a 200 nm strip) but the suppression is broader and lasts longer.
+  - **conserving** (all results before 4 Nov 2026): ε = 1 + A f e^(−t/t_relax) n with A = −2.5, t_relax = 35 τ0.
+    The core is normal (ε = −1.5) at once and relaxes within ~50 τ0.
+  - What the paper fixes and what it leaves open is in the `snspd/hotspot.py` docstring; the comparison is under
+    Current results.
 
 **λ and ρ only relabel the units.** With screening off, λ enters only K0 and τ0, so every normalised result
 (i_det = I_det/I_sw, I_sw/I_dep) is independent of λ, absolute currents scale as 1/λ² and times as λ²/ρ_n. No result
@@ -130,6 +171,148 @@ runs reproduce the rescaled values within the bisection tolerance (plain I_sw 99
 are in λ = 175 nm units: multiply by 0.0851 to compare.
 
 ## Current results
+
+### Kinetic hotspot after Simon et al. (4 Nov 2026, `--hotspot kinetic`, 400 τ0, 1.4 ξ, production meshes)
+
+The hotspot now follows Simon et al. (PRB 112, 174512 (2025)). The suppression builds up over the thermalisation
+time instead of appearing at once, energy escapes to the substrate, and ε stays ≥ −0.25 (`snspd/hotspot.py`, which
+also lists what the paper leaves open). Dark I_sw and crowding maps involve no photon and are reused from the
+conserving runs (`results/kinetic_reused_dark_results.sh`); only the photon thresholds are new. Figure:
+`results/hotspot_profiles_conserving_vs_kinetic.png`; site-by-site table: `python compare_hotspots.py`.
+
+**The hotspot itself** (f = 1, centre of the 200 nm wire):
+
+| | conserving | kinetic |
+|---|---|---|
+| ε at the hit site | −1.45 at t0 | minimum +0.43 at t0 + 12.5 τ0 |
+| normal core (ε < 0) | 580 nm², gone by t0 + 5.5 τ0 | never forms |
+| ∫(1 − ε) dA at t0 + 5 / 20 / 50 / 100 τ0 | 1334 / 869 / 369 / 88 nm² | 508 / 1124 / 1021 / 629 nm² |
+
+The kinetic photon is a shallow, broad, long-lived suppression rather than a short normal spot. The weight it puts
+on the strip is 1.3× the conserving one at t0 + 20 τ0, 2.8× at t0 + 50 and 7× at t0 + 100.
+
+**Thresholds**, in units of I_dep (narrowest cross-section), conserving → kinetic. Each cell gives the voltage
+trigger (lower bound), then sustained switching (upper bound).
+
+| | i_50 | i_95 | i_max |
+|---|---|---|---|
+| plain wire, 200 nm | 0.845 → 0.833 / 0.845 → 0.833 | 0.850 → 0.848 / 0.850 → 0.848 | 0.850 → 0.848 / same |
+| long zipper | 0.795 → 0.779 / 0.805 → 0.814 | 0.853 → 0.835 / 0.853 → 0.835 | 0.907 → 0.891 / same |
+| 100 nm strip | 0.766 → 0.737 / 0.825 → 0.818 | 0.775 → 0.772 / 0.825 → 0.819 | — |
+| 56 nm strip | 0.603 → 0.617 / 0.823 → 0.801 | 0.614 → 0.622 / 0.823 → 0.804 | — |
+| 30 nm strip | 0.327 → 0.382 / 0.815 → 0.775 | 0.334 → 0.390 / 0.815 → 0.778 | — |
+| plain wire, 2 µm | 0.849 → 0.833 / 0.848 → 0.832 | 0.851 → 0.847 / 0.851 → 0.846 | 0.851 → 0.849 / 0.851 → 0.848 |
+| slot column, 110 nm | 0.826 → 0.820 / 0.837 → 0.833 | 0.914 → 0.893 / 0.914 → 0.896 | 0.973 → 0.952 / 0.973 → 0.952 |
+| slot column, 200 nm | 0.812 → 0.811 / 0.837 → 0.835 | 0.872 → 0.872 / 0.875 → 0.879 | 0.963 → 0.952 / 0.971 → 0.952 |
+| slot column, 400 nm | 0.787 → 0.790 / 0.835 → 0.821 | 0.849 → 0.835 / 0.860 → 0.846 | 0.954 → 0.951 / 0.973 → 0.952 |
+
+Files: `results/{hitmap,slots}/summary_kinetic_T400_m1.4{,_trigger}.txt`,
+`results/narrow_baseline/width_scan_summary_kinetic_T400_m1.4{,_trigger}.txt`. The slot columns use the critical grid.
+
+* **The plain wire barely moves**: i_50 −0.012, i_95 −0.002, the same under both criteria. Hits near the edges get
+  0.016–0.019 easier and centre hits 0.005–0.008 harder: the wall reflects the energy, so an edge hit at −96 nm
+  reaches ε = 0.21 against 0.43 for a centre hit. Latency at threshold grows from a median of 92 to 134 τ0.
+* **The zipper's plateau now edges past the plain wire's, inside the hotspot uncertainty.** i_95 is 0.835 against
+  0.848 under both criteria
+  (0.853 against 0.850 before) and the tail is shorter (i_max 0.891, was 0.907). The margin is 0.011–0.012, well
+  short of the 0.03 go margin; go / no-go is 1/3 under both criteria (C2 stress passes by 2 µA/µm).
+* **The zipper's onset gain shrinks under the sustained criterion**, from 0.040 to 0.019. Its lowest sites
+  (0.788–0.798 I_dep at 15 sites left of the centre, 13 of them flux-mediated and triggering 195–220 τ0 after the
+  photon) detect at 0.806–0.819 instead, 38–54 τ0 after the photon. Sites triggering more than 200 τ0 after the photon drop
+  from 15 of 42 to 1. With the trigger alone the onset gain stays
+  (0.054). These flux-mediated thresholds are the ones that also move with the mesh (Flux trapping) and with the
+  hotspot's time constants (sensitivity below), so treat them as uncertain by ~0.03 I_dep.
+* **The sustained floor of the narrow strips is not a strip property.** The ~0.82 I_dep floor of the conserving runs
+  becomes 0.775 (30 nm), 0.801 (56 nm) and 0.818 (100 nm): it depends on how long the hotspot keeps the strip
+  suppressed. With it, the 56 nm strip beats the zipper on onset and plateau under both criteria.
+* **Slot columns**: every slot site gets 0.003–0.029 easier (medians −0.016 to −0.027 under both criteria), about as
+  much as the 2 µm plain wire off its centre (−0.019), so their standing against it barely moves. The trigger onset
+  gain shrinks (400 nm column: 0.075 → 0.056 at i_50), the 400 nm column's plateau edge grows (i_95 +0.013 → +0.023
+  with the trigger, −0.014 → −0.004 sustained) and the tails shorten (i_max 0.97 → 0.95). Every column is still
+  no-go under both criteria.
+* **Selectivity** (f = 0.35) of the zipper falls below the plain wire's under the sustained criterion (−0.038; it
+  was +0.000) and stays near it with the trigger (+0.005, was +0.011).
+
+**How much of this comes from the paper** (`results/kinetic_sensitivity.txt`). The paper fixes the shape of the
+build-up and the two time constants in picoseconds. It does not fix τ0 (it needs the film's ρ_n), the amplitude, the
+profile or a floor on ε. Eleven sites were rerun with t_rise / t_esc = 7 / 75 τ0 (τ0 anchored on D = 0.5 cm²/s),
+7 / 50 τ0 (τ_esc = 10 ps, the paper's other value) and with no floor on ε:
+* **Robust in sign:** no normal core forms for a centre hit; sustained thresholds of the narrow strips fall (30 nm by
+  0.011–0.040, 56 nm by 0.005–0.021); edge hits of the plain wire get easier (0.005–0.024).
+* **Not robust:**
+  - the change at the plain-wire centre (−0.013 to +0.021);
+  - the zipper's plateau-tail sites (−0.026 to +0.008), so its 0.012 plateau edge over the plain wire is inside the
+    spread;
+  - narrow-strip trigger thresholds (30 nm: −0.02 to +0.10);
+  - the zipper's flux-mediated sites, which flip between 0.788 and 0.817 (a 7 τ0 rise brings the delayed channel
+    back at (−96, 0)).
+* **Consequence:** differences up to ~0.03 I_dep between geometries depend on hotspot details the paper leaves
+  open. That is the size of the go margin. These include the zipper's onset gain and plateau edge, and the
+  56 nm strip vs zipper order under the sustained criterion. Settling them needs the film's τ_th and ρ_n (or T_c),
+  not more geometry runs. Larger gaps survive every variant, e.g. the narrow strips under the trigger.
+
+### Measured NbTiN parameters and the hotspot (5 Nov 2026, `results/kinetic_sensitivity.txt`)
+
+Sidorova et al. measured 9 nm NbTiN films from KTH, the group whose hairpins set λ (PRB 104, 184514 (2021),
+arXiv:2108.04717; arXiv:2204.01423): T_c 9.51 K (film) / 8.60 K (200 nm strip), R_sq 381 Ω (ρ_n 343 µΩ cm),
+D 0.472 cm²/s, τ_EP(T_c) 2.9–4.0 ps, phonon escape τ_esc 80 ps, electron energy relaxation 90 ps, c_e/c_ph 0.13–0.16,
+I_C/I_dep 0.63 at 3 K. τ_th is not measured.
+* τ0 = ħ/(πΔ0) = 0.145–0.16 ps, or μ0λ²/ρ_n = 0.13 ps: the 0.12–0.17 ps used so far stands.
+* The escape time does not: 80 ps = 530 τ0, against the kinetic hotspot's 100 τ0 (15 ps, NbN).
+* Variant `NbTiN` (t_esc 530 τ0, D 7.1 nm²/τ0, t_rise 10 τ0, no heat): every threshold drops by 0.013–0.10 I_dep
+  (plain 0.810–0.813, zipper onset 0.790–0.804, zipper tail 0.809–0.835, 30 nm v3 0.677, 56 nm v3 0.738). The order
+  of the geometries stays. It overstates the effect: most of the energy goes to the phonons within τ_EP.
+
+### Flux trapping with the kinetic hotspot (5 Nov 2026, `run_flux_kinetic.sh`, `results/fluxtrap/`)
+
+Same scans as below, with `--hotspot kinetic`: zipper 42 sites × 34 biases, Slot 400 12 sites × 17 biases
+(0.70–0.88), plain wire 8 × 13 (0.78–0.90). Comparison: `results/fluxtrap/compare_<geom>_T400_m1.4.txt`; figure
+`outcomes_<geom>_T400_m1.4.png` (share of the unit cell by outcome vs bias, one panel per hotspot).
+
+| Zipper, share of the cell, conserving / kinetic | 0.70 | 0.78 | 0.80 | 0.82 | 0.84 |
+| --- | --- | --- | --- | --- | --- |
+| flux left, no signal | 59 / 25 | 68 / 47 | 43 / 26 | 30 / 6 | 7 / 2 |
+| pulse, then heals | 0 / 0 | 24 / 43 | 7 / 57 | 10 / 1 | 1 / 0 |
+| detected via trapped flux | 0 / 0 | 0 / 0 | 45 / 10 | 56 / 1 | 6 / 0 |
+| detected directly | 0 / 0 | 0 / 0 | 0 / 0 | 1 / 87 | 84 / 95 |
+
+* Less flux, later: first flux at 0.68 instead of 0.64 I_dep, 54 instead of 34 τ0 after the photon (median); 211
+  instead of 319 runs end with silent flux. Same states, more double quanta ([0 −2]: 29 vs 10 runs).
+* Switching via trapped flux: 11 runs instead of 68. Pulses that heal: 76 instead of 30, median 15 slips (was 3),
+  up to 88 (≈ 80 eV at 0.80 I_dep).
+* Zipper efficiency points from the scan, conserving → kinetic: trigger i_50 0.800 → 0.784, sustained i_50 0.810 →
+  0.815 and i_95 0.856 → 0.840; direct-only i_50 0.834 → 0.820, so the direct-only onset gain over the plain wire is
+  0.016 → 0.015.
+* Six left-channel sites are resistive at 0.79, heal at 0.80–0.81 and are resistive again from 0.82. The hitmap
+  bisection, which assumes a monotone outcome, found the upper crossing (0.817).
+* Slot 400: still no detection via trapped flux; flux entry and pulses that heal cover 86–92 % of the sampled cell
+  at 0.78–0.82; sustained onset 0.81–0.84. Plain wire: no flux, no pulses, every detection direct (0.83–0.85).
+* Trapped states (`summary_Long_Zipper_kinetic_T400_m1.4.txt`): the same switching currents as with the conserving
+  hotspot within 0.003 ([0 −1] 0.909, [0 +1 0 0 0 −1 0] 0.874, [0 −1 −1] 0.874, [0 −2] 0.786; new [0 −1 0 0 0 −1 0]
+  0.824). All hold at zero bias, and a second photon shifts thresholds by −0.03 to +0.04 vs pristine.
+
+### Electro-thermal check (5 Nov 2026, `snspd/thermal.py`, `thermal_check.py`, `results/thermal/`)
+
+dθ/dt = D∇²θ + η|∇μ|² − θ/t_esc, ε = max(ε_photon − θ, −1), θ = (T − T0)/(T_c − T0), after Zotova & Vodolazov,
+PRB 85, 024509 (2012). η = 4E_cond/(C_v(T_c − T0)) = 0.59 (one temperature, nominal; ρ_n cancels), varied ×0.5 and
+×2; "NbTiN 2T" adds the phonons with the measured values above (η 1.22, D 7.1 nm²/τ0, τ_EP 27 τ0, c_e/c_ph 0.16,
+escape 530 τ0). θ = 0 within 25 nm of the contacts. Detection: still resistive at 400 τ0 (bisection, 0.004 I_dep).
+
+| Site | trigger (lower) | sustained (upper) | heat, 1T | heat, NbTiN 2T |
+| --- | --- | --- | --- | --- |
+| 30 nm (0, 0) | 0.376 | 0.775 | 0.457 | 0.439 |
+| 56 nm (0, 0) | 0.620 | 0.801 | 0.613 | 0.609 |
+| 100 nm (0, 0) / (−36, 0) | 0.774 / 0.732 | 0.819 / 0.817 | 0.756 / 0.723 | 0.759 / 0.717 |
+| plain (0, 0) / (−96, 0) | 0.848 / 0.832 | same | 0.827 / 0.808 | 0.827 / 0.801 |
+| zipper (0, 0) / (−68, 0) / (−96, 0) | 0.756 / 0.772 / 0.774 | 0.804 / 0.817 / 0.817 | 0.768 / 0.764 / 0.765 | 0.760 / 0.762 / 0.762 |
+| zipper tail (−42, 58) / (−36, 61) | 0.856 / 0.891 | same | 0.835 / 0.870 | 0.835 / 0.870 |
+| Slot 400 (−58, 0) / (−28, 200) | 0.762 / 0.807 | 0.808 / 0.830 | 0.754 / 0.788 | 0.747 / 0.782 |
+
+* Heat merges the bounds at or below the lower one (30 nm and the zipper centre are the only sites above it).
+* Narrow strips detect below every zipper site: the narrow-strip comparison goes to the narrow strips.
+* Zipper onset sites gain ~0.05 over the plain wire; the tail stays 0.04 above it.
+* η ×0.5 to ×2 moves thresholds by ≤ 0.03 (≤ 0.06 at 30 nm); the 2T model is within 0.008 of 1T (0.018 at 30 nm).
+* Prototype: 14 sites, estimated heat parameters, no circuit.
 
 ### Slot column, 2 µm strips (30 Oct 2026, `results/slots/`, `_trigger` files are the lower bound)
 
@@ -367,23 +550,24 @@ layout has a symmetry other than `strip` or `zipper`, add its map rule to `snspd
 
 ## Next steps for the hole study
 
-0. **Close the gap between the two bounds: add heat.** Couple the TDGL to a local electron-temperature balance:
-   Joule heating, in-plane diffusion and escape to the substrate (Vodolazov, PR Applied 7, 034014 (2017); Zotova &
-   Vodolazov, PRB 85, 024509 (2012)). T(r, t) then sets the local ε = 1 − T/T_c each step. Detection becomes "the
-   resistive state latches", and the voltage-trigger / sustained bounds reduce to one threshold. This decides the
-   narrow-strip comparison.
-1. **Mesh at the bridges.** 0.5 ξ (~8 mean edges across a 12 nm bridge) for the [0 −2] switching current and a
-   few left-channel and centre sites at 0.76–0.84 I_dep. If 0.5 ξ is too costly on the full strip, use one hole
-   period with periodic-like long leads.
-2. **Flux trapping, follow-up.** The first map is done (see above).
-   - Photon sequences at sub-threshold bias: does accumulated flux reach a state that switches? Does a switching
-     event clear the trapped flux?
-   - A longer strip with more hole periods (end effects).
-3. Hole-length sweep of the zipper (channel length / width from 2 to ~6): separates "current bypasses the short
-   channel" from "detection needs the whole width to switch" as the reason the 56 nm channels do not act as narrow
-   strips.
-4. Re-run the column geometries of the archived cascade scripts (2-channel, aligned 3-channel, short zipper) with the
-   current protocol (conserving hotspot, 0.8 ξ, full grid).
-5. Hotspot with an energy sink (loss time 5–20 τ0 and ∞) on the zipper and the 56 nm strip.
-6. Detection criterion: both bounds are now computed (voltage trigger in `results/v2_voltage_trigger/`, sustained
-   in `results/`). Still to do: repeat the key thresholds at 250 τ0.
+Status of the 4 Nov plan: electro-thermal TDGL (prototype done, `thermal_check.py`); ρ_n / T_c / τ_th (literature
+values for the same film class: τ0 confirmed, escape 5× longer, τ_th unknown); kinetic flux study (done); defect
+baseline and barrier dark counts (assessed, not run: docs/report.md §12).
+
+1. **Full maps with heat** (plain, zipper, 56 nm, Slot 400) with `snspd/thermal.py`, NbTiN 2T as default: i_50 and
+   i_95 under one criterion.
+2. **Calibrate η** on the measured retrapping current of 9 nm NbTiN strips (arXiv:2204.01423).
+3. **Two-temperature photon:** the photon's energy in the same electron/phonon equations (τ_EP, c_e/c_ph measured).
+4. **Our film:** R(T) of a bar from the same chip for T_c and R_sq; τ_th needs a time-resolved measurement.
+5. **Circuit:** kinetic inductance and a 50 Ω load, to tell a latch from a pulse that resets.
+6. **Mesh at the bridges:** 0.5 ξ for the [0 −2] switching current, if the zipper's flux numbers are quoted.
+7. **Defect-limited baseline:** only meaningful once the absolute photon scale is fixed. Every f = 1 threshold of
+   the 200 nm devices (≥ 0.75 I_dep even with heat) lies above the measured I_C/I_dep = 0.63 of this film.
+8. **Barrier dark counts** (Vodolazov, PRB 85, 174507 (2012)): F0 = Φ0²d/(4πμ0λ²) ≈ 490 K; a straight film reaches
+   ΔF ≈ 25 k_BT (2.5 K) only at ~0.96 I_dep. Needs a pinned-phase relaxation in the solver; matters only once a
+   geometry wins on the plateau.
+9. **Photon sequences** at sub-threshold bias (does accumulated flux switch? does a switch clear it?).
+10. Hole-length sweep of the zipper (channel length / width 2 to ~6), and a longer strip with more hole periods.
+11. Re-run the column geometries of the archived cascade scripts (2-channel, aligned 3-channel, short zipper) with
+    the current protocol.
+12. Repeat the key thresholds at 250 τ0 (window dependence of both bounds).

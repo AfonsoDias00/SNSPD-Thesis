@@ -12,3 +12,6 @@ __pycache__/
 # IDE
 .vscode/
 .idea/
+
+# Pinned production meshes, regenerated from results/ by `python -m snspd.sim pin-meshes`
+meshes/

@@ -19,6 +19,7 @@ from dataclasses import dataclass, field, replace
 import numpy as np
 
 C_PLAIN, C_ZIP, C_NARROW = "#2a78d6", "#eb6834", "#52514e"
+C_SLOT = {110.0: "#1baf7a", 200.0: "#c98500", 400.0: "#d55181"}   # aqua, yellow, magenta: one hue per slot length
 
 
 @dataclass(frozen=True)
@@ -204,7 +205,7 @@ def slot_column(slot_nm: float, n_holes: int) -> Geometry:
         holes=holes, probes=((-96.0, 0.0), (-58.0, 0.0), (-19.0, 0.0), (-58.0, b + 20.0), (0.0, b + 20.0)),
         grid_full=tuple(channel + bridge), grid_critical=tuple(critical), symmetry="column",
         cell_half_y_nm=period / 2.0, crowd_half_y_nm=period / 2.0,
-        hole_points=int(np.ceil(holes[0].perimeter() / HOLE_POINT_SPACING_NM)), probe_y_nm=LONG_PROBE_Y_NM, color=C_ZIP)
+        hole_points=int(np.ceil(holes[0].perimeter() / HOLE_POINT_SPACING_NM)), probe_y_nm=LONG_PROBE_Y_NM, color=C_SLOT.get(slot_nm, C_ZIP))
 
 
 SLOT_110 = slot_column(110.0, 7)

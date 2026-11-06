@@ -1,0 +1,6 @@
+gamma,geom,criterion,I_sw_uA,i_sw,flag,n_runs,wall_s
+10.0,100 nm,sustained,50.638,1.0047,,8,1076
+10.0,100 nm,trigger,50.638,1.0047,,8,1101
+10.0,Plain_Wire,trigger,101.473,1.0066,,8,1471
+10.0,Long_Zipper,trigger,86.902,0.9949,,8,1664
+10.0,Slot_400,trigger,76.133,0.8875,,7,7201

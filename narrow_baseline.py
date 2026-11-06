@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import os
+from dataclasses import replace
 
 import numpy as np
 
@@ -133,7 +134,7 @@ def cmd_report(cfg, a):
     P("=" * 78)
     P(f"NARROW-STRIP BASELINE   hotspot={cfg.hotspot}   T={cfg.tmax:g} tau0   mesh={cfg.mesh_xi:g} xi   "
       f"narrow width={a.width_nm:g} nm")
-    for line in a.film.describe() + hsm.HOTSPOT.describe(a.film, cfg.hotspot):
+    for line in a.film.describe() + cfg.pset.params.describe(a.film, cfg.hotspot) + [f"protocol: {cfg.pset.note}"]:
         P(line)
     P("=" * 78)
     P(f"{'':<30}" + "".join(f"{c['g'].label:>15}" for c in cols))
@@ -237,13 +238,15 @@ def parse_args(argv=None):
     ap.add_argument("--workers", type=int, default=1)
     ap.add_argument("--compare", default=None, help="hitmap.py CSV with the same hotspot, window and mesh")
     ap.add_argument("--rho-uohm-cm", type=float, default=None, help="film resistivity; only used to quote times in ps")
+    ap.add_argument("--preset", choices=list(sim.PRESETS), default="",
+                    help="parameter set (snspd.sim.PRESETS): '' = gamma 1 results, 'nbtin' = gamma 10 + NbTiN times")
     ap.add_argument("--out", default=OUT_DIR)
     a = ap.parse_args(argv)
     a.energies = tuple(float(s) for s in a.energies.split(",") if s)
     a.widths = [float(s) for s in a.widths.split(",") if s]
-    a.film = Film(rho_uohm_cm=a.rho_uohm_cm)
+    a.film = replace(sim.PRESETS[a.preset].film, rho_uohm_cm=a.rho_uohm_cm)
     cfg = sim.SimConfig(tmax=a.tmax, hotspot=a.hotspot, mesh_xi=a.mesh_xi, hit_lo_frac=a.hit_lo_frac,
-                        sustained=a.criterion == "sustained", out_dir=a.out)
+                        sustained=a.criterion == "sustained", out_dir=a.out, preset=a.preset)
     return a, cfg
 
 

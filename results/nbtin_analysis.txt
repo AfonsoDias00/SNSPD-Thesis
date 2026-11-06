@@ -1,0 +1,123 @@
+GAMMA 1 vs NBTIN (gamma 10, NbTiN hotspot times D 7.1 nm^2/tau0 and escape 530 tau0, settled start)
+kinetic hotspot f = 1, 400 tau0, 1.4 xi, pinned meshes; thresholds in I_dep of the narrowest free width
+
+=== trigger (lower bound) ===
+device           sites           I_sw           i_10           i_50           i_95          i_max
+                         g1 -> nbtin    g1 -> nbtin    g1 -> nbtin    g1 -> nbtin    g1 -> nbtin 
+Plain_Wire         3/8  0.970->1.007  0.827->0.879  0.833->0.889  0.848->0.908  0.848->0.910
+Long_Zipper       8/42  0.968->0.995  0.773->0.840  0.779->0.853  0.835->0.875  0.891->0.878
+Plain_Wire_2um     3/3  0.950->0.999  0.831->0.880  0.833->0.888  0.847->0.909  0.849->0.911
+Slot_110           7/7  0.973->0.997  0.798->0.855  0.820->0.884  0.893->0.919  0.952->0.934
+Slot_200           7/7  0.973->0.997  0.787->0.841  0.811->0.868  0.872->0.902  0.952->0.926
+Slot_400           7/7  0.962->0.997  0.764->0.810  0.790->0.841  0.835->0.893  0.951->0.921
+30 nm              0/4  0.971->  -    0.377->  -    0.382->  -    0.390->  -    0.390->  -  
+56 nm              0/5  0.970->  -    0.613->  -    0.617->  -    0.622->  -    0.622->  -  
+100 nm             0/7  0.968->  -    0.732->  -    0.737->  -    0.772->  -    0.774->  -  
+
+=== sustained (upper bound) ===
+device           sites           I_sw           i_10           i_50           i_95          i_max
+                         g1 -> nbtin    g1 -> nbtin    g1 -> nbtin    g1 -> nbtin    g1 -> nbtin 
+Plain_Wire         8/8  0.970->1.007  0.827->0.876  0.833->0.892  0.848->0.910  0.848->0.910
+Long_Zipper      42/42  0.968->0.995  0.809->0.838  0.814->0.847  0.835->0.887  0.891->0.927
+Plain_Wire_2um     3/3  0.979->0.999  0.830->0.880  0.832->0.888  0.846->0.909  0.848->0.911
+Slot_110           7/7  0.973->0.997  0.816->0.855  0.833->0.885  0.896->0.931  0.952->0.959
+Slot_200           7/7  0.973->0.997  0.824->0.842  0.835->0.869  0.879->0.912  0.952->0.959
+Slot_400           7/7  0.973->0.997  0.808->0.833  0.821->0.849  0.846->0.893  0.952->0.959
+30 nm              0/4  0.971->  -    0.775->  -    0.775->  -    0.778->  -    0.778->  -  
+56 nm              0/5  0.971->  -    0.801->  -    0.801->  -    0.804->  -    0.804->  -  
+100 nm             0/7  0.968->  -    0.817->  -    0.818->  -    0.819->  -    0.819->  -  
+
+=== site by site: nbtin - gamma 1 [I_dep] at the sites present in both (f = 1) ===
+device          criterion     n    mean     min     max   largest changes
+Plain_Wire      trigger       3  +0.055  +0.046  +0.063   (0,0) +0.063, (-58,0) +0.057, (-96,0) +0.046
+Plain_Wire      sustained     8  +0.056  +0.046  +0.063   (-14,0) +0.063, (0,0) +0.063, (-42,0) +0.062
+Long_Zipper     trigger       8  +0.065  +0.053  +0.087   (0,0) +0.087, (-96,30) +0.071, (-96,45) +0.071
+Long_Zipper     sustained    42  +0.038  +0.015  +0.069   (-18,61) +0.069, (-50,61) +0.061, (-42,50) +0.059
+Plain_Wire_2um  trigger       3  +0.055  +0.048  +0.063   (0,0) +0.063, (-58,0) +0.054, (-96,0) +0.048
+Plain_Wire_2um  sustained     3  +0.055  +0.047  +0.063   (0,0) +0.063, (-58,0) +0.055, (-96,0) +0.047
+Slot_110        trigger       7  +0.043  -0.018  +0.080   (-28,55) +0.080, (-58,0) +0.063, (-19,0) +0.057
+Slot_110        sustained     7  +0.037  +0.007  +0.069   (-28,55) +0.069, (-58,75) +0.053, (-58,0) +0.041
+Slot_200        trigger       7  +0.037  -0.026  +0.065   (-58,0) +0.065, (-58,120) +0.064, (-28,100) +0.053
+Slot_200        sustained     7  +0.025  +0.007  +0.053   (-58,120) +0.053, (-28,100) +0.042, (0,104) +0.022
+Slot_400        trigger       7  +0.031  -0.031  +0.066   (-58,0) +0.066, (-58,220) +0.058, (-28,200) +0.054
+Slot_400        sustained     7  +0.025  +0.007  +0.048   (-58,220) +0.048, (-28,200) +0.031, (-58,0) +0.025
+
+=== gap between the bounds, sustained - trigger, per site [I_dep]: median (max) ===
+device                     gamma 1             nbtin
+Plain_Wire           0.000 (0.000)    -0.000 (-0.000)
+Long_Zipper          0.017 (0.050)     0.000 (0.003)
+Plain_Wire_2um      -0.001 (0.002)     0.000 (0.000)
+Slot_110             0.011 (0.027)     0.000 (0.025)
+Slot_200             0.011 (0.048)     0.000 (0.033)
+Slot_400             0.023 (0.047)     0.027 (0.038)
+30 nm                0.394 (0.398)                 -
+56 nm                0.185 (0.190)                 -
+100 nm               0.082 (0.085)                 -
+
+=== the switching run at threshold: latency after the photon [tau0] (median, 90 %, max), voltage branch, flags ===
+device          criterion  model        latency median / 90% / max late (>300)  V_peak/V_trail             flags
+Plain_Wire      trigger    gamma 1             134 /   167 /   167           0       0/8                       -
+Plain_Wire      trigger    nbtin               273 /   331 /   346           1       0/3                       -
+Plain_Wire      sustained  gamma 1             134 /   167 /   167           0       0/8                       -
+Plain_Wire      sustained  nbtin               271 /   338 /   346           3       0/8                       -
+Long_Zipper     trigger    gamma 1             171 /   290 /   312           7       9/33                      -
+Long_Zipper     trigger    nbtin               227 /   348 /   371           3       1/7                       -
+Long_Zipper     sustained  gamma 1              85 /   167 /   206           0       9/33                      -
+Long_Zipper     sustained  nbtin               303 /   361 /   376          25      11/31                      -
+Plain_Wire_2um  trigger    gamma 1             160 /   209 /   222           0       0/3                       -
+Plain_Wire_2um  trigger    nbtin               329 /   344 /   348           2       0/3                       -
+Plain_Wire_2um  sustained  gamma 1             168 /   173 /   174           0       0/3                       -
+Plain_Wire_2um  sustained  nbtin               329 /   344 /   348           2       0/3                       -
+Slot_110        trigger    gamma 1             154 /   168 /   172           0       1/6                       -
+Slot_110        trigger    nbtin               232 /   310 /   315           2       3/4                       -
+Slot_110        sustained  gamma 1              76 /   144 /   154           0       1/6                       -
+Slot_110        sustained  nbtin               232 /   310 /   315           2       3/4                       -
+Slot_200        trigger    gamma 1             122 /   273 /   314           1       1/6                       -
+Slot_200        trigger    nbtin               206 /   245 /   258           0       3/4                       -
+Slot_200        sustained  gamma 1              66 /   133 /   149           0       2/5                       -
+Slot_200        sustained  nbtin               192 /   245 /   258           0       3/4                       -
+Slot_400        trigger    gamma 1              80 /   144 /   184           0       0/7                       -
+Slot_400        trigger    nbtin               240 /   285 /   316           1       3/4                       -
+Slot_400        sustained  gamma 1              58 /   128 /   154           0       4/3                       -
+Slot_400        sustained  nbtin               152 /   270 /   316           1       2/5                       -
+30 nm           trigger    gamma 1              70 /    72 /    72           0       4/0                       -
+30 nm           sustained  gamma 1              13 /    13 /    14           0       4/0                       -
+56 nm           trigger    gamma 1              80 /    93 /    98           0       2/3                       -
+56 nm           sustained  gamma 1              23 /    25 /    26           0       5/0                       -
+100 nm          trigger    gamma 1              97 /   119 /   122           0       1/6                       -
+100 nm          sustained  gamma 1              38 /    40 /    42           0       2/5                       -
+
+=== selectivity: median over probe sites of i(f) - i(1) [I_dep]; weaker photons need more bias ===
+device          criterion      f = 0.6  g1 -> nbtin   f = 0.35  g1 -> nbtin
+Plain_Wire      trigger           0.066 ->    nan         0.109 ->    nan
+Plain_Wire      sustained         0.066 ->  0.052         0.109 ->  0.099
+Long_Zipper     trigger           0.056 ->    nan         0.114 ->    nan
+Long_Zipper     sustained         0.053 ->  0.044         0.071 ->  0.095
+Plain_Wire_2um  trigger           0.065 ->    nan         0.099 ->    nan
+Plain_Wire_2um  sustained         0.067 ->    nan         0.107 ->    nan
+Slot_110        trigger           0.048 ->    nan         0.106 ->    nan
+Slot_110        sustained         0.029 ->    nan         0.098 ->    nan
+Slot_200        trigger           0.048 ->    nan         0.120 ->    nan
+Slot_200        sustained         0.027 ->    nan         0.083 ->    nan
+Slot_400        trigger           0.066 ->    nan         0.134 ->    nan
+Slot_400        sustained         0.037 ->    nan         0.093 ->    nan
+
+=== go / no-go: does the hole device beat its plain reference by 0.03 I_dep? (i_50 onset, i_95 plateau, i_max) ===
+  trigger   gamma 1  Long_Zipper  vs Plain_Wire      gain i_50 +0.054  i_95 +0.013  i_max -0.043   -> no-go (plateau)
+  trigger   gamma 1  Slot_110     vs Plain_Wire_2um  gain i_50 +0.013  i_95 -0.046  i_max -0.103   -> no-go (plateau)
+  trigger   gamma 1  Slot_200     vs Plain_Wire_2um  gain i_50 +0.022  i_95 -0.025  i_max -0.103   -> no-go (plateau)
+  trigger   gamma 1  Slot_400     vs Plain_Wire_2um  gain i_50 +0.043  i_95 +0.012  i_max -0.103   -> no-go (plateau)
+  trigger   gamma 1  Long_Zipper  vs 56 nm           gain i_50 -0.162  i_95 -0.212  i_max -0.269   -> no-go (plateau)
+  trigger   nbtin    Long_Zipper  vs Plain_Wire      gain i_50 +0.036  i_95 +0.033  i_max +0.032   -> GO (plateau)
+  trigger   nbtin    Slot_110     vs Plain_Wire_2um  gain i_50 +0.003  i_95 -0.010  i_max -0.023   -> no-go (plateau)
+  trigger   nbtin    Slot_200     vs Plain_Wire_2um  gain i_50 +0.020  i_95 +0.007  i_max -0.015   -> no-go (plateau)
+  trigger   nbtin    Slot_400     vs Plain_Wire_2um  gain i_50 +0.047  i_95 +0.016  i_max -0.009   -> no-go (plateau)
+  sustained gamma 1  Long_Zipper  vs Plain_Wire      gain i_50 +0.019  i_95 +0.012  i_max -0.043   -> no-go (plateau)
+  sustained gamma 1  Slot_110     vs Plain_Wire_2um  gain i_50 -0.001  i_95 -0.050  i_max -0.104   -> no-go (plateau)
+  sustained gamma 1  Slot_200     vs Plain_Wire_2um  gain i_50 -0.003  i_95 -0.033  i_max -0.104   -> no-go (plateau)
+  sustained gamma 1  Slot_400     vs Plain_Wire_2um  gain i_50 +0.011  i_95 +0.001  i_max -0.104   -> no-go (plateau)
+  sustained gamma 1  Long_Zipper  vs 56 nm           gain i_50 -0.012  i_95 -0.032  i_max -0.087   -> no-go (plateau)
+  sustained nbtin    Long_Zipper  vs Plain_Wire      gain i_50 +0.046  i_95 +0.024  i_max -0.017   -> no-go (plateau)
+  sustained nbtin    Slot_110     vs Plain_Wire_2um  gain i_50 +0.003  i_95 -0.022  i_max -0.047   -> no-go (plateau)
+  sustained nbtin    Slot_200     vs Plain_Wire_2um  gain i_50 +0.019  i_95 -0.003  i_max -0.047   -> no-go (plateau)
+  sustained nbtin    Slot_400     vs Plain_Wire_2um  gain i_50 +0.038  i_95 +0.016  i_max -0.047   -> no-go (plateau)

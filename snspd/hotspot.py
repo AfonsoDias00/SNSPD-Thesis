@@ -1,7 +1,31 @@
 """
 Photon hotspot as a time-dependent suppression of the pyTDGL disorder parameter epsilon(r, t).
 
-conserving (default)
+kinetic (default since 4 Nov 2026; after Simon et al., PRB 112, 174512 (2025), arXiv:2501.13791)
+    The conserving model's diffusion of n(r, t) (below) carries the energy, but the suppression s = 1 - epsilon follows
+    the local energy density e = f n exp(-(t - t0)/t_esc) with a delay, and saturates:
+        ds/dt = (s_eq(e) - s) / t_rise,   s = 0 at t0,   s_eq(e) = s_max tanh(|A| e / s_max).
+    From the paper:
+      * pyTDGL's epsilon is the paper's alpha = (1 - T/Tc - eps_qp)/(1 - T/Tc) (Eq. 10), and the quasiparticle
+        suppression builds up as eps_qp(t) = eps_inf (1 - exp(-t/tau_th)) (Sec. III).  For a constant drive this model
+        gives exactly that curve with t_rise = tau_th: 1.4 ps (D = 0.5 cm^2/s) to 1.8 ps (1.5 cm^2/s), NbN, T = 0.2 Tc.
+      * energy escapes to the substrate with tau_esc = 15 ps (Table 1; appendix VII.1 uses 10 ps).
+    Not in the paper, which gives no spatial profile, no eps_inf, no bound on alpha and no wall treatment; the choices
+    made here:
+      * transport: the paper grows a disc of radius sqrt(D t); here the reflecting-wall diffusion of the conserving
+        model carries the energy, which the hole geometries need.
+      * amplitude: for weak density s_eq ~ |A| e, the conserving model's calibration, so f = 1 is the same photon.
+      * s_max = 1.25, i.e. epsilon >= -0.25: eps_qp is the relative gap suppression in linear response, capped here at
+        1 (|Delta| -> 0) at T = 0.2 Tc.  For f = 1 the suppression peaks at s = 0.6 (centre of a 200 nm strip) to 0.8
+        (edge hit, energy reflected), so the cap is never reached; tanh only bends the response.
+    Time unit: tau0 ~ hbar / (pi Delta0) = 0.12-0.17 ps for Tc = 8-12 K (README, "Time unit without a measured
+    resistivity"), so t_rise = 10 tau0 = 1.2-1.7 ps and t_esc = 100 tau0 = 12-17 ps.  Anchoring tau0 on D = 10 nm^2/tau0
+    = 0.5 cm^2/s instead (tau0 = 0.200 ps) gives 7 and 75 tau0.  These choices (and the cap) move photon
+    thresholds by 0.01-0.04 I_dep, more for narrow strips under the trigger criterion (results/kinetic_sensitivity.txt).
+    Result (compare_hotspots.py --profiles): for f = 1 no normal core forms (epsilon >= +0.43 at the centre of a
+    200 nm strip; the conserving core starts at -1.5), but the suppression is broader and outlasts the conserving one:
+    integral (1 - epsilon) dA is 1.3x the conserving value at t0 + 20, 2.8x at t0 + 50 and 7x at t0 + 100 tau0.
+conserving (every result before 4 Nov 2026)
     epsilon = 1 + A f exp(-(t - t0)/t_relax) n(r, t - t0),  dn/dt = D laplacian(n), no flux through film edges or
     hole walls, n(r, 0) = Gaussian of radius r0 rescaled so that  integral(n dA) = pi r0^2.  P1 finite elements on the
     device mesh, lumped mass, Crank-Nicolson.  In free space this is exactly the legacy profile; at walls the energy
@@ -9,18 +33,6 @@ conserving (default)
 legacy
     epsilon = 1 + A f (r0^2/r_t^2) exp(-(t - t0)/t_relax) exp(-|r - r_hit|^2 / r_t^2),  r_t^2 = r0^2 + 4 D (t - t0).
     Free-space Gaussian: energy that would sit outside the film or inside a hole is lost.
-kinetic
-    The same conserving diffusion of n(r, t), but the suppression s = 1 - epsilon follows the local energy density
-    e = f n exp(-(t - t0)/t_esc) with a delay and saturates:
-        ds/dt = (s_eq(e) - s) / t_rise,   s = 0 at t0,   s_eq(e) = s_max tanh(|A| e / s_max).
-    For weak density s_eq ~ |A| e, the same energy calibration as the conserving model (f = 1 is the same photon); the
-    differences are only in time and saturation:
-      * t_rise: suppression builds up over the quasiparticle/phonon thermalisation time instead of instantly
-        (tau_th = 1.4-1.8 ps in NbN, Simon et al., arXiv:2501.13791);
-      * t_esc: energy leaves to the substrate on ~15 ps (tau_esc in the same paper) instead of t_relax = 35 tau0;
-      * s_max = 1.25: epsilon cannot go below -0.25, the value for |Delta| -> 0 at T = 0.2 Tc in the mapping
-        alpha = (1 - T/Tc - eps_qp)/(1 - T/Tc) of that paper.  The conserving model's core reaches -1.5.
-    The result is a back-loaded hotspot: weaker in the first picoseconds, broader and longer-lived afterwards.
 
 f scales the amplitude as a proxy for photon energy (f = 1 is the reference photon); in the kinetic model it scales
 the energy density, so the response saturates.  Hotspot picture: Semenov et al., Physica C 351, 349 (2001);
@@ -49,9 +61,9 @@ class HotspotParams:
     dt_tau0: float = 0.25             # diffusion time step
     eps_floor: float = -6.0           # numerical guard: epsilon is never pushed below this
     # kinetic model only (see module docstring); t_relax is not used there
-    kin_s_max: float = 1.25           # saturated suppression: epsilon >= 1 - s_max = -0.25
-    kin_rise_tau0: float = 10.0       # build-up time of the suppression (~1.2-1.7 ps)
-    kin_esc_tau0: float = 100.0       # energy escape time to the substrate (~12-17 ps); np.inf = no loss
+    kin_s_max: float = 1.25           # saturated suppression: epsilon >= 1 - s_max = -0.25 (a choice, see docstring)
+    kin_rise_tau0: float = 10.0       # build-up time = tau_th (1.2-1.7 ps at tau0 = 0.12-0.17 ps)
+    kin_esc_tau0: float = 100.0       # energy escape time = tau_esc (12-17 ps); np.inf = no loss
 
     def describe(self, film: Film, model: str = "conserving") -> list[str]:
         D_si, tr, t0 = film.cm2_per_s(self.D_nm2_per_tau0), film.ps(self.t_relax_tau0), film.ps(self.t0_tau0)

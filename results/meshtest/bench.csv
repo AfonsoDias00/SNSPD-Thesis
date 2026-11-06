@@ -1,0 +1,8 @@
+geom,mesh,nodes,I_uA,switched,wall_s
+Plain_Wire,U2.5,3487,75.0,False,44
+Plain_Wire,U2.0,8130,75.0,False,119
+Slot_400,U2.0,15898,63.0,False,339
+Plain_Wire,P1.4,11257,75.0,False,444
+Slot_400,G1.4/4,14449,63.0,False,522
+Slot_400,G1.4/2,19599,63.0,False,527
+Slot_400,P1.4,26557,63.0,False,1247

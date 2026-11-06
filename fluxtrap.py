@@ -143,11 +143,14 @@ def observed_run(device, I, eps, cfg, seed=None, phase=None):
     """One run: (Trigger, classification, final Solution with its last frame loaded -- usable as a seed).  Phase
     slips count from the photon, or from t = 0 without one.  phase: see sim.solved."""
     from snspd.fluxoid import frames
-    from snspd.hotspot import HOTSPOT
-    with sim.solved(device, I, eps, cfg, seed, phase) as sol:
-        trig = sim.settle(device, I, sol, sim.detect(sol), cfg)
+    t0 = cfg.pset.params.t0_tau0
+    init = None
+    if seed is None and phase is None and eps is not None and cfg.pset.settled_start:
+        init = sim.settled_state(device, I, cfg)          # a photon run of a preset that starts settled (sim.py)
+    with sim.solved(device, I, eps, cfg, seed, phase, init=init) as sol:
+        trig = sim.settle(device, I, sol, sim.detect(sol, t0), cfg)
         rec = classify(trig, frames(sol, meter_for(device)), sol.dynamics.time, sol.dynamics.voltage(),
-                       HOTSPOT.t0_tau0 if eps is not None else 0.0)
+                       t0 if eps is not None else 0.0)
     return trig, rec, sol
 
 
@@ -160,8 +163,8 @@ def scan_task(task):
     t_start = time.time()
     try:
         g, cfg = task["geom"], replace(task["cfg"], save_every=SAVE_EVERY)
-        ctx = sim.context(g, cfg.mesh_xi, task["film"])
-        eps = hsm.build_eps(ctx["hs"], cfg.hotspot, task["x_nm"], task["y_nm"], 1.0, cfg.tmax)
+        ctx = sim.context(g, cfg.mesh_xi, task["film"], cfg.pset.params)
+        eps = hsm.build_eps(ctx["hs"], cfg.hotspot, task["x_nm"], task["y_nm"], 1.0, cfg.tmax, cfg.pset.params)
         trig, rec, _ = observed_run(ctx["device"], task["I"], eps, cfg)
         return dict(ok=True, task=task, res=dict(trig=trig._asdict(), **rec), wall_s=time.time() - t_start)
     except Exception as exc:
@@ -282,7 +285,7 @@ def trapped_task(task):
     try:
         g, film = task["geom"], task["film"]
         cfg = replace(task["cfg"], save_every=SAVE_EVERY)
-        ctx = sim.context(g, cfg.mesh_xi, film)
+        ctx = sim.context(g, cfg.mesh_xi, film, cfg.pset.params)
         dev, i_dep = ctx["device"], film.I_dep_uA(g.free_width_min_nm())
         tol = sim.scales(g, film)[0]
         if task["kind"] == "pristine":
@@ -294,7 +297,7 @@ def trapped_task(task):
                                            phase=winding_psi(dev, task["n"]))
         else:
             x, y = task["site"]
-            eps = hsm.build_eps(ctx["hs"], cfg.hotspot, x, y, 1.0, cfg.tmax)
+            eps = hsm.build_eps(ctx["hs"], cfg.hotspot, x, y, 1.0, cfg.tmax, cfg.pset.params)
             trig, rec, seed = observed_run(dev, task["bias"] * i_dep, eps, cfg)
         res = dict(regenerated=fmt_n(rec["n_end"]), regen_outcome=rec["outcome"], regen_history=rec["history"])
         if rec["outcome"] != "trapped" or (task["site"] is None and tuple(rec["n_end"]) != tuple(task["n"])):
@@ -319,7 +322,7 @@ def second_photon(ctx, cfg, seed, I_top, tol, i_dep):
     from snspd import hotspot as hsm
     out = {}
     for xs, ys in PROBE_SITES:
-        eps = hsm.build_eps(ctx["hs"], cfg.hotspot, xs, ys, 1.0, cfg.tmax)
+        eps = hsm.build_eps(ctx["hs"], cfg.hotspot, xs, ys, 1.0, cfg.tmax, cfg.pset.params)
         I_det, fl, _, tr = sim.bisect(ctx["device"], cfg.hit_lo_frac * I_top, I_top, eps, cfg, tol, seed=seed)
         out[f"{xs:g},{ys:g}"] = dict(i_det=(I_top if fl == "at_wall" else I_det) / i_dep, flag=fl, t_trigger=tr.t)
     return out
@@ -387,8 +390,8 @@ def trace_task(task):
     t_start = time.time()
     try:
         g, cfg = task["geom"], replace(task["cfg"], save_every=SAVE_EVERY)
-        ctx = sim.context(g, cfg.mesh_xi, task["film"])
-        eps = hsm.build_eps(ctx["hs"], cfg.hotspot, task["x_nm"], task["y_nm"], 1.0, cfg.tmax)
+        ctx = sim.context(g, cfg.mesh_xi, task["film"], cfg.pset.params)
+        eps = hsm.build_eps(ctx["hs"], cfg.hotspot, task["x_nm"], task["y_nm"], 1.0, cfg.tmax, cfg.pset.params)
         trig, rec, sol = observed_run(ctx["device"], task["I"], eps, cfg)
         t, v = np.asarray(sol.dynamics.time), np.asarray(sol.dynamics.voltage())
         tg = np.arange(0.0, t[-1], 0.25)
@@ -429,8 +432,86 @@ def cmd_trace(cfg, a):
     stem = f"trace_{g.key}_{x:g}_{y:g}"
     with open(cfg.path(stem, "txt"), "w") as fh:
         fh.write(text + "\n")
-    fig_trace(g, {b: r["res"] for b, r in res.items() if r["ok"]}, cfg.path(stem, "png"),
-              f"{g.label}: photon at ({x:g}, {y:g}) nm  ({cfg.tag})")
+    ok = {b: r["res"] for b, r in res.items() if r["ok"]}
+    if a.detailed:
+        fig_trace(g, ok, cfg.path(stem + "_detailed", "png"), f"{g.label}: photon at ({x:g}, {y:g}) nm  ({cfg.tag})")
+    fig_trace_simple(g, ok, cfg.path(stem, "png"), f"{g.label}, photon at ({x:g}, {y:g}) nm, {cfg.hotspot} hotspot")
+
+
+# ==============================================================================
+# compare: the same scan with two hotspot models
+# ==============================================================================
+def cmd_compare(cfg, a):
+    """Conserving vs kinetic scan of one geometry: per-site thresholds, area shares, trapped states, timing."""
+    from dataclasses import replace
+    g = geo.get(a.geom)
+    cfgs = {m: replace(cfg, hotspot=m) for m in ("conserving", "kinetic")}
+    scans = {m: load_scan(c, g) for m, c in cfgs.items()}
+    if not all(scans.values()):
+        raise SystemExit(f"need both scans of {g.key} at {cfg.tmax:g} tau0, {cfg.mesh_xi:g} xi")
+    common = sorted(set(scans["conserving"]) & set(scans["kinetic"]), key=lambda s: (s[1], s[0]))
+    bias = {m: sorted({float(r["bias"]) for s in common for r in scans[m][s]}) for m in scans}
+    # compare on the biases scanned in both
+    shared = sorted(set(bias["conserving"]) & set(bias["kinetic"]))
+    sub = {m: {s: [r for r in scans[m][s] if float(r["bias"]) in shared] for s in common} for m in scans}
+    summ = {m: {s: site_summary(sub[m][s], shared[-1]) for s in common} for m in scans}
+    fm = lambda v, s: f">{shared[-1]:.2f}" if v >= s["none"] - 1e-9 else f"{v:.2f}"
+    L = [f"FLUX TRAPPING, CONSERVING vs KINETIC HOTSPOT  {g.label}  T{cfg.tmax:g} m{cfg.mesh_xi:g}  "
+         f"({len(common)} sites, biases {shared[0]:.2f}..{shared[-1]:.2f} scanned in both, units of I_dep)", "",
+         "Per site, lowest bias at which the photon leaves flux or fires (trap), fires the voltage trigger (fire), "
+         "is detected (sust), is detected without a trapped dwell (direct); C = conserving, K = kinetic",
+         f"{'site':>12}{'trap C':>8}{'trap K':>8}{'fire C':>8}{'fire K':>8}{'sust C':>8}{'sust K':>8}"
+         f"{'direct C':>10}{'direct K':>10}   K: state just below sust"]
+    for s in common:
+        c, k = summ["conserving"][s], summ["kinetic"][s]
+        L.append(f"{f'({s[0]:g},{s[1]:g})':>12}{fm(c['i_trap'], c):>8}{fm(k['i_trap'], k):>8}{fm(c['i_fire'], c):>8}"
+                 f"{fm(k['i_fire'], k):>8}{fm(c['i_sust'], c):>8}{fm(k['i_sust'], k):>8}{fm(c['i_direct'], c):>10}"
+                 f"{fm(k['i_direct'], k):>10}   {k['outcome_below']:<9} [{fmt_n(k['n_below'])}]")
+    full = len(common) == len(g.hit_grid("full"))
+    L += ["", "Share of the unit cell (thresholds interpolated as in hitmap.py" + ("" if full else
+          "; SUBSET of the sites, indicative only") + "), C / K:",
+          f"{'bias':>6}{'flux, silent':>16}{'pulse, heals':>16}{'via trap':>14}{'direct':>14}{'detected':>14}"]
+    shares = {}
+    for m in scans:
+        maps = {k: an.unit_map(g, [(x, y, summ[m][(x, y)][k]) for x, y in common])[2]
+                for k in ("i_trap", "i_fire", "i_sust", "i_direct")}
+        fin = np.isfinite(maps["i_fire"])
+        shares[m] = lambda k, b, maps=maps, fin=fin: (maps[k][fin] <= b + 1e-9).mean() * 100
+    for b in [v for v in (0.66, 0.70, 0.74, 0.76, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.88, 0.90)
+              if shared[0] <= v <= shared[-1] and v in shared]:
+        cells = []
+        for k1, k2 in (("i_trap", "i_fire"), ("i_fire", "i_sust"), ("i_sust", "i_direct"), ("i_direct", None),
+                       ("i_sust", None)):
+            v = [shares[m](k1, b) - (shares[m](k2, b) if k2 else 0.0) for m in ("conserving", "kinetic")]
+            cells.append(f"{v[0]:5.0f} /{v[1]:4.0f}")
+        L.append(f"{b:>6.2f}" + "".join(f"{c:>14}" if i else f"{c:>16}" for i, c in enumerate(cells)))
+    L += ["", "Trapped states left by sub-threshold photons (fluxoid per hole: runs C / K, over the shared biases):"]
+    cnt = {m: Counter(r["n_end"] for s in common for r in sub[m][s] if r["outcome"] == "trapped") for m in scans}
+    for n in sorted(set(cnt["conserving"]) | set(cnt["kinetic"]), key=lambda n: -(cnt["conserving"][n] + cnt["kinetic"][n])):
+        L.append(f"  [{n}]  {cnt['conserving'][n]} / {cnt['kinetic'][n]}")
+    L += ["", "Runs by outcome over the shared biases (C / K):  " + ",  ".join(
+        f"{o} {sum(r['outcome'] == o for s in common for r in sub['conserving'][s])} / "
+        f"{sum(r['outcome'] == o for s in common for r in sub['kinetic'][s])}" for o in OUTCOMES)]
+
+    def stats(vals, nd=0):
+        v = np.array(vals, float)
+        return "-" if not v.size else (f"median {np.median(v):.{nd}f}, range {v.min():.{nd}f}-{v.max():.{nd}f} "
+                                       f"(n = {v.size})")
+
+    t0 = 20.0
+    L += ["", "Timing after the photon [tau0], C | K:"]
+    for lab, pick in (("flux reaches a hole (trapped runs)", lambda r: r["outcome"] == "trapped" and r["t_trap"]),
+                      ("resistive onset, direct", lambda r: r["outcome"] == "direct" and r["t_onset"]),
+                      ("resistive onset, via trap", lambda r: r["outcome"] == "via_trap" and r["t_onset"])):
+        col = "t_trap" if "hole" in lab else "t_onset"
+        v = {m: [float(r[col]) - t0 for s in common for r in sub[m][s] if pick(r)] for m in scans}
+        L.append(f"  {lab:<36} {stats(v['conserving'])}  |  {stats(v['kinetic'])}")
+    sl = {m: [float(r["slips"]) for s in common for r in sub[m][s] if r["outcome"] == "transient"] for m in scans}
+    L.append(f"  {'phase slips in a pulse that heals':<36} {stats(sl['conserving'], 1)}  |  {stats(sl['kinetic'], 1)}")
+    text = "\n".join(L)
+    sim.log(text)
+    with open(os.path.join(cfg.out_dir, f"compare_{g.key}_T{cfg.tmax:g}_m{cfg.mesh_xi:g}.txt"), "w") as fh:
+        fh.write(text + "\n")
 
 
 # ==============================================================================
@@ -446,6 +527,7 @@ def cmd_report(cfg, a):
     scan = load_scan(cfg, g)
     if scan:
         L += report_scan(cfg, a, g, scan, i_dep)
+        fig_outcomes(cfg, a, g)
     L += report_trapped(cfg, g)
     text = "\n".join(L)
     sim.log(text)
@@ -520,8 +602,10 @@ def report_scan(cfg, a, g, scan, i_dep):
     states = Counter(r["n_end"] for rows in scan.values() for r in rows if r["outcome"] == "trapped")
     L += ["", "Trapped states left by sub-threshold photons (fluxoid per hole, runs):"]
     L += [f"  [{n}]  {c}" for n, c in states.most_common()]
-    fig_state(scan, summ, ref, biases, g, cfg.path(f"states_{g.key}", "png"), f"{g.label}: outcome of one photon  ({cfg.tag})")
-    fig_maps(g, maps, summ, cfg.path(f"maps_{g.key}", "png"), f"{g.label}: thresholds in units of I_dep  ({cfg.tag})")
+    if a.detailed:
+        fig_state(scan, summ, ref, biases, g, cfg.path(f"states_{g.key}", "png"),
+                  f"{g.label}: outcome of one photon  ({cfg.tag})")
+        fig_maps(g, maps, summ, cfg.path(f"maps_{g.key}", "png"), f"{g.label}: thresholds in units of I_dep  ({cfg.tag})")
     return L
 
 
@@ -666,9 +750,142 @@ def fig_trace(g, res, path, title):
     plt.close(fig)
 
 
+# ---- simple figures (the default since 5 Nov 2026) ---------------------------------------------------------------
+# Bands from the bottom.  Colours checked for adjacent-pair separation (OKLab, normal and simulated protan / deutan /
+# tritan vision: >= 16 for every pair).
+OUTCOME_BANDS = (("detected directly", "#1d4e89", "white"),
+                 ("detected via trapped flux", "#c84b17", "white"),
+                 ("pulse, then heals", "#e3a832", None),
+                 ("flux left, no signal", "#99bfeb", None),
+                 ("nothing", "#f1f0eb", None))
+OUTCOME_WORDS = {"clean": "nothing", "trapped": "flux left", "transient": "pulse, heals", "direct": "detected",
+                 "via_trap": "detected via trapped flux"}
+
+
+def outcome_bands(cfg, g):
+    """(grid biases, share of the unit cell in each OUTCOME_BANDS band, subset?) from the scan at cfg, or None.  Same
+    threshold maps and area rule as the report tables."""
+    scan = load_scan(cfg, g)
+    if not scan:
+        return None
+    biases = sorted({float(r["bias"]) for rows in scan.values() for r in rows})
+    summ = {s: site_summary(rows, biases[-1]) for s, rows in scan.items()}
+    maps = {k: an.unit_map(g, [(x, y, summ[(x, y)][k]) for x, y in summ])[2]
+            for k in ("i_trap", "i_fire", "i_sust", "i_direct")}
+    fin = np.isfinite(maps["i_fire"])
+    F = {k: np.array([(m[fin] <= b + 1e-9).mean() for b in biases]) for k, m in maps.items()}
+    bands = np.array([F["i_direct"], F["i_sust"] - F["i_direct"], F["i_fire"] - F["i_sust"],
+                      F["i_trap"] - F["i_fire"], 1.0 - F["i_trap"]])
+    return np.array(biases), np.clip(bands, 0.0, 1.0), len(scan) < len(g.hit_grid("full"))
+
+
+def plain_detected(cfg, g, a):
+    """(bias, detected share) of the plain reference wire from the hitmap at the same hotspot, or None."""
+    if not g.holes:
+        return None
+    h = geo.get("Plain_Wire_2um" if g.key.startswith("Slot") else "Plain_Wire")
+    ref = hitmap_ref(cfg, h, a.film, a.hitmap_dir)
+    if not ref:
+        return None
+    Z = an.unit_map(h, [(x, y, v) for (x, y), v in ref.items()])[2]
+    Z = Z[np.isfinite(Z)]
+    b = np.linspace(0.5, 1.0, 1001)
+    return b, np.array([(Z <= v).mean() for v in b]), h
+
+
+def fig_outcomes(cfg, a, g):
+    """What one photon does, as a share of the unit cell, vs bias: one panel per hotspot model with a scan."""
+    from dataclasses import replace
+    from snspd import plotting as pl
+    import matplotlib.pyplot as plt
+    pl.apply_style()
+    models = [(m, replace(cfg, hotspot=m)) for m in ("conserving", "kinetic")]
+    data = [(m, c, outcome_bands(c, g)) for m, c in models]
+    data = [(m, c, d) for m, c, d in data if d is not None]
+    if not data:
+        return
+    # common x range: from the first bias with any event to the first at which everything is detected
+    first = min(b[0] for _, _, (b, _, _) in data)
+    lo = max(first, min(b[np.argmax(bands[4] < 0.995)] for _, _, (b, bands, _) in data) - 0.03)
+    hi = max(b[min(np.argmax(bands[0] + bands[1] > 0.995), len(b) - 1)] for _, _, (b, bands, _) in data) + 0.02
+    hi = min(hi, min(b[-1] for _, _, (b, _, _) in data))
+    width = max(8.0, 5.4 * len(data))
+    fig, axes = plt.subplots(1, len(data), figsize=(width, 4.0), sharey=True, layout="constrained", squeeze=False)
+    ax_in = 0.82 * width / len(data)                                 # approximate axes width [inch]
+    for ax, (m, c, (b, bands, subset)) in zip(axes[0], data):
+        ax.stackplot(b, bands * 100, colors=[col for _, col, _ in OUTCOME_BANDS], edgecolor=pl.SURFACE, linewidth=1.0)
+        if b[0] > lo + 1e-9:                                         # this model's scan starts later
+            ax.axvspan(lo, b[0], facecolor="none", hatch="///", edgecolor=pl.INK2, lw=0, alpha=0.3)
+            ax.text((lo + b[0]) / 2, 50, "not scanned", ha="center", va="center", fontsize=8, color=pl.INK2,
+                    rotation=90)
+        base = np.cumsum(bands, axis=0) - bands / 2
+        ref = plain_detected(c, g, a)
+        cum = np.cumsum(bands, axis=0)
+        xg = np.linspace(lo, hi, 241)
+        for k, (lab, _, tc) in enumerate(OUTCOME_BANDS[:4]):
+            half = 0.5 * len(lab) * 0.062 / ax_in * (hi - lo)       # half the label width in bias units (8 pt)
+            bot, top = cum[k] - bands[k], cum[k]
+            th = np.interp(xg, b, bands[k])
+            for x in xg[np.argsort(-th)][:60]:                       # thickest places first; label only if it fits
+                if th[np.argmin(np.abs(xg - x))] < 0.10 or x - half < lo or x + half > hi:
+                    continue
+                y = np.interp(x, b, base[k])
+                xs = np.linspace(x - half, x + half, 9)
+                if ref is not None and abs(np.interp(y, ref[1], ref[0]) - x) < half + 0.004:
+                    continue                                         # keep labels off the reference line
+                if np.all(np.interp(xs, b, bot) < y - 0.035) and np.all(np.interp(xs, b, top) > y + 0.035):
+                    ax.text(x, y * 100, lab, ha="center", va="center", fontsize=8, color=tc or pl.INK)
+                    break
+        if ref is not None:
+            rb, rf, h = ref
+            ax.plot(rb, rf * 100, color=pl.INK, lw=1.6)
+            j = int(np.argmax(rf >= 0.97))
+            ax.annotate(f"{h.label}: detected", (rb[j], 97), xytext=(-6, 0), textcoords="offset points",
+                        ha="right", va="center", fontsize=8, color=pl.INK)
+        ax.set_xlim(lo, hi)
+        ax.set_ylim(0, 100)
+        ax.set_xlabel("bias  I / I_dep")
+        ax.set_title(f"{m} hotspot" + ("  (subset of sites: indicative)" if subset else ""), fontsize=10)
+        ax.grid(False)
+    axes[0][0].set_ylabel("share of the unit cell [%]")
+    handles = [plt.Rectangle((0, 0), 1, 1, facecolor=col, edgecolor=pl.INK2, lw=0.4) for _, col, _ in OUTCOME_BANDS]
+    fig.legend(handles, [lab for lab, _, _ in OUTCOME_BANDS], loc="outside lower center", ncol=5 if len(data) > 1 else 3, frameon=False,
+               fontsize=8.5)
+    fig.suptitle(f"{g.label}: what one photon does ({cfg.tmax:g} tau0 window, {cfg.mesh_xi:g} xi mesh)", fontsize=11)
+    fig.savefig(os.path.join(cfg.out_dir, f"outcomes_{g.key}_T{cfg.tmax:g}_m{cfg.mesh_xi:g}.png"), dpi=200)
+    plt.close(fig)
+
+
+def fig_trace_simple(g, res, path, title):
+    """Two panels: flux quanta held by the holes and phase slips since the photon, one line per bias."""
+    from snspd import plotting as pl
+    import matplotlib.pyplot as plt
+    from snspd.fluxoid import PSI_LOOP_MIN
+    pl.apply_style()
+    cols = ["#2a78d6", "#eb6834", "#1baf7a", "#7a5bc2"]
+    fig, (a1, a2) = plt.subplots(1, 2, figsize=(10, 3.7), sharex=True, layout="constrained")
+    for b, col in zip(sorted(res), cols):
+        q = res[b]
+        fr = [f for f in q["frames"] if f[2] >= PSI_LOOP_MIN]
+        a1.step([f[0] for f in fr], [sum(abs(v) for v in f[1]) for f in fr], where="post", color=col, lw=1.8,
+                label=f"{b:.2f} I_dep: {OUTCOME_WORDS[q['outcome']]}, {q['slips']:.1f} slips by t = {q['t'][-1]:.0f}")
+        a2.plot(q["t"], q["slip_series"], color=col, lw=1.8)
+    for ax in (a1, a2):
+        ax.axvline(20.0, color=pl.INK2, ls=":", lw=1.0)
+        ax.set_xlabel("t [tau0]   (photon at 20, dotted)")
+    a1.set_title("flux quanta held by the holes (a line ends where the loops go normal)", fontsize=9)
+    a2.set_title("phase slips since the photon (|int V dt| / 2 pi)", fontsize=9)
+    a2.set_yscale("symlog", linthresh=1.0)
+    a2.set_ylim(0, None)
+    fig.legend(*a1.get_legend_handles_labels(), loc="outside lower center", ncol=2, fontsize=8.5, frameon=False)
+    fig.suptitle(title, fontsize=11)
+    fig.savefig(path, dpi=200)
+    plt.close(fig)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("Usage")[0], formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("command", choices=["scan", "trapped", "report", "trace"])
+    ap.add_argument("command", choices=["scan", "trapped", "report", "trace", "compare"])
     ap.add_argument("--geom", default="Long_Zipper")
     ap.add_argument("--grid", choices=["full", "critical"], default="full")
     ap.add_argument("--biases", default="0.56:0.70:0.02,0.71:0.96:0.01", help="units of I_dep (nothing happens below ~0.64)")
@@ -683,17 +900,22 @@ def main(argv=None):
                     help="trapped: place this fluxoid state (one integer per hole) instead of generating it with a "
                          "photon (repeatable; use --place=\"0 -1 0\")")
     ap.add_argument("--no-second", action="store_true", help="trapped: skip the second-photon thresholds")
-    ap.add_argument("--hotspot", choices=["conserving", "legacy", "kinetic"], default="conserving")
+    ap.add_argument("--hotspot", choices=["conserving", "legacy", "kinetic"], default=sim.SimConfig.hotspot)
     ap.add_argument("--tmax", type=float, default=400.0)
     ap.add_argument("--mesh-xi", type=float, default=sim.SimConfig.mesh_xi)
     ap.add_argument("--workers", type=int, default=1)
     ap.add_argument("--out", default=OUT_DIR)
+    ap.add_argument("--preset", choices=list(sim.PRESETS), default="",
+                    help="parameter set (snspd.sim.PRESETS): '' = gamma 1 results, 'nbtin' = gamma 10 + NbTiN times")
+    ap.add_argument("--detailed", action="store_true",
+                    help="report/trace: also the detailed figures (per-site state diagram, threshold maps, 3-row trace)")
     a = ap.parse_args(argv)
-    a.film = Film()
+    a.film = sim.PRESETS[a.preset].film
     a.biases = parse_biases(a.biases)
     a.sites = [tuple(float(v) for v in s.split(",")) for s in a.sites.split(";") if s]
-    cfg = sim.SimConfig(tmax=a.tmax, hotspot=a.hotspot, mesh_xi=a.mesh_xi, out_dir=a.out)
-    {"scan": cmd_scan, "trapped": cmd_trapped, "report": cmd_report, "trace": cmd_trace}[a.command](cfg, a)
+    cfg = sim.SimConfig(tmax=a.tmax, hotspot=a.hotspot, mesh_xi=a.mesh_xi, out_dir=a.out, preset=a.preset)
+    {"scan": cmd_scan, "trapped": cmd_trapped, "report": cmd_report, "trace": cmd_trace,
+     "compare": cmd_compare}[a.command](cfg, a)
 
 
 if __name__ == "__main__":

@@ -1,0 +1,5 @@
+geom,x_nm,y_nm,tmax,criterion,i_400,t_400,i_det,change,flag,n_runs,branch,t_trigger,wall_s
+Plain_Wire,-96.0,0.0,800.0,trigger,0.8773,366.5,0.8774,0.0001,at_wall,6,,,2615
+Plain_Wire,0.0,0.0,800.0,trigger,0.9103,293.0,0.9104,0.0001,at_wall,6,,,2609
+Long_Zipper,-36.0,61.0,800.0,trigger,0.9269,346.0,0.9241,-0.0028,,6,V_peak,483.3,2656
+Long_Zipper,0.0,0.0,800.0,trigger,0.8426,357.5,0.8427,0.0001,at_wall,6,,,2661

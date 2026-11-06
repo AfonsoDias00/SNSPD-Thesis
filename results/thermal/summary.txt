@@ -1,0 +1,45 @@
+ELECTRO-THERMAL CHECK (snspd/thermal.py, prototype)  kinetic hotspot f = 1, 400 tau0, 1.4 xi, pinned meshes
+threshold with heat = lowest bias at which the run is still resistive at 400 tau0 (bisection, tol 0.004 I_dep); bounds from the stored kinetic runs: lower = voltage trigger, upper = sustained
+position = (i_thermal - lower) / (upper - lower): 0 = at the lower bound, 1 = at the upper bound
+variant      site                   lower   upper  thermal  position  t_trig  normal nm2   normal domain   highest healed run (bias, slips, peak theta)
+  t_trig: trigger time of the run at the threshold [tau0]; normal nm2: area with theta >= 1 at its end; normal domain: (highest bias without, lowest with) a normal domain at 400 tau0 among the bisection runs
+1T eta 0.59  30 nm (0,0)            0.376   0.775    0.457      0.20    53.1           0   0.457-0.463     0.453, 28.03 slips, theta 0.414
+1T eta 0.59  30 nm (-13,0)          0.390   0.778    0.461      0.18    55.0           0   0.461-0.474     0.458, 31.05 slips, theta 0.428
+1T eta 0.59  56 nm (0,0)            0.620   0.801    0.613     -0.04    77.9       10646   0.610-0.613     0.610, 5.97 slips, theta 0.196
+1T eta 0.59  100 nm (0,0)           0.774   0.819    0.756     -0.39   117.1       30074   0.754-0.756     0.754, 0.1 slips, theta 0.021
+1T eta 0.59  100 nm (-36,0)         0.732   0.817    0.723     -0.11    93.5       24742   0.719-0.723     0.719, 3.92 slips, theta 0.131
+1T eta 0.59  plain (0,0)            0.848   0.848    0.827         -   108.2       82057   0.824-0.827     0.824, 0.14 slips, theta 0.027
+1T eta 0.59  plain (-96,0)          0.832   0.832    0.808         -   234.8       39006   0.804-0.808     0.804, 4.71 slips, theta 0.12
+1T eta 0.59  zipper (0,0)           0.756   0.804    0.768      0.24   157.2       39569   0.765-0.768     0.765, 3.05 slips, theta 0.195
+1T eta 0.59  zipper (-68,0)         0.772   0.817    0.764     -0.18    67.8           0   0.764-0.766     0.761, 2.84 slips, theta 0.219
+1T eta 0.59  zipper (-96,0)         0.774   0.817    0.765     -0.20   267.8           0   0.768-0.772     0.763, 1.72 slips, theta 0.113
+1T eta 0.59  zipper (-42,58)        0.856   0.856    0.835         -   150.2       63169   0.832-0.835     0.832, 0.72 slips, theta 0.113
+1T eta 0.59  zipper (-36,61)        0.891   0.891    0.870         -   106.5       81555   0.867-0.870     0.867, 0.13 slips, theta 0.031
+1T eta 0.59  Slot 400 (-58,0)       0.762   0.808    0.754     -0.18    83.0       28069   0.751-0.754     0.751, 2.13 slips, theta 0.194
+1T eta 0.59  Slot 400 (-28,200)     0.807   0.830    0.788     -0.83    97.5       23251   0.786-0.788     0.786, 1.43 slips, theta 0.16
+1T eta 0.30  30 nm (0,0)            0.376   0.775    0.513      0.34    46.6           0   0.517-0.571     0.510, 52.08 slips, theta 0.376
+1T eta 0.30  100 nm (0,0)           0.774   0.819    0.766     -0.18    97.9       20788   0.763-0.766     0.763, 0.03 slips, theta 0.011
+1T eta 0.30  plain (0,0)            0.848   0.848    0.836         -   127.8       50240   0.832-0.836     0.832, 0.02 slips, theta 0.014
+1T eta 0.30  zipper (0,0)           0.756   0.804    0.777      0.45   152.2       13685   0.775-0.777     0.775, 3.11 slips, theta 0.102
+1T eta 0.30  zipper (-68,0)         0.772   0.817    0.771     -0.03    68.0           0   0.771-0.789     0.768, 2.9 slips, theta 0.112
+1T eta 0.30  Slot 400 (-58,0)       0.762   0.808    0.778      0.34    68.6           0   0.778-0.780     0.775, 7.38 slips, theta 0.188
+1T eta 1.20  30 nm (0,0)            0.376   0.775    0.410      0.08    59.8        2381   0.406-0.410     0.406, 12.0 slips, theta 0.405
+1T eta 1.20  100 nm (0,0)           0.774   0.819    0.739     -0.77   103.4       47643   0.737-0.739     0.737, 0.24 slips, theta 0.041
+1T eta 1.20  plain (0,0)            0.848   0.848    0.803         -   148.2       87767   0.800-0.803     0.800, 0.34 slips, theta 0.051
+1T eta 1.20  zipper (0,0)           0.756   0.804    0.748     -0.16   171.8       49008   0.746-0.748     0.746, 2.37 slips, theta 0.381
+1T eta 1.20  zipper (-68,0)         0.772   0.817    0.747     -0.55    68.2       44464   0.745-0.747     0.745, 0.63 slips, theta 0.2
+1T eta 1.20  Slot 400 (-58,0)       0.762   0.808    0.728     -0.74    98.2       57727   0.725-0.728     0.725, 1.78 slips, theta 0.313
+NbTiN 2T     30 nm (0,0)            0.376   0.775    0.439      0.16    55.0           0   0.439-0.443     0.435, 23.06 slips, theta 0.52
+NbTiN 2T     30 nm (-13,0)          0.390   0.778    0.446      0.14    55.8         745   0.442-0.446     0.442, 30.09 slips, theta 0.563
+NbTiN 2T     56 nm (0,0)            0.620   0.801    0.609     -0.06    93.5        7384   0.606-0.609     0.606, 0.06 slips, theta 0.028
+NbTiN 2T     100 nm (0,0)           0.774   0.819    0.759     -0.34    91.2       34418   0.756-0.759     0.756, 0.16 slips, theta 0.043
+NbTiN 2T     100 nm (-36,0)         0.732   0.817    0.717     -0.17    98.5       21486   0.714-0.717     0.714, 4.9 slips, theta 0.258
+NbTiN 2T     plain (0,0)            0.848   0.848    0.827         -   109.8       77223   0.824-0.827     0.824, 0.22 slips, theta 0.054
+NbTiN 2T     plain (-96,0)          0.832   0.832    0.801         -   365.5        3321   0.797-0.801     0.797, 4.69 slips, theta 0.254
+NbTiN 2T     zipper (0,0)           0.756   0.804    0.760      0.08   184.0       32968   0.757-0.760     0.757, 3.01 slips, theta 0.384
+NbTiN 2T     zipper (-68,0)         0.772   0.817    0.762     -0.23    68.5       16981   0.759-0.762     0.759, 0.73 slips, theta 0.183
+NbTiN 2T     zipper (-96,0)         0.774   0.817    0.762     -0.27                   0   0.762-0.765     0.760, 0.73 slips, theta 0.213
+NbTiN 2T     zipper (-42,58)        0.856   0.856    0.835         -   151.8       59679   0.832-0.835     0.832, 0.2 slips, theta 0.058
+NbTiN 2T     zipper (-36,61)        0.891   0.891    0.870         -   143.0       71556   0.867-0.870     0.867, 0.23 slips, theta 0.063
+NbTiN 2T     Slot 400 (-58,0)       0.762   0.808    0.747     -0.32    92.0       30156   0.745-0.747     0.745, 2.01 slips, theta 0.332
+NbTiN 2T     Slot 400 (-28,200)     0.807   0.830    0.782     -1.10   114.2       14143   0.780-0.782     0.780, 1.28 slips, theta 0.248

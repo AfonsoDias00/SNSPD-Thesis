@@ -1,0 +1,30 @@
+{
+ "Slot_110": {
+  "I_sw": 85.51539098966526,
+  "flag": "",
+  "n_sims": 7,
+  "branch": "V_trail",
+  "t_trigger": 55.0
+ },
+ "Slot_200": {
+  "I_sw": 85.51539098966526,
+  "flag": "",
+  "n_sims": 7,
+  "branch": "V_trail",
+  "t_trigger": 55.0
+ },
+ "Slot_400": {
+  "I_sw": 85.51539098966526,
+  "flag": "",
+  "n_sims": 7,
+  "branch": "V_trail",
+  "t_trigger": 55.0
+ },
+ "Plain_Wire_2um": {
+  "I_sw": 100.68500213679394,
+  "flag": "",
+  "n_sims": 8,
+  "branch": "V_trail",
+  "t_trigger": 55.0
+ }
+}

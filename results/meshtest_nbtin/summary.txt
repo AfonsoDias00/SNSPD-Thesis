@@ -1,0 +1,32 @@
+MESH TEST (preset 'nbtin', kinetic f = 1, 400 tau0): thresholds [I_dep] against the 1.4 xi production values
+s/run: wall time per bisection run under the same machine load (1.4 xi: factorial_check base corner)
+
+dark I_sw / I_dep (production 1.4 xi: plain 1.007, zipper 0.995, Slot 400 ~1.00):
+  U2.0    Plain_Wire    0.997   8130 nodes
+  U2.0    Long_Zipper   0.981   7153 nodes
+
+site                criterion    1.4 xi            U2.0            U2.5          G1.4/4          G2.0/4     s/run at 1.4 xi
+plain (0,0)         trigger         nan                                                                     31  vs  
+plain (0,0)         sustained     0.910  0.901 (-0.009)                                                     36  vs  93
+plain (-96,0)       trigger         nan                                                                     42  vs  
+plain (-96,0)       sustained     0.877  0.872 (-0.006)                                                     54  vs  97
+zipper (0,0)        trigger         nan                                                                     37  vs  
+zipper (0,0)        sustained     0.843  0.853 (+0.010)                                                     56  vs  84
+zipper (-68,0)      trigger         nan                                                                     35  vs  
+zipper (-68,0)      sustained     0.832  0.831 (-0.001)                                                     56  vs  75
+zipper (-42,58)     trigger         nan                                                                     40  vs  
+zipper (-42,58)     sustained     0.911  0.898 (-0.012)                                                     41  vs  74
+zipper (-36,61)     trigger         nan                                                                     40  vs  
+zipper (-36,61)     sustained     0.927  0.917 (-0.010)                                                     46  vs  66
+Slot 400 (-58,0)    trigger         nan                                                                     91  vs  
+Slot 400 (-58,0)    sustained       nan                                                                     125  vs  
+Slot 400 (-28,200)  trigger         nan                                                                     104  vs  
+Slot 400 (-28,200)  sustained       nan                                                                     100  vs  
+
+differences that carry the conclusions (zipper - plain at matching sites, I_dep):
+  trigger   1.4   (0,0) - (0,0): +nan   (-68,0) - (-96,0): +nan   (-36,61) - (0,0): +nan
+  trigger   U2.0  (0,0) - (0,0):   -     (-68,0) - (-96,0):   -     (-36,61) - (0,0):   -  
+  trigger   U2.5  (0,0) - (0,0):   -     (-68,0) - (-96,0):   -     (-36,61) - (0,0):   -  
+  sustained 1.4   (0,0) - (0,0): -0.068   (-68,0) - (-96,0): -0.046   (-36,61) - (0,0): +0.017
+  sustained U2.0  (0,0) - (0,0): -0.049   (-68,0) - (-96,0): -0.041   (-36,61) - (0,0): +0.015
+  sustained U2.5  (0,0) - (0,0):   -     (-68,0) - (-96,0):   -     (-36,61) - (0,0):   -  

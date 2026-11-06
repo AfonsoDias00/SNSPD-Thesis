@@ -181,7 +181,7 @@ def cmd_report(cfg, a, geoms):
     P(f"SUMMARY   hotspot={cfg.hotspot}   T={cfg.tmax:g} tau0   mesh={cfg.mesh_xi:g} xi   grid={a.grid}")
     if a.grid == "critical":
         P("NOTE: critical grid -> the maps are interpolated from few points; quantiles are indicative only.")
-    for line in a.film.describe() + hsm.HOTSPOT.describe(a.film, cfg.hotspot):
+    for line in a.film.describe() + cfg.pset.params.describe(a.film, cfg.hotspot) + [f"protocol: {cfg.pset.note}"]:
         P(line)
     P("=" * 78)
     P(f"{'':<30}" + "".join(f"{g.label:>14}" for g in geoms))
@@ -350,13 +350,16 @@ def parse_args(argv=None):
     ap.add_argument("--go-margin", type=float, default=0.03, help="holes' i_95 must beat the reference by this much")
     ap.add_argument("--sel-margin", type=float, default=0.01, help="holes' selectivity must beat the reference by this much")
     ap.add_argument("--rho-uohm-cm", type=float, default=None, help="film resistivity; only used to quote times in ps")
+    ap.add_argument("--preset", choices=list(sim.PRESETS), default="",
+                    help="parameter set (snspd.sim.PRESETS): '' = gamma 1 results, 'nbtin' = gamma 10 + NbTiN times")
     ap.add_argument("--out", default=OUT_DIR)
     a = ap.parse_args(argv)
     a.energies = tuple(float(x) for x in a.energies.split(",") if x)
     a.crowd_biases = tuple(float(x) for x in a.crowd_biases.split(",") if x)
-    a.film = Film(rho_uohm_cm=a.rho_uohm_cm)
+    a.film = replace(sim.PRESETS[a.preset].film, rho_uohm_cm=a.rho_uohm_cm)
     cfg = sim.SimConfig(tmax=a.tmax, hotspot=a.hotspot, mesh_xi=a.mesh_xi, save_every=a.save_every,
-                        hit_lo_frac=a.hit_lo_frac, sustained=a.criterion == "sustained", out_dir=a.out)
+                        hit_lo_frac=a.hit_lo_frac, sustained=a.criterion == "sustained", out_dir=a.out,
+                        preset=a.preset)
     geoms = [geo.get(k) for k in a.geoms.split(",") if k]
     return a, cfg, geoms
 
