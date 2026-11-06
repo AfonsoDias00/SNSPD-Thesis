@@ -1,9 +1,0 @@
-FLUX TRAPPING  Long zipper  conserving_T400_m0.8   biases in units of I_dep = 87.35 uA (narrowest cross-section 173 nm)
-holes: 0:(-36,-122), 1:(-36,0), 2:(-36,122), 3:(36,-183), 4:(36,-61), 5:(36,61), 6:(36,183)
-
-Trapped states as initial conditions (no photon unless stated); i in units of I_dep:
-  [0 -2 0 0 0 0 0] from a photon at (-68,0) at 0.770  (regenerated [0 -2 0 0 0 0 0], 0 scan runs end in it)
-      switching current of the trapped state  i_sw = 0.8449    [V_trail at t = 64.5]
-      held at i = 0.845 for 400 tau0: via_trap, 33.18 slips in the last 50 (24.71 after settling), ends [0 0 0 0 1 -1 0]   0:0,-2,0,0,0,0,0 63:0,0,0,0,-1,-1,0 123:0,0,0,0,0,-1,0 128:0,0,0,0,1,-1,0
-      held at i = 0.841 for 400 tau0: transient, 0.0 slips in the last 50, ends [0 0 0 0 1 -1 0]   0:0,-2,0,0,0,0,0 61:0,-1,0,0,-1,0,0 66:0,0,0,0,-1,0,0 70:0,0,0,0,-1,-1,0 133:0,0,0,0,0,-1,0 143:0,0,0,0,1,-1,0
-      held at i = 0.000 for 400 tau0: trapped, 0.0 slips in the last 50, ends [0 -2 0 0 0 0 0]   0:0,-2,0,0,0,0,0

@@ -1,6 +1,0 @@
-Geometry,x_nm,y_nm,energy_f,tmax,hotspot,mesh_xi,I_sw_uA,I_det_uA,i_det,flag,n_sims,wall_s,branch,t_trigger
-Narrow_Wire,-14.0,0.0,1.0,400.0,conserving,1.4,27.364899915911735,16.73962237043663,0.61171875,,8,63.5,collapse,69.19
-Narrow_Wire,-26.0,0.0,1.0,400.0,conserving,1.4,27.364899915911735,17.26340365788963,0.630859375,,8,63.7,collapse,69.11
-Narrow_Wire,-20.0,0.0,1.0,400.0,conserving,1.4,27.364899915911735,16.889274166851774,0.6171875,,8,64.4,collapse,69.15
-Narrow_Wire,0.0,0.0,1.0,400.0,conserving,1.4,27.364899915911735,17.41305545430477,0.636328125,,8,54.2,V_peak,62.44
-Narrow_Wire,-7.0,0.0,1.0,400.0,conserving,1.4,27.364899915911735,17.038925963266916,0.62265625,,8,54.9,V_trail,79.0

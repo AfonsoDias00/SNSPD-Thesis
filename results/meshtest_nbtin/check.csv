@@ -1,7 +1,0 @@
-mesh,label,geom,criterion,nodes,i_det,flag,n_runs,t_trigger,I_sw_uA,wall_s
-U2.0,"zipper (-68,0)",Long_Zipper,sustained,7153,0.831,,8,270.6,85.708,602
-U2.0,"zipper (0,0)",Long_Zipper,sustained,7153,0.8525,,8,285.0,85.708,670
-U2.0,"plain (0,0)",Plain_Wire,sustained,8130,0.9015,,8,318.0,100.488,741
-U2.0,"plain (-96,0)",Plain_Wire,sustained,8130,0.8715,,8,307.0,100.488,774
-U2.0,"zipper (-36,61)",Long_Zipper,sustained,7153,0.9169,,8,327.2,85.708,530
-U2.0,"zipper (-42,58)",Long_Zipper,sustained,7153,0.8981,,8,314.4,85.708,594

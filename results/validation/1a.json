@@ -1,7 +1,7 @@
 {
  "id": "1a",
  "title": "hotspot diffusion solver",
- "wall_s": 133.4,
+ "wall_s": 166.6,
  "checks": [
   {
    "id": "1a.1",
@@ -13,16 +13,16 @@
   },
   {
    "id": "1a.2",
-   "name": "Long zipper: integral n dA / pi r0^2 over 380 tau0, sites ((-36.0, 61.0), (-68.0, 0.0), (-96.0, 0.0))",
-   "value": "max |deviation| 7.1e-09",
+   "name": "Slot column, 400 nm: integral n dA / pi r0^2 over 380 tau0, sites ((0.0, 220.0), (-28.0, 200.0), (-96.0, 0.0))",
+   "value": "max |deviation| 5.6e-09",
    "expected": "< 1e-5 (float32 snapshots)",
    "verdict": "PASS",
-   "note": "most negative n / n(0) peak: -9.3e-19"
+   "note": "most negative n / n(0) peak: 0.0e+00"
   },
   {
    "id": "1a.3",
-   "name": "Slot column, 400 nm: integral n dA / pi r0^2 over 380 tau0, sites ((0.0, 220.0), (-96.0, 0.0))",
-   "value": "max |deviation| 5.6e-09",
+   "name": "Slot column, 110 nm: integral n dA / pi r0^2 over 380 tau0, sites ((0.0, 75.0), (-96.0, 0.0))",
+   "value": "max |deviation| 6.6e-09",
    "expected": "< 1e-5 (float32 snapshots)",
    "verdict": "PASS",
    "note": "most negative n / n(0) peak: 0.0e+00"

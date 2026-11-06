@@ -13,8 +13,9 @@ from snspd import sim
 
 from . import common as C
 
-MODULES = {"1a": "diffusion", "1b": "epsilon", "1c": "disc_vs_hole", "1d": "photon",
-           "2a": "meter", "2b": "ring", "2c": "single_hole", "2d": "scan_stats"}
+MODULES = {"1a": "diffusion", "1b": "epsilon", "1c": "disc_vs_hole", "2a": "meter", "2b": "ring"}
+# 1d (photon thresholds), 2c (one hole in a strip) and 2d (flux-scan statistics) checked the stored results of the
+# first phase and were removed with them (commit 00f9b0d has them).
 QUICK = ("1a", "1b", "2a")            # no long TDGL runs, ~6 min
 
 

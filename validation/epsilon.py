@@ -81,7 +81,7 @@ def run(a):
                           abs(ratio[0] / want[0] - 1) < 0.02 and abs(ratio[1] / want[1] - 1) < 0.02))
 
     # 3. epsilon at the hotspot centre at t0 for every production site
-    geoms = list(geo.GEOMETRIES.values()) + [geo.plain_strip(w) for w in (30.0, 56.0, 100.0)]
+    geoms = list(geo.GEOMETRIES.values()) + [C.SLOT_400, C.SLOT_110] + [geo.plain_strip(w) for w in (30.0, 56.0, 100.0)]
     lines, eps_min, worst = [], np.inf, None
     for g in geoms:
         hs = sim.context(g, 1.4)["hs"]

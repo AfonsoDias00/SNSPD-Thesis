@@ -3,7 +3,7 @@
 insulating walls, P1 elements on the device mesh, lumped mass, Crank-Nicolson.  Exact solutions, with
 s^2 = r0^2 + 4 D t:
 
-  conservation  integral n dA = pi r0^2 at every step, plain wire, zipper and 400 nm slot column, 380 tau0
+  conservation  integral n dA = pi r0^2 at every step, plain wire, 400 nm and 110 nm slot columns, 380 tau0
   free space    hotspot at the centre of a 600 nm square (300 nm from every wall): n = (r0^2/s^2) exp(-r^2/s^2),
                 <r^2> = r0^2 + 4 D t
   wall          source a nm from one straight insulating wall.  The code truncates the Gaussian at the wall and
@@ -73,8 +73,8 @@ def run(a):
 
     # conservation on the production meshes
     for k, (g, sites) in enumerate(((geo.PLAIN_WIRE, ((-96.0, 0.0), (0.0, 0.0))),
-                                    (geo.LONG_ZIPPER, ((-36.0, 61.0), (-68.0, 0.0), (-96.0, 0.0))),
-                                    (geo.SLOT_400, ((0.0, 220.0), (-96.0, 0.0))))):
+                                    (C.SLOT_400, ((0.0, 220.0), (-28.0, 200.0), (-96.0, 0.0))),
+                                    (C.SLOT_110, ((0.0, 75.0), (-96.0, 0.0))))):
         hs = sim.context(g, MESH)["hs"]
         drift, neg = 0.0, 0.0
         for x, y in sites:

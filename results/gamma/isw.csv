@@ -1,5 +1,0 @@
-gamma,geom,criterion,I_sw_uA,i_sw,flag,n_runs,branch,t_trigger,wall_s
-10.0,30 nm,trigger,15.25,1.0086,,8,V_trail,388.5,54
-10.0,30 nm,sustained,15.25,1.0086,,8,V_trail,388.5,61
-10.0,56 nm,trigger,28.467,1.0086,,8,V_trail,389.8,213
-10.0,56 nm,sustained,28.467,1.0086,,8,V_trail,389.8,564

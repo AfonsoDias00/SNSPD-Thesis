@@ -10,7 +10,9 @@ A Geometry carries everything the simulation and the analysis need to know about
       "zipper" -- y-mirror plus the glide (x, y) -> (-x, half_period - y) of two staggered hole columns
       "column" -- x-mirror and y-mirror of a single centred hole column
 
-To study a new internal-hole layout, add a builder here and register it in GEOMETRIES.
+To study a new internal-hole layout, add a builder here and register it in GEOMETRIES.  Registered now: the plain
+reference strips only.  slot_column() is the single-column builder of the first phase (30 nm slots, 40 nm bridges),
+kept unregistered for validation/ until the new fabrication-friendly layouts replace it.
 """
 from __future__ import annotations
 
@@ -18,8 +20,7 @@ from dataclasses import dataclass, field, replace
 
 import numpy as np
 
-C_PLAIN, C_ZIP, C_NARROW = "#2a78d6", "#eb6834", "#52514e"
-C_SLOT = {110.0: "#1baf7a", 200.0: "#c98500", 400.0: "#d55181"}   # aqua, yellow, magenta: one hue per slot length
+C_PLAIN, C_HOLES, C_NARROW = "#2a78d6", "#eb6834", "#52514e"
 
 
 @dataclass(frozen=True)
@@ -157,37 +158,19 @@ PLAIN_WIRE = plain_strip(
     probes=((-96.0, 0.0), (-58.0, 0.0), (0.0, 0.0)), color=C_PLAIN)
 
 
+# Plain reference strips: 0.8 um long (the first phase) and 2 um long, the length of the slot devices
+LONG_LENGTH_NM = 2000.0
+LONG_PROBE_Y_NM = 750.0
+PLAIN_WIRE_2UM = replace(
+    PLAIN_WIRE, key="Plain_Wire_2um", label="Plain wire, 2 um", length_nm=LONG_LENGTH_NM, probe_y_nm=LONG_PROBE_Y_NM)
+
+
 # ==============================================================================
 # Internal holes
 # ==============================================================================
-def long_zipper() -> Geometry:
-    """Two staggered columns of 16 x 110 nm ellipses at x = +/-36 nm, period 122 nm, 12 nm bridges between the holes
-    of a column, three 56 nm channels.  Narrowest free width 173 nm."""
-    a, b = 8.0, 55.0
-    holes = [Ellipse(-36.0, y, a, b) for y in (-122.0, 0.0, 122.0)] + \
-            [Ellipse(36.0, y, a, b) for y in (-183.0, -61.0, 61.0, 183.0)]
-    base = [(x, y) for x in (-96, -88, -68, -50, -18, 0) for y in (0, 15, 30, 45, 61)]
-    bridge = [(x, y) for x in (-42, -36, -30) for y in (46, 50, 54, 58, 61)]
-    critical = [(-96, 0), (-68, 0), (0, 0), (-50, 30), (-18, 30), (-36, 58), (-36, 61), (-42, 58), (-30, 58)]
-    return Geometry(
-        key="Long_Zipper", label="Long zipper", width_nm=200.0, holes=tuple(holes),
-        probes=((-96.0, 0.0), (-68.0, 0.0), (0.0, 0.0), (-18.0, 30.0), (-36.0, 61.0)),
-        grid_full=tuple((float(x), float(y)) for x, y in base + bridge),
-        grid_critical=tuple((float(x), float(y)) for x, y in critical),
-        symmetry="zipper", cell_half_y_nm=61.0, color=C_ZIP)
-
-
-LONG_ZIPPER = long_zipper()
-
-# Fabrication-feasible layouts: 2 um strips, 40 nm bridges, 30 nm wide holes, at least 40 nm from hole to film edge
-LONG_LENGTH_NM = 2000.0
-LONG_PROBE_Y_NM = 750.0
 SLOT_WIDTH_NM = 30.0
 SLOT_BRIDGE_NM = 40.0
 HOLE_POINT_SPACING_NM = 5.0
-
-PLAIN_WIRE_2UM = replace(
-    PLAIN_WIRE, key="Plain_Wire_2um", label="Plain wire, 2 um", length_nm=LONG_LENGTH_NM, probe_y_nm=LONG_PROBE_Y_NM)
 
 
 def slot_column(slot_nm: float, n_holes: int) -> Geometry:
@@ -205,14 +188,10 @@ def slot_column(slot_nm: float, n_holes: int) -> Geometry:
         holes=holes, probes=((-96.0, 0.0), (-58.0, 0.0), (-19.0, 0.0), (-58.0, b + 20.0), (0.0, b + 20.0)),
         grid_full=tuple(channel + bridge), grid_critical=tuple(critical), symmetry="column",
         cell_half_y_nm=period / 2.0, crowd_half_y_nm=period / 2.0,
-        hole_points=int(np.ceil(holes[0].perimeter() / HOLE_POINT_SPACING_NM)), probe_y_nm=LONG_PROBE_Y_NM, color=C_SLOT.get(slot_nm, C_ZIP))
+        hole_points=int(np.ceil(holes[0].perimeter() / HOLE_POINT_SPACING_NM)), probe_y_nm=LONG_PROBE_Y_NM, color=C_HOLES)
 
 
-SLOT_110 = slot_column(110.0, 7)
-SLOT_200 = slot_column(200.0, 5)
-SLOT_400 = slot_column(400.0, 3)
-
-GEOMETRIES = {g.key: g for g in (PLAIN_WIRE, LONG_ZIPPER, PLAIN_WIRE_2UM, SLOT_110, SLOT_200, SLOT_400)}
+GEOMETRIES = {g.key: g for g in (PLAIN_WIRE, PLAIN_WIRE_2UM)}
 
 
 def get(key: str, width_nm: float | None = None) -> Geometry:

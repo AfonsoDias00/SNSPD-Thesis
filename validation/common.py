@@ -95,6 +95,12 @@ def annulus(r1_nm, r2_nm, mesh_xi):
     return film_device(circle(r2_nm, points=n(r2_nm)), [circle(r1_nm, points=n(r1_nm))], mesh_xi, name="ring")
 
 
+# Holed devices for the solver checks: the first phase's slot columns (30 nm wide, 40 nm bridges, 2 um strip), until
+# the new layouts are registered in snspd.geometry
+SLOT_400 = geo.slot_column(400.0, 3)
+SLOT_110 = geo.slot_column(110.0, 7)
+
+
 def holed_strip(x_nm, a_nm, b_nm=None, y_nm=0.0):
     """The 200 nm x 0.8 um plain wire with one elliptical (b = a: circular) hole."""
     b_nm = a_nm if b_nm is None else b_nm

@@ -88,11 +88,6 @@ PRESETS = {
     "nbtin": ParamSet(replace(FILM, gamma=10.0),
                       replace(hs_mod.HOTSPOT, D_nm2_per_tau0=7.1, kin_esc_tau0=530.0), True,
                       "gamma = 10; NbTiN hotspot times: D 7.1 nm^2/tau0, escape 530 tau0; photon into the settled state"),
-    # the two other corners of the 2 x 2 (gamma, hotspot times) check, factorial_check.py
-    "nbtin-times": ParamSet(FILM, replace(hs_mod.HOTSPOT, D_nm2_per_tau0=7.1, kin_esc_tau0=530.0), False,
-                            "gamma = 1; NbTiN hotspot times: D 7.1 nm^2/tau0, escape 530 tau0; bias on at t = 0"),
-    "g10": ParamSet(replace(FILM, gamma=10.0), hs_mod.HOTSPOT, True,
-                    "gamma = 10; hotspot times of NbN: D 10 nm^2/tau0, escape 100 tau0; photon into the settled state"),
 }
 
 

@@ -2,7 +2,7 @@
 2a  The fluxoid meter (snspd/fluxoid.py) on hand-built order parameters, on the real meshes around real holes, with
 no TDGL.  This separates bugs in the meter from the physics.
 
-  winding     psi = exp(i sum_k n_k phi_k) around every hole of the zipper, the 400 nm slot column and a single
+  winding     psi = exp(i sum_k n_k phi_k) around every hole of the 400 and 110 nm slot columns and a single
               60 nm hole, n_k = -3..3, plus a uniform-current phase gradient: exactly n_k.
   noise       the same with independent random phase noise in [-0.3, 0.3] rad on every mesh site: still n_k.
   vortex      a vortex psi_v = (z - z_v) / sqrt(|z - z_v|^2 + 2 xi^2) between the hole wall and the loop counts +1
@@ -11,7 +11,8 @@ no TDGL.  This separates bugs in the meter from the physics.
               the min |psi| >= PSI_LOOP_MIN gate.  Measured: the rejection band and the band in which the count
               disagrees with the core's side of the loop.
   belt        a normal hotspot on the loop is rejected; the same hotspot 11 nm off the loop is not, and counts right.
-  bridge      a vortex in the middle of a 12 nm zipper bridge, where the loops of the two holes meet.
+  bridge      a vortex in the middle of the 40 nm bridge between two slots of the 400 nm column, where the loops of
+              the two holes meet.
 """
 from __future__ import annotations
 
@@ -38,7 +39,7 @@ def run(a):
     from shapely.geometry import Point, Polygon
     rng = np.random.default_rng(1)
     checks = []
-    devs = {"zipper": sim.make_device(geo.LONG_ZIPPER, MESH), "slot400": sim.make_device(geo.SLOT_400, MESH),
+    devs = {"slot110": sim.make_device(C.SLOT_110, MESH), "slot400": sim.make_device(C.SLOT_400, MESH),
             "one_hole": sim.make_device(C.holed_strip(0.0, R_HOLE), MESH)}
     meters = {k: FluxoidMeter(d) for k, d in devs.items()}
 
@@ -58,7 +59,7 @@ def run(a):
                     got, _ = meters[k](psi * np.exp(1j * rng.uniform(-0.3, 0.3, len(psi))))
                     if tuple(got) != n:
                         bad_noise.append((k, n, q, got))
-    checks.append(C.check("2a.1", "winding n = -3..3 around every hole (zipper, slot column, one hole), with and "
+    checks.append(C.check("2a.1", "winding n = -3..3 around every hole (two slot columns, one hole), with and "
                           "without a transport phase gradient", f"{n_cases - len(bad)} of {n_cases} exact",
                           f"all exact and accepted (min |psi| >= {PSI_LOOP_MIN})", not bad, "; ".join(map(str, bad[:3]))))
     checks.append(C.check("2a.2", "the same with phase noise of +-0.3 rad on every site (3 draws each)",
@@ -138,23 +139,23 @@ def run(a):
                           "FluxoidMeter.__call__ divides by the loop samples (np.roll(z, -1) / z) and rounds the NaN; "
                           "TDGL frames are never exactly 0 off the terminals, so production runs are not affected"))
 
-    # a vortex in the middle of a zipper bridge: on the loops of both holes of the column
-    dev, meter = devs["zipper"], meters["zipper"]
+    # a vortex in the bridge between holes 0 and 1 of the 400 nm column (bridge y = -240..-200 nm, |x| <= 15 nm)
+    dev, meter = devs["slot400"], meters["slot400"]
     xyz = np.asarray(dev.points) * 1e3
-    step = 0.25
+    step = 0.5
     both = []
-    for xv in np.arange(-44.0, -27.99, step):
-        for yv in np.arange(55.0, 67.01, step):
+    for xv in np.arange(-15.0, 15.01, step):
+        for yv in np.arange(-240.0, -199.99, step):
             got, floor = meter(vortex(xyz, complex(xv, yv)))
-            if got[1] == 1 and got[2] == 1 and floor >= PSI_LOOP_MIN:
+            if got[0] == 1 and got[1] == 1 and floor >= PSI_LOOP_MIN:
                 both.append((xv, yv))
     both = np.array(both).reshape(-1, 2)
     ext = "" if not len(both) else (f"x {both[:, 0].min():g}..{both[:, 0].max():g}, "
                                     f"y {both[:, 1].min():g}..{both[:, 1].max():g} nm")
-    checks.append(C.check("2a.9", "vortex anywhere in the 12 nm bridge between zipper holes 1 and 2 "
-                          "(x = -44..-28, y = 55..67 nm, 0.25 nm grid): counted in both holes in an accepted frame",
+    checks.append(C.check("2a.9", "vortex anywhere in the 40 nm bridge between holes 0 and 1 of the 400 nm slot "
+                          "column (x = -15..15, y = -240..-200 nm, 0.5 nm grid): counted in both holes in an accepted frame",
                           f"{len(both) * step ** 2:.1f} nm^2 of double counting" + (f" ({ext})" if ext else ""),
                           "never (each vortex counted at most once)", not len(both),
-                          "the two fluxoid loops (each pushed 6 nm out, half the bridge) overlap at the bridge middle; "
+                          "the two fluxoid loops (each pushed out to half the bridge) meet at the bridge middle; "
                           "a frame taken while a vortex crosses there adds a spurious quantum for one frame"))
     return checks, dict(r_loop_nm=r_loop, crossing=rows.tolist(), bridge_double=both.tolist())

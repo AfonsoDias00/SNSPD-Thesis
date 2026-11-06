@@ -1,7 +1,7 @@
 {
  "id": "1b",
  "title": "epsilon mapping",
- "wall_s": 205.6,
+ "wall_s": 13.4,
  "checks": [
   {
    "id": "1b.1",
@@ -33,7 +33,7 @@
    "value": "-3.25 at Plain 30 nm (-13.0, 0.0) (deepest)",
    "expected": "> eps_floor = -6: the floor never acts, epsilon is linear in f everywhere",
    "verdict": "PASS",
-   "note": "per geometry, shallowest .. deepest: Plain wire -1.45 at (0.0, 0.0) .. -2.80 at (-96.0, 0.0); Long zipper -1.43 at (-68.0, 0.0) .. -2.80 at (-96.0, 15.0); Plain wire, 2 um -1.43 at (-58.0, 0.0) .. -2.82 at (-96.0, 0.0); Slot column, 110 nm -1.42 at (-42.0, 27.5) .. -2.81 at (-96.0, 75.0); Slot column, 200 nm -1.42 at (-58.0, 0.0) .. -2.80 at (-96.0, 100.0); Slot column, 400 nm -1.42 at (-58.0, 0.0) .. -2.80 at (-96.0, 0.0); Plain 30 nm -1.87 at (0.0, 0.0) .. -3.25 at (-13.0, 0.0); Plain 56 nm -1.49 at (0.0, 0.0) .. -3.24 at (-26.0, 0.0); Plain 100 nm -1.47 at (-29.0, 0.0) .. -3.23 at (-48.0, 0.0)"
+   "note": "per geometry, shallowest .. deepest: Plain wire -1.45 at (0.0, 0.0) .. -2.80 at (-96.0, 0.0); Plain wire, 2 um -1.43 at (-58.0, 0.0) .. -2.82 at (-96.0, 0.0); Slot column, 400 nm -1.42 at (-58.0, 0.0) .. -2.80 at (-96.0, 0.0); Slot column, 110 nm -1.42 at (-42.0, 27.5) .. -2.81 at (-96.0, 75.0); Plain 30 nm -1.87 at (0.0, 0.0) .. -3.25 at (-13.0, 0.0); Plain 56 nm -1.49 at (0.0, 0.0) .. -3.24 at (-26.0, 0.0); Plain 100 nm -1.47 at (-29.0, 0.0) .. -3.23 at (-48.0, 0.0)"
   },
   {
    "id": "1b.5",
@@ -60,11 +60,9 @@
   },
   "eps_by_geometry": [
    "Plain wire -1.45 at (0.0, 0.0) .. -2.80 at (-96.0, 0.0)",
-   "Long zipper -1.43 at (-68.0, 0.0) .. -2.80 at (-96.0, 15.0)",
    "Plain wire, 2 um -1.43 at (-58.0, 0.0) .. -2.82 at (-96.0, 0.0)",
-   "Slot column, 110 nm -1.42 at (-42.0, 27.5) .. -2.81 at (-96.0, 75.0)",
-   "Slot column, 200 nm -1.42 at (-58.0, 0.0) .. -2.80 at (-96.0, 100.0)",
    "Slot column, 400 nm -1.42 at (-58.0, 0.0) .. -2.80 at (-96.0, 0.0)",
+   "Slot column, 110 nm -1.42 at (-42.0, 27.5) .. -2.81 at (-96.0, 75.0)",
    "Plain 30 nm -1.87 at (0.0, 0.0) .. -3.25 at (-13.0, 0.0)",
    "Plain 56 nm -1.49 at (0.0, 0.0) .. -3.24 at (-26.0, 0.0)",
    "Plain 100 nm -1.47 at (-29.0, 0.0) .. -3.23 at (-48.0, 0.0)"

@@ -1,5 +1,0 @@
-CHECK edge   conserving_T150_m0.8   (tol = bisection tolerance in units of I_sw)
-geometry           test site    i_det    branch  t_trig        ref site  ref i_det     diff     tol
-Plain_Wire           (-98,0)   0.8633   V_trail   120.5         (-96,0)     0.8617  +0.0016  0.0034
-Long_Zipper          (-98,0)   0.8250   V_trail    58.5         (-96,0)     0.8219  +0.0031  0.0039
-Long_Zipper         (-98,61)   0.8414   V_trail    63.5        (-96,61)     0.8406  +0.0008  0.0039

@@ -1,16 +1,16 @@
 VALIDATION SUMMARY   (results/validation/<id>.json; PASS / FAIL against the stated expectation, INFO = no pass mark)
 
-1a  hotspot diffusion solver   (133 s)
+1a  hotspot diffusion solver   (167 s)
   [PASS] 1a.1   Plain wire: integral n dA / pi r0^2 over 380 tau0, sites ((-96.0, 0.0), (0.0, 0.0))
          measured: max |deviation| 6.9e-09
          expected: < 1e-5 (float32 snapshots)
          note:     most negative n / n(0) peak: 0.0e+00
-  [PASS] 1a.2   Long zipper: integral n dA / pi r0^2 over 380 tau0, sites ((-36.0, 61.0), (-68.0, 0.0), (-96.0, 0.0))
-         measured: max |deviation| 7.1e-09
-         expected: < 1e-5 (float32 snapshots)
-         note:     most negative n / n(0) peak: -9.3e-19
-  [PASS] 1a.3   Slot column, 400 nm: integral n dA / pi r0^2 over 380 tau0, sites ((0.0, 220.0), (-96.0, 0.0))
+  [PASS] 1a.2   Slot column, 400 nm: integral n dA / pi r0^2 over 380 tau0, sites ((0.0, 220.0), (-28.0, 200.0), (-96.0, 0.0))
          measured: max |deviation| 5.6e-09
+         expected: < 1e-5 (float32 snapshots)
+         note:     most negative n / n(0) peak: 0.0e+00
+  [PASS] 1a.3   Slot column, 110 nm: integral n dA / pi r0^2 over 380 tau0, sites ((0.0, 75.0), (-96.0, 0.0))
+         measured: max |deviation| 6.6e-09
          expected: < 1e-5 (float32 snapshots)
          note:     most negative n / n(0) peak: 0.0e+00
   [PASS] 1a.4   free space (600 nm square, 1.4 xi): profile vs (r0^2/s^2) exp(-r^2/s^2)
@@ -54,7 +54,7 @@ VALIDATION SUMMARY   (results/validation/<id>.json; PASS / FAIL against the stat
          expected: 2, within 1.5-2.5
          note:     2.8 xi (7.4 nm): 1.1e-02, 1.4 xi (4.1 nm): 4.3e-03, 0.7 xi (1.7 nm): 8.7e-04, 0.35 xi (0.8 nm): 1.9e-04
 
-1b  epsilon mapping   (206 s)
+1b  epsilon mapping   (13 s)
   [PASS] 1b.1   pyTDGL 0.9 TDGLSolver given epsilon = -3 / 1.2
          measured: accepted / rejected
          expected: accepted / rejected (only epsilon > 1 is checked, at t = 0)
@@ -68,7 +68,7 @@ VALIDATION SUMMARY   (results/validation/<id>.json; PASS / FAIL against the stat
   [PASS] 1b.4   epsilon at the hotspot centre at t0, f = 1, over every production hit site
          measured: -3.25 at Plain 30 nm (-13.0, 0.0) (deepest)
          expected: > eps_floor = -6: the floor never acts, epsilon is linear in f everywhere
-         note:     per geometry, shallowest .. deepest: Plain wire -1.45 at (0.0, 0.0) .. -2.80 at (-96.0, 0.0); Long zipper -1.43 at (-68.0, 0.0) .. -2.80 at (-96.0, 15.0); Plain wire, 2 um -1.43 at (-58.0, 0.0) .. -2.82 at (-96.0, 0.0); Slot column, 110 nm -1.42 at (-42.0, 27.5) .. -2.81 at (-96.0, 75.0); Slot column, 200 nm -1.42 at (-58.0, 0.0) .. -2.80 at (-96.0, 100.0); Slot column, 400 nm -1.42 at (-58.0, 0.0) .. -2.80 at (-96.0, 0.0); Plain 30 nm -1.87 at (0.0, 0.0) .. -3.25 at (-13.0, 0.0); Plain 56 nm -1.49 at (0.0, 0.0) .. -3.24 at (-26.0, 0.0); Plain 100 nm -1.47 at (-29.0, 0.0) .. -3.23 at (-48.0, 0.0)
+         note:     per geometry, shallowest .. deepest: Plain wire -1.45 at (0.0, 0.0) .. -2.80 at (-96.0, 0.0); Plain wire, 2 um -1.43 at (-58.0, 0.0) .. -2.82 at (-96.0, 0.0); Slot column, 400 nm -1.42 at (-58.0, 0.0) .. -2.80 at (-96.0, 0.0); Slot column, 110 nm -1.42 at (-42.0, 27.5) .. -2.81 at (-96.0, 75.0); Plain 30 nm -1.87 at (0.0, 0.0) .. -3.25 at (-13.0, 0.0); Plain 56 nm -1.49 at (0.0, 0.0) .. -3.24 at (-26.0, 0.0); Plain 100 nm -1.47 at (-29.0, 0.0) .. -3.23 at (-48.0, 0.0)
   [PASS] 1b.5   min epsilon over 20-400 tau0 at Plain 30 nm (-13.0, 0.0)
          measured: -3.247 at t = 20 tau0
          expected: at t0 = 20
@@ -77,74 +77,8 @@ VALIDATION SUMMARY   (results/validation/<id>.json; PASS / FAIL against the stat
          expected: 1 / |A|
          note:     epsilon < -1 is outside the documented range but is physical in a two-temperature picture (T_e > 2 T_c - T at the core); it sets how fast psi collapses (rate |epsilon| / u) and the proximity length xi / sqrt|epsilon| at the hotspot edge, not the size of the normal core
 
-1c  frozen normal disc vs a real hole   (103 s)
-  [PASS] 1c.1   R = 20 nm: disc (epsilon = -1) vs hole, dark I_sw
-         measured: 67.79 vs 74.59 uA: the disc acts as a hole +7.3 nm larger in radius
-         expected: 0 to 2 xi = 10 nm larger (proximity effect only)
-         note:     GL flat-interface estimate: 2.9 nm; flags: disc '', hole ''
-  [PASS] 1c.2   R = 20 nm: disc (epsilon = -3) vs hole, dark I_sw
-         measured: 67.03 vs 74.59 uA: the disc acts as a hole +8.1 nm larger in radius
-         expected: 0 to 2 xi = 10 nm larger (proximity effect only)
-         note:     GL flat-interface estimate: 4.4 nm; flags: disc '', hole ''
-  [PASS] 1c.3   R = 20 nm hole: i_sw = I_sw / I_sw(plain) against the free-width fraction (w - 2R)/w
-         measured: 0.763 vs 0.800 (0.954 of it)
-         expected: within 10 % of (w - 2R)/w (plan: free width, small crowding penalty)
-         note:     I_sw / I_dep(free width) = 0.925 vs 0.970 for the plain wire
-  [PASS] 1c.4   R = 40 nm: disc (epsilon = -1) vs hole, dark I_sw
-         measured: 52.54 vs 58.21 uA: the disc acts as a hole +5.8 nm larger in radius
-         expected: 0 to 2 xi = 10 nm larger (proximity effect only)
-         note:     GL flat-interface estimate: 2.9 nm; flags: disc '', hole ''
-  [PASS] 1c.5   R = 40 nm hole: i_sw = I_sw / I_sw(plain) against the free-width fraction (w - 2R)/w
-         measured: 0.596 vs 0.600 (0.993 of it)
-         expected: within 10 % of (w - 2R)/w (plan: free width, small crowding penalty)
-         note:     I_sw / I_dep(free width) = 0.963 vs 0.970 for the plain wire
-
-1d  plain-wire photon thresholds against known behaviour   (0 s)
-  [PASS] 1d.1   centre site (0,0): linearity of i_det(f) over the detected range f = 0.4-1
-         measured: max |residual| 0.0054
-         expected: <= 3 x bisection tol = 0.0104 (linear in photon energy)
-         note:     slope -0.202 I_dep per unit f; i_det stays within tol of its f = 1 value for f >= 1; i_det(f) = 0.2:1.000*, 0.3:1.000*, 0.35:1.000*, 0.4:0.992, 0.5:0.978, 0.6:0.959, 0.7:0.937, 0.8:0.915, 0.9:0.893, 1:0.869   (* = no detection below I_sw)
-  [PASS] 1d.3   centre site: i_det falls monotonically with f
-         measured: yes
-         expected: monotonic within tol
-  [FAIL] 1d.2   edge site (-96,0): linearity of i_det(f) over the detected range f = 0.3-1
-         measured: max |residual| 0.0292
-         expected: <= 3 x bisection tol = 0.0104 (linear in photon energy)
-         note:     slope -0.124 I_dep per unit f; i_det stays within tol of its f = 1 value for f >= 0.6; i_det(f) = 0.2:1.000*, 0.3:0.973, 0.35:0.954, 0.4:0.934, 0.5:0.891, 0.6:0.880, 0.7:0.880, 0.8:0.880, 0.9:0.877, 1:0.877   (* = no detection below I_sw)
-  [PASS] 1d.4   edge site: i_det falls monotonically with f
-         measured: yes
-         expected: monotonic within tol
-  [PASS] 1d.5   weak photons (f <= 0.6, where the edge detects): the edge is more sensitive than the centre
-         measured: f=0.3: centre-edge +0.027, f=0.35: centre-edge +0.046, f=0.4: centre-edge +0.057, f=0.5: centre-edge +0.088, f=0.6: centre-edge +0.079
-         expected: centre - edge > tol at every such f
-         note:     f = 0.2: neither site detects below I_sw
-  [PASS] 1d.6   strong photons: the profile across the width flattens
-         measured: |centre - edge| 0.0082 at f = 1 vs 0.0793 at f = 0.6
-         expected: smaller at f = 1
-         note:     all f: 0.2:+0.000, 0.3:+0.027, 0.35:+0.046, 0.4:+0.057, 0.5:+0.088, 0.6:+0.079, 0.7:+0.057, 0.8:+0.036, 0.9:+0.016, 1:-0.008
-  [PASS] 1d.7   width law i_det = 1 - d_hs/w at the centre, 30-100 nm strips, voltage-trigger bound
-         measured: d_hs = 20.2 nm, max |residual| 0.0050
-         expected: max |residual| <= 3 x tol = 0.0104
-         note:     (w, i_det, (1 - i) w): (30, 0.327, 20.2 nm), (56, 0.636, 20.4 nm), (100, 0.803, 19.7 nm), (200, 0.869, 26.2 nm)
-  [INFO] 1d.8   the 200 nm wire against that law
-         measured: 0.869 vs 0.899 (-0.030)
-         expected: on the law if detection is a normal belt of width d_hs
-         note:     (1 - i) w = 26 nm instead of 20: the wide wire detects at lower bias than a d_hs belt would allow
-  [PASS] 1d.9   centre site: photon at t0 = 40 vs 20 tau0
-         measured: 0.8660 vs 0.8688 (-0.0027)
-         expected: |diff| <= tol = 0.0035
-  [PASS] 1d.10  edge site: photon at t0 = 40 vs 20 tau0
-         measured: 0.8770 vs 0.8770 (+0.0000)
-         expected: |diff| <= tol = 0.0035
-  [PASS] 1d.11  mirror: (58,0) vs (-58,0)
-         measured: 0.8715 vs 0.8715 (+0.0000)
-         expected: |diff| <= tol = 0.0035
-  [PASS] 1d.12  mirror: (96,0) vs (-96,0)
-         measured: 0.8770 vs 0.8770 (+0.0000)
-         expected: |diff| <= tol = 0.0035
-
-2a  fluxoid meter on synthetic fields   (30 s)
-  [PASS] 2a.1   winding n = -3..3 around every hole (zipper, slot column, one hole), with and without a transport phase gradient
+2a  fluxoid meter on synthetic fields   (20 s)
+  [PASS] 2a.1   winding n = -3..3 around every hole (two slot columns, one hole), with and without a transport phase gradient
          measured: 42 of 42 exact
          expected: all exact and accepted (min |psi| >= 0.05)
   [PASS] 2a.2   the same with phase noise of +-0.3 rad on every site (3 draws each)
@@ -171,109 +105,9 @@ VALIDATION SUMMARY   (results/validation/<id>.json; PASS / FAIL against the stat
          measured: raises ValueError (cannot convert float NaN to integer)
          expected: a rejected frame (min |psi| = 0), not an exception
          note:     FluxoidMeter.__call__ divides by the loop samples (np.roll(z, -1) / z) and rounds the NaN; TDGL frames are never exactly 0 off the terminals, so production runs are not affected
-  [FAIL] 2a.9   vortex anywhere in the 12 nm bridge between zipper holes 1 and 2 (x = -44..-28, y = 55..67 nm, 0.25 nm grid): counted in both holes in an accepted frame
-         measured: 11.7 nm^2 of double counting (x -36..-31.5, y 59..63.25 nm)
+  [PASS] 2a.9   vortex anywhere in the 40 nm bridge between holes 0 and 1 of the 400 nm slot column (x = -15..15, y = -240..-200 nm, 0.5 nm grid): counted in both holes in an accepted frame
+         measured: 0.0 nm^2 of double counting
          expected: never (each vortex counted at most once)
-         note:     the two fluxoid loops (each pushed 6 nm out, half the bridge) overlap at the bridge middle; a frame taken while a vortex crosses there adds a spurious quantum for one frame
+         note:     the two fluxoid loops (each pushed out to half the bridge) meet at the bridge middle; a frame taken while a vortex crosses there adds a spurious quantum for one frame
 
-2b  closed ring: winding, persistent current, depairing limit   (82 s)
-  [PASS] 2b.1   stable rings: winding read at every frame (all meshes)
-         measured: 27 of 27 runs clean
-         expected: every frame accepted and = n
-  [PASS] 2b.2   circulating current from psi vs (K0/4) xi int f^2 n/r dr (radial GL), n = 1..8, 0.5 xi
-         measured: max |I / I_GL - 1| = 0.0056
-         expected: < 0.01 (coarser meshes in the note)
-         note:     1.4 xi: 1:-0.001, 2:-0.002, 3:-0.005, 4:-0.008, 5:-0.012, 6:-0.017, 7:-0.022, 8:-0.027; 0.8 xi: 1:-0.000, 2:-0.001, 3:-0.002, 4:-0.003, 5:-0.004, 6:-0.006, 7:-0.008, 8:-0.009; 0.5 xi: 1:-0.002, 2:-0.003, 3:-0.003, 4:-0.003, 5:-0.004, 6:-0.004, 7:-0.005, 8:-0.006;  uniform-state formula (1 - q^2) q at the local q = n/r vs GL: 1:-0.000, 2:-0.000, 3:-0.000, 4:-0.000, 5:-0.001, 6:-0.001, 7:-0.002, 8:-0.003
-  [INFO] 2b.2b  the same current from pyTDGL's interpolated current density (what hitmap.py's crowding analysis reads)
-         measured: 1.4 xi: +0.093 / 0.8 xi: +0.070 / 0.5 xi: +0.032
-         expected: I / I_GL - 1 (largest over n)
-         note:     a ring 3 xi wide is mostly boundary sites at 1.4 xi; the excess falls with the mesh
-  [PASS] 2b.3   |psi|^2 at mid-radius vs the radial GL solution, 0.5 xi
-         measured: max |rel. diff| = 0.0029
-         expected: < 0.01
-         note:     1.4 xi: 1:-0.0005, 2:-0.0020, 3:-0.0044, 4:-0.0078, 5:-0.0119, 6:-0.0166, 7:-0.0217, 8:-0.0268; 0.8 xi: 1:-0.0002, 2:-0.0006, 3:-0.0014, 4:-0.0024, 5:-0.0037, 6:-0.0052, 7:-0.0067, 8:-0.0082; 0.5 xi: 1:-0.0001, 2:-0.0002, 3:-0.0005, 4:-0.0009, 5:-0.0013, 6:-0.0018, 7:-0.0024, 8:-0.0029
-  [PASS] 2b.4   largest winding that survives 600 tau0 (1.4 / 0.8 / 0.5 xi)
-         measured: 8 / 8 / 8
-         expected: 8 (q^2 < 1/3 + 1/6R^2 at R = 15 xi: n < 8.67); 7 if set at R1 (n < 7.80); all lower n stable
-         note:     q = n_max / R_mid = 0.533, 0.533, 0.533 vs 1/sqrt 3 = 0.577
-  [FAIL] 2b.5   start above the limit, n = 9..12: end state, all meshes and seeds
-         measured: n = 2..4, i.e. current 0.34-0.64 j_dep
-         expected: 8 or slightly below (plan)
-         note:     1.4 xi: 9->[3], 10->[3], 11->[4], 12->[3, 3, 4]; 0.8 xi: 9->[4], 10->[3], 11->[3], 12->[3, 2, 2]; 0.5 xi: 9->[3], 10->[3], 11->[2], 12->[3, 3, 2].  Each slip leaves the slip point depressed and the next follows ~5 tau0 later, down to about half the depairing current: TDGL switching/retrapping hysteresis, no heat needed
-  [FAIL] 2b.6   n = 12, 0.5 xi, a frame every 2 solver steps for 100 tau0: size of every change between accepted frames
-         measured: [-6, -2, -1]  (84 of 787 frames rejected)
-         expected: all -1 (one slip at a time, plan)
-         note:     same run with a frame every 10 steps: [-6, -2, -1].  In a fast burst |psi| at the slip point stays below the gate through several slips, so only the net change is defined
-  [PASS] 2b.6b  every change of more than one quantum spans rejected frames (all runs, both frame rates)
-         measured: 32 of 32 bridged
-         expected: all (a multi-slip jump between two consecutive accepted frames would be a meter fault)
-  [PASS] 2b.7   mesh convergence: largest stable winding on 1.4 / 0.8 / 0.5 xi
-         measured: 8 / 8 / 8
-         expected: identical
-         note:     end states from n = 12 (seeds 0-2): 1.4 xi [3, 3, 4]; 0.8 xi [2, 2, 3]; 0.5 xi [2, 3, 3] -- they differ by up to 1 between seeds at one mesh, so they are not a mesh test
-
-2c  one hole in the plain strip   (7 s)
-  [PASS] 2c.1   placed quantum after 50 tau0 at zero bias: still in its hole, and the two probe paths differ by exactly 2 pi
-         measured: yes
-         expected: fluxoid kept; f_right + f_left = 1
-         note:     still held after 100 tau0 at 0.7 I_dep: circle d = 20 nm at x = -72: no, circle d = 20 nm at x = -36: no, circle d = 20 nm at x = 0: no, circle d = 20 nm at x = 36: no, circle d = 20 nm at x = 72: no, zipper ellipse 16 x 110 nm alone at x = -36: yes, zipper hole 1 (-36, 0) in the zipper: yes
-  [PASS] 2c.2   zero bias, entry from the left: phase per quantum Delta theta(right path) / 2 pi against the transport share I_L / I passing left of the hole (reciprocity), holes whose circulating current stays below 0.5 j_dep in the narrower channel (London regime)
-         measured: max |difference| 0.0016 over 3 holes
-         expected: < 0.005
-         note:     circle d = 20 nm at x = -72: 0.1170 vs 0.1311 (circulation 1.04 j_dep in 18 nm); circle d = 20 nm at x = -36: 0.3132 vs 0.3179 (circulation 0.54 j_dep in 54 nm); circle d = 20 nm at x = 0: 0.5001 vs 0.5016 (circulation 0.35 j_dep in 90 nm); circle d = 20 nm at x = 36: 0.6868 vs 0.6810 (circulation 0.54 j_dep in 54 nm); circle d = 20 nm at x = 72: 0.8831 vs 0.8709 (circulation 1.03 j_dep in 18 nm); zipper ellipse 16 x 110 nm alone at x = -36: 0.3127 vs 0.3142 (circulation 0.30 j_dep in 56 nm); zipper hole 1 (-36, 0) in the zipper: 0.3310 vs 0.3299 (circulation 0.26 j_dep in 56 nm).  With pyTDGL's interpolated current density: max |difference| 0.0071
-  [PASS] 2c.3   20 nm circles: phase per quantum against the point-vortex value x/w
-         measured: max |difference| 0.023
-         expected: < 0.03 (small hole ~ point vortex)
-         note:     x/w 0.14: 0.117, x/w 0.32: 0.313, x/w 0.50: 0.500, x/w 0.68: 0.687, x/w 0.86: 0.883
-  [PASS] 2c.4   zipper hole 1: phase per quantum at 0.7 I_dep vs the flux-scan runs at 0.7 that end in [0 -1 0 0 0 0 0], less the dark-run baseline
-         measured: 0.366 vs 0.384 - 0.018 = 0.366 (16 runs)
-         expected: equal within 0.01
-         note:     the plan's 0.32 vs ~0.4: ellipse alone at zero bias 0.313 (x/w 0.32); other zipper holes +0.018; bias 0.7 I_dep +0.035; slip baseline +0.018: a dark run slips that much after t0 = 20 tau0 (0.018 of it by 100 tau0), the bias transient still settling
-  [PASS] 2c.5   one quantum in a centred 40 nm hole, zero bias, 400 tau0
-         measured: fluxoid [1] on 52 frames (0 rejected); circulating current 11.88 uA per side, net -0.057 uA
-         expected: stays 1; net ~ 0
-  [PASS] 2c.6   centred 40 nm hole: I_sw drop with one quantum, against the GL two-channel estimate
-         measured: 69.55 vs 74.59 uA: 5.04 uA (estimate 5.14 uA)
-         expected: estimate within 25 %
-         note:     the plan's linear estimate 2 I_c = 23.8 uA is 4.7x too large; phase offset between the channels Delta = 0.249 / xi.  Just below I_sw (69.21 uA): trapped, 11.88 slips, fluxoid history 0:1 50:0 75:-1 106:0 127:1 158:0 180:-1 215:0 232:1 268:0 289:-1 320:0 341:1 372:0 394:-1
-  [INFO] 2c.7   zipper [0 -1 0 0 0 0 0]: GL two-channel estimate of the I_sw drop vs the stored trapped-state result
-         measured: estimate 0.030 I_dep, stored 0.058 I_dep
-         expected: same order (two channels standing in for a seven-hole device)
-         note:     I_c = 7.29 uA at zero bias, circulation along the transport on the right, transport share left of the hole 0.330; linear estimate I_c / share = 0.124 I_dep
-
-2d  fluxoid steps in the flux scans   (405 s)
-  [PASS] 2d.1   Long_Zipper scan, runs that end trapped (no trigger): changes of one quantum per hole between accepted states
-         measured: 426 of 426
-         expected: all
-  [FAIL] 2d.2   Long_Zipper scan, resistive runs (transient/direct/via_trap): changes of 2 or more quanta in one hole
-         measured: 174 of 1610 (10.8 %)
-         expected: 0 if frames resolve every vortex
-         note:     per outcome: transient {1: 207, 2: 25, 3: 9}; direct {1: 897, 2: 131, 3: 3}; via_trap {1: 332, 2: 6}
-  [PASS] 2d.3   Slot_400 scan, runs that end trapped (no trigger): changes of one quantum per hole between accepted states
-         measured: 33 of 33
-         expected: all
-  [FAIL] 2d.4   Slot_400 scan, resistive runs (transient/direct/via_trap): changes of 2 or more quanta in one hole
-         measured: 23 of 218 (10.6 %)
-         expected: 0 if frames resolve every vortex
-         note:     per outcome: transient {1: 171, 2: 17, 3: 3}; direct {1: 24, 2: 3}; via_trap {}
-  [INFO] 2d.5   trace of the zipper photon at (-68, 0), 4 biases: changes with a rejected frame between the two accepted states
-         measured: 11 of 26
-         expected: all (plan); not required, see 2a.5-2a.6
-         note:     min |psi| on the loops at the frame before or at each change: median 0.07, min 0.01
-  [PASS] 2d.6   dense re-runs: every 5th frame reproduces the stored history
-         measured: yes
-         expected: identical (deterministic solver; frames do not change the dynamics)
-  [PASS] 2d.7   dense re-runs: jumps of 2+ quanta between accepted frames, production rate vs 5x
-         measured: 10 -> 5; at 5x, 5 of 5 span rejected frames
-         expected: every remaining jump spans rejected frames (a burst, winding undefined in between)
-         note:     Long_Zipper (-96,0) @ 0.78: 1 jumps of 2+ at the production rate, 1 at 5x (1 bridged by rejected frames); Long_Zipper (0,0) @ 0.81: 5 jumps of 2+ at the production rate, 3 at 5x (3 bridged by rejected frames); Slot_400 (-42,0) @ 0.82: 4 jumps of 2+ at the production rate, 1 at 5x (1 bridged by rejected frames)
-  [FAIL] 2d.8   zipper mesh (1.4 xi): committed sim.make_device vs the working tree
-         measured: 10710 vs 10543 sites
-         expected: identical (the outlines agree to ~1e-14 nm)
-         note:     stored zipper results (hitmap, flux scan, trapped states) reproduce bit for bit only with the committed construction (2d.6); zipper runs made now use another triangulation
-  [FAIL] 2d.9   zipper on the working-tree mesh vs stored: I_sw and the f = 1 thresholds at (-96,0), (-68,0), (0,0)
-         measured: largest change 10.9 x the bisection tolerance (0.34 uA)
-         expected: <= 2 x tol (same resolution, only the triangulation differs)
-         note:     I_sw: 84.34 vs 84.51 uA (-0.0020 I_dep); (-96,0): 72.50 vs 68.80 uA (+0.0423 I_dep); (-68,0): 72.03 vs 68.80 uA (+0.0370 I_dep); (0,0): 71.11 vs 71.11 uA (+0.0000 I_dep)
-
-55 PASS, 10 FAIL, 5 INFO
+25 PASS, 2 FAIL, 1 INFO

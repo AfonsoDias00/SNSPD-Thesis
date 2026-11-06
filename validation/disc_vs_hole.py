@@ -24,7 +24,8 @@ from snspd import sim, store
 from . import common as C
 
 ID, TITLE = "1c", "frozen normal disc vs a real hole"
-CASES = (("hole", 20.0, None), ("disc", 20.0, -1.0), ("disc", 20.0, -3.0), ("hole", 40.0, None), ("disc", 40.0, -1.0))
+CASES = (("plain", 0.0, None), ("hole", 20.0, None), ("disc", 20.0, -1.0), ("disc", 20.0, -3.0), ("hole", 40.0, None),
+         ("disc", 40.0, -1.0))
 BRACKET = (0.4, 1.2)          # [I_dep of the free width]; wider below than sim.ISW_BRACKET in case of strong crowding
 W = geo.PLAIN_WIRE.width_nm
 
@@ -49,8 +50,9 @@ def isw_task(task):
     try:
         kind, R, e = task["kind"], task["R"], task["eps"]
         cfg = C.CFG
-        if kind == "hole":
-            dev = sim.context(C.holed_strip(0.0, R), cfg.mesh_xi)["device"]
+        if kind in ("hole", "plain"):
+            g = C.holed_strip(0.0, R) if kind == "hole" else geo.PLAIN_WIRE
+            dev = sim.context(g, cfg.mesh_xi)["device"]
             run = lambda I: sim.run_simulation(dev, I, None, cfg)
         else:
             dev = sim.context(geo.PLAIN_WIRE, cfg.mesh_xi)["device"]
@@ -101,7 +103,7 @@ def interface_loss(eps_n):
 
 def run(a):
     vals = isw_values(CASES, a.workers)
-    isw_plain = store.load_json("results/hitmap/isw_conserving_T400_m1.4.json", {})[geo.PLAIN_WIRE.key]["I_sw"]
+    isw_plain = vals[("plain", 0.0, None)]["I_sw"]
     checks, extra = [], dict(isw={f"{k}_{R:g}_{e}": v for (k, R, e), v in vals.items()}, I_sw_plain=isw_plain)
     for R in sorted({R for _, R, _ in CASES}):
         hole = vals.get(("hole", R, None))

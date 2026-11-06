@@ -15,7 +15,7 @@ Usage
   python hitmap.py report [options]             # rebuild figures and summary from the saved files
 
 Options
-  --geoms Plain_Wire,Long_Zipper   first = reference for the go / no-go comparison
+  --geoms Plain_Wire,<holed device>   first = reference for the go / no-go comparison
   --grid {full,critical}           critical = ~10 sites per geometry, full = the reference grid
   --mesh-xi 1.4                    max mesh edge in xi (0.8 for the final numbers)
   --tmax 150                       solver window in tau0
@@ -334,7 +334,7 @@ def cmd_selftest(cfg, a, geoms):
 def parse_args(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("Usage")[0], formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("command", choices=["selftest", "plan", "run", "report"])
-    ap.add_argument("--geoms", default="Plain_Wire,Long_Zipper", help=f"comma separated, from {list(geo.GEOMETRIES)}")
+    ap.add_argument("--geoms", default="Plain_Wire", help=f"comma separated, from {list(geo.GEOMETRIES)}")
     ap.add_argument("--tmax", type=float, default=sim.SimConfig.tmax)
     ap.add_argument("--hotspot", choices=list(hsm.MODELS), default=sim.SimConfig.hotspot)
     ap.add_argument("--criterion", choices=["sustained", "trigger"], default="sustained")

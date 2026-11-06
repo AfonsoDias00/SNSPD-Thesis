@@ -7,7 +7,7 @@ film.  The hole then carries a fluxoid (an integer winding of the order-paramete
 snspd/fluxoid.py) and a circulating current that adds to the transport current on one side of the hole, so after
 such a photon the device is no longer the one the photon found.
 
-  scan     every hit site of a geometry (default: the long zipper, full grid) at fixed biases, in units of I_dep of
+  scan     every hit site of a geometry (full grid) at fixed biases, in units of I_dep of
            the narrowest cross-section, over the full window: did the voltage trigger fire and when, did the device
            stay resistive (both together: the detection criterion of snspd/sim.py), the phase slipped between the probes since the photon (|int V dt| / 2 pi: one vortex crossing the full width
            slips 1; a vortex that stops in a hole slips only the fraction of the width it crossed, ~0.3-0.4 here) and
@@ -783,7 +783,7 @@ def plain_detected(cfg, g, a):
     """(bias, detected share) of the plain reference wire from the hitmap at the same hotspot, or None."""
     if not g.holes:
         return None
-    h = geo.get("Plain_Wire_2um" if g.key.startswith("Slot") else "Plain_Wire")
+    h = geo.get("Plain_Wire_2um" if g.length_nm == geo.LONG_LENGTH_NM else "Plain_Wire")
     ref = hitmap_ref(cfg, h, a.film, a.hitmap_dir)
     if not ref:
         return None
@@ -886,7 +886,7 @@ def fig_trace_simple(g, res, path, title):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("Usage")[0], formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("command", choices=["scan", "trapped", "report", "trace", "compare"])
-    ap.add_argument("--geom", default="Long_Zipper")
+    ap.add_argument("--geom", required=True, help="a registered holed geometry (snspd.geometry.GEOMETRIES)")
     ap.add_argument("--grid", choices=["full", "critical"], default="full")
     ap.add_argument("--biases", default="0.56:0.70:0.02,0.71:0.96:0.01", help="units of I_dep (nothing happens below ~0.64)")
     ap.add_argument("--sites", default="", help="scan: only these sites, x,y;x,y [nm] (default: the whole --grid)")
