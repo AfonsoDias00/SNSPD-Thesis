@@ -1,0 +1,43 @@
+FLUX TRAPPING  stagger columns, 400 nm slots  kinetic-nbtin_T400_m2   biases in units of I_dep = 60.63 uA (narrowest cross-section 120 nm),  dark I_sw = 0.950
+holes: 0:(-40,-440), 1:(-40,0), 2:(-40,440), 3:(40,-660), 4:(40,-220), 5:(40,220), 6:(40,660)
+9 sites x 16 biases 0.50..0.95
+outcome per run: clean / trapped (no trigger, flux left) / transient (voltage trigger, < 1 slip in the last 50 tau0) / direct (sustained switch) / via_trap (sustained, after >= 20 tau0 trapped at |V| < 0.05 before 2 slips)
+
+Per site, lowest scanned bias at which the photon: leaves flux or fires the voltage trigger (i_trap); fires the voltage trigger (i_fire: the detection criterion until 29 Oct 2026); switches and stays resistive (i_sust: the detection criterion, compare 'hitmap'); does so without a trapped dwell (i_direct); does so with the resistive onset by t = 150 tau0 (i_prompt).  '>' = not in the range.
+        site  i_trap  i_fire  i_sust  hitmap  i_direct  i_prompt   state just below i_sust
+     (-96,0)    0.65    0.68    0.83   0.664      0.83      0.83   transient [0 1 0 0 -4 -4 0]
+     (-80,0)    0.62    0.68    0.83   0.654      0.83      0.83   transient [0 1 0 0 -4 -4 0]
+     (-64,0)    0.65    0.68    0.83   0.664      0.83      0.83   transient [0 1 0 0 -4 -4 0]
+     (-16,0)    0.86    0.86    0.89   0.856      0.89      0.92   transient [0 5 0 0 -2 -3 0]
+       (0,0)    0.86    0.86    0.89   0.862      0.89      0.95   transient [0 3 0 0 -1 -2 0]
+   (-40,204)    0.92    0.92    0.92   0.908      0.92      0.95   clean    [0 0 0 0 0 0 0]
+   (-80,220)    0.86    0.86    0.89   0.856      0.89      0.92   transient [0 -2 -1 0 0 0 -5]
+   (-40,220)    0.92    0.92    0.92   0.914      0.92      0.95   clean    [0 0 0 0 0 0 0]
+     (0,220)    0.86    0.89    0.89   0.877      0.89      0.95   trapped  [0 2 0 0 0 -2 0]
+
+Check against the hitmap thresholds: 4 of 9 sites switch first at the grid bias just above the hitmap threshold;  differ: (-16,0) scan 0.89 vs hitmap 0.856, (-80,0) scan 0.83 vs hitmap 0.654, (-64,0) scan 0.83 vs hitmap 0.664, (-80,220) scan 0.89 vs hitmap 0.856, (-96,0) scan 0.83 vs hitmap 0.664
+
+Area fractions of the unit cell (thresholds interpolated as in hitmap.py; grid resolution 0.03; SUBSET of the sites, indicative only):
+  fired = voltage trigger; sustained = stays resistive (detected); silent trap = flux left, no trigger
+  bias     fired  sustained   direct   prompt  silent trap
+  0.70       11%         0%       0%       0%           8%
+  0.75       24%         0%       0%       0%           5%
+  0.78       32%         0%       0%       0%           4%
+  0.80       37%         0%       0%       0%           3%
+  0.82       42%         0%       0%       0%           2%
+  0.85       49%        20%      20%      16%           1%
+  0.88       66%        42%      42%      32%           1%
+  0.90       80%        66%      66%      42%           1%
+  0.95      100%       100%     100%     100%           0%
+
+Efficiency-curve points for each definition of a detection (grid biases: up to one step above the bisected thresholds):
+              i_10   i_50   i_95  i_max
+      fired  0.698  0.856  0.916  0.920
+  sustained  0.837  0.890  0.918  0.920
+     prompt  0.839  0.918  0.949  0.950
+     direct  0.837  0.890  0.918  0.920
+
+Trapped states left by sub-threshold photons (fluxoid per hole, runs):
+  [0 -3 0 0 0 0 0]  3
+  [0 -2 0 0 0 0 0]  1
+  [0 2 0 0 0 -2 0]  1

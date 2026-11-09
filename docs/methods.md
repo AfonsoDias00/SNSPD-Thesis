@@ -77,8 +77,11 @@ reasonable choices moves thresholds by 0.01–0.03 I_dep; the measured escape ti
   It counts every resistive episode, including flux moving between holes and episodes that heal.
 - **Sustained (upper bound):** the trigger, plus ≥ 1 phase slip in the last 50 τ0 of the window, plus ≥ 1 slip in the
   last 50 τ0 of a 150 τ0 photon-free continuation. Without heat, the TDGL must stay resistive on its own.
-- **At γ = 10 the bounds nearly coincide** (median gap 0.000 I_dep for 200 nm devices, up to 0.03 at a few slot
-  sites), so one criterion is usually enough. At γ = 1 they were 0.02 (200 nm) to 0.40 (30 nm strip) apart.
+- **At γ = 10 the bounds coincide in plain strips and nearly did in the first phase's hole layouts** (median gap
+  0.000 I_dep, up to 0.03 at a few slot sites). At γ = 1 they were 0.02 (200 nm) to 0.40 (30 nm strip) apart.
+- **They do not coincide in the 40–60 nm channel layouts** of the second phase (docs/slots.md). A channel photon
+  dumps the channel's current into the other channels with a few phase slips and the device heals with trapped
+  flux. The gap is 0.15 I_dep in the double column.
 - **With heat** (`snspd/thermal.py`, Zotova–Vodolazov heat equation [8]; 14-site check on 5 Nov) thresholds fell at or
   below the trigger bound at 11 of 14 sites. The trigger is the closer bound.
 
@@ -97,8 +100,13 @@ depend on γ, so each photon run starts from a state prepared by a γ = 1 dark r
   ~0.92 I_dep. Their probe phase is still building up then (0.07 × 2π over 50–100 τ0), though they are stationary from
   ~120 τ0. The fallback start's bias-on transient then fires the trailing-mean trigger at t = 55 τ0. **A threshold run
   with t_trigger = 55.0 is a protocol artefact.**
-- Dark I_sw is bisected from the uniform start; at γ = 10 it comes out at ≈ 1.00 I_dep (a window effect). On 2 µm
-  devices the bias-on transient alone can fire the trigger, so take the dark I_sw from the sustained criterion.
+- **Fallback to γ = 10 (7 Nov).** Between the γ = 1 and the γ = 10 dark I_sw (≈ 0.96–0.98 I_dep), the γ = 1 bias
+  step overshoots into switching. The settling then retries with the device's own γ = 10 dynamics, again up to
+  3 × 100 τ0. That only helps where a stationary state exists. The single slot column at 0.965 I_dep creeps
+  (|V| ≈ 0.02) and switches after ~800 τ0, so it has none, and those runs still start uniform.
+- Dark I_sw is bisected from the uniform start; at γ = 10 it comes out at ≈ 0.98–1.00 I_dep. That is partly a window
+  effect: the single slot column switches at 0.965 after ~800 τ0. On 1.5–2 µm devices the bias-on transient alone
+  can fire the trigger, so take the dark I_sw from the sustained criterion (`hitmap.py --isw-sustained`).
 
 ## 5 · Numerics and the checks behind them
 
@@ -108,7 +116,10 @@ depend on γ, so each photon run starts from a state prepared by a γ = 1 dark r
 | Uniform 2.0 ξ for screening only | γ = 1: shifts −0.006 to −0.013, differences kept within 0.007. γ = 10: per-site shifts ≤ 0.012, but one hole-vs-plain difference moved 0.02. 2.5 ξ: shifts up to −0.05, a key difference shrank 30 % |
 | No graded meshes | run time scales ~h⁻⁴ (stable time step ∝ h_min²): 1.4 → 2.0 ξ is 3.7× faster, a graded mesh at most 2.4×. Coarsening near a hole rim dropped dark I_sw from 0.97 to 0.83: **hole rims, bridges and contacts must stay fine** |
 | Pinned meshes (`SNSPD_MESH_DIR`, `python -m snspd.sim pin-meshes`) | holed geometries triangulate differently on other GEOS/shapely versions; 0.04 I_dep of triangulation noise was seen for flux-mediated quantities |
+| **Solver time step: dt_max ≤ 0.025 (from 7 Nov 2026; 0.2 before)** | dt_max 0.2 leaves a local instability at single small cells: a site with |ψ| above its neighbours and μ offset by ~0.2, with a stationary |∇μ|² 50× the 99.9th percentile (dark, no photon). dt_max 0.05 removes it on 2.0 ξ meshes, 0.025 on the 1.4 ξ double column. Without heat it changes nothing measurable (dark I_sw and trigger thresholds within 0.003, `dt_check.py`). With heat it becomes a permanent hot spot that seeds the latch: heated thresholds moved by up to +0.07. Every heated result before 7 Nov 15:00 (`results/heat/check.csv`, `check_m1.4.csv`) is superseded by `check_dt0.025.csv`. Not the cause: the singular Neumann Laplacian of μ (pinning μ did not help) |
 | Window 400 τ0 | γ = 10: 800 τ0 changes thresholds by ≤ 0.003 at 4 sites, although threshold runs fire late (330–395 τ0) |
+| Shortened strips (second phase) | 150 nm of plain lead beyond the outermost slot reproduces a 2 µm strip within 0.011 I_dep at 1.4 ξ (double column, 3 sites + dark I_sw, `mesh_check.py`) |
+| 2.0 ξ maps (second phase) | 1.4 − 2.0 ξ at the critical sites: mean +0.005 to +0.011, at most +0.019 (next to dark switching); channel sites ≤ 0.011 |
 | Current crowding: disc average (1.5 ξ radius, ≥ 1.5 ξ from walls) | single-node maxima are mesh noise (a straight strip gave 1.2–1.4) |
 | Strip length | 0.8 µm was short enough that flux exited at the far edge; ψ = 0 terminals nucleate dark switching 20–50 nm from the contacts; keep photon sites ≥ 0.27 µm from them |
 

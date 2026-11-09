@@ -175,8 +175,9 @@ def thermal_solver_class():
 
 
 @contextlib.contextmanager
-def solved_thermal(device, current_uA, eps_photon, cfg, thermal: ThermalParams, seed=None):
-    """Like snspd.sim.solved, with heat.  Yields (Solution, HeatField)."""
+def solved_thermal(device, current_uA, eps_photon, cfg, thermal: ThermalParams, seed=None, init=None):
+    """Like snspd.sim.solved, with heat.  Yields (Solution, HeatField).  init: (psi, mu) to start from
+    (sim.settled_state, for presets with a settled start); the heat field starts at the bath temperature."""
     from . import sim
     h5_path = sim.temp_h5(cfg)
     sol = None
@@ -184,6 +185,8 @@ def solved_thermal(device, current_uA, eps_photon, cfg, thermal: ThermalParams, 
         solver = thermal_solver_class()(device, sim.solver_options(cfg, cfg.tmax, h5_path), thermal=thermal,
                                         eps_photon=eps_photon, seed_solution=seed,
                                         terminal_currents=dict(source=current_uA, drain=-current_uA))
+        if init is not None:
+            solver.psi_init, solver.mu_init = np.array(init[0]), np.array(init[1])
         sol = solver.solve()
         yield sol, solver.heat
     finally:
@@ -194,9 +197,10 @@ def solved_thermal(device, current_uA, eps_photon, cfg, thermal: ThermalParams, 
 
 def run_thermal(device, current_uA, eps_photon, cfg, thermal: ThermalParams, t0: float):
     """One run: dict(latched, trigger branch and time, slips in the last window, peak theta, area of theta >= 1 at
-    the end [nm^2], Joule energy)."""
+    the end [nm^2], Joule energy).  A preset with a settled start (cfg.pset) starts from sim.settled_state."""
     from . import sim
-    with solved_thermal(device, current_uA, eps_photon, cfg, thermal) as (sol, heat):
+    init = sim.settled_state(device, current_uA, cfg) if cfg.pset.settled_start else None
+    with solved_thermal(device, current_uA, eps_photon, cfg, thermal, init=init) as (sol, heat):
         trig = sim.detect(sol, t0)
         t = np.asarray(sol.dynamics.time)
         v = np.asarray(sol.dynamics.voltage())

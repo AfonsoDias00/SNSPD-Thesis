@@ -1,0 +1,163 @@
+SLOT LAYOUTS vs PLAIN REFERENCES  (preset nbtin: gamma 10, NbTiN hotspot times; kinetic f = 1; 400 tau0; voltage trigger; dark I_sw sustained; 2.0 xi, shortened strips)
+units: I_dep of the narrowest free cross-section (slot layouts: 120 nm, I_dep = 60.6 uA; plain strips: their width)
+
+device        free nm sites   I_sw   i_10   i_50   i_90   i_95  i_max eta(0.70) eta(0.80) eta(0.90) eta(0.95)
+Plain_Wire        200     8  0.997  0.870  0.884  0.901  0.901  0.901        0%        0%       79%      100%
+Plain_120         120     7  0.985  0.813  0.826  0.850  0.852  0.853        0%        0%      100%      100%
+Plain_60           60     5  0.987  0.706  0.707  0.709  0.709  0.709        0%      100%      100%      100%
+Plain_40           40     4  0.977  0.567  0.570  0.576  0.576  0.576      100%      100%      100%      100%
+Single_400        120    51  0.981  0.740  0.745  0.900  0.929  0.960        0%       74%       90%       98%
+Double_400        120    63  0.981  0.674  0.688  0.848  0.889  0.933       62%       85%       96%      100%
+Stagger_400       120    63  0.950  0.664  0.705  0.841  0.875  0.919       45%       84%       98%      100%
+
+CASCADE: a photon that blocks one channel sends its current into the others, which switch if the bias exceeds 1 - w_channel / w_free.  The hit channel must also detect on its own: compare the plain strip of the channel width.
+device             channels  cascade limit  plain strip of w_ch   channel sites (median, min-max)
+Single_400        2 x 60 nm          0.501                0.706             0.740 (0.740-0.756)
+Double_400        3 x 40 nm          0.667                0.570             0.675 (0.665-0.702)
+Stagger_400       3 x 40 nm          0.667                0.570             0.677 (0.654-0.862)
+  -> the channel threshold is about max(cascade limit, local threshold of a strip of the channel width).
+
+GAINS (reference - device, positive = the slot device needs less bias; go if > 0.03 at the plateau i_95)
+  Single_400   vs Plain_Wire   i_10 +0.131  i_50 +0.139  i_95 -0.028  i_max -0.058   -> no-go (plateau)
+  Double_400   vs Plain_Wire   i_10 +0.196  i_50 +0.196  i_95 +0.012  i_max -0.031   -> no-go (plateau)
+  Stagger_400  vs Plain_Wire   i_10 +0.206  i_50 +0.179  i_95 +0.027  i_max -0.017   -> no-go (plateau)
+  Single_400   vs Plain_120    i_10 +0.073  i_50 +0.082  i_95 -0.078  i_max -0.107   -> no-go (plateau)
+  Double_400   vs Plain_120    i_10 +0.139  i_50 +0.138  i_95 -0.038  i_max -0.080   -> no-go (plateau)
+  Stagger_400  vs Plain_120    i_10 +0.149  i_50 +0.121  i_95 -0.023  i_max -0.066   -> no-go (plateau)
+
+WHERE IS THE INSENSITIVE AREA (f = 1 sites by region; '*' = site censored at the dark-switching edge, t = 55)
+  Single_400: bridge row 23 sites median 0.922 max 0.960 (3*);  channel 21 sites median 0.740 max 0.756;  slot end 7 sites median 0.863 max 0.885
+      area fraction above 0.85: 18 %, above 0.90: 10 %   (bridge rows are 9 % of the cell length)
+  Double_400: bridge row 31 sites median 0.885 max 0.933;  channel 16 sites median 0.675 max 0.702;  slot end 16 sites median 0.748 max 0.831
+      area fraction above 0.85: 10 %, above 0.90: 4 %   (bridge rows are 9 % of the cell length)
+  Stagger_400: bridge row 31 sites median 0.877 max 0.919;  channel 16 sites median 0.677 max 0.862;  slot end 16 sites median 0.753 max 0.825
+      area fraction above 0.85: 9 %, above 0.90: 2 %   (bridge rows are 9 % of the cell length)
+
+LATENCY of the switching run at threshold, after the photon [tau0]: median / 90 % / max
+  Plain_Wire      292 /  332 /  361
+  Plain_120       256 /  339 /  340
+  Plain_60        189 /  214 /  216
+  Plain_40        182 /  204 /  212
+  Single_400      265 /  374 /  378
+  Double_400      160 /  336 /  376
+  Stagger_400     160 /  349 /  368
+
+SELECTIVITY: i_det(f) - i_det(1) at the probe sites (weak photons need more bias), median
+  Plain_Wire   f = 0.6: +0.044  f = 0.35: +0.077
+  Plain_120    f = 0.6: +0.071  f = 0.35: +0.109
+  Plain_60     f = 0.6: +0.115  f = 0.35: +0.186
+  Plain_40     f = 0.6: +0.161  f = 0.35: +0.268
+  Single_400   f = 0.6: +0.096  f = 0.35: +0.164
+  Double_400   f = 0.6: +0.107  f = 0.35: +0.200
+  Stagger_400  f = 0.6: +0.120  f = 0.35: +0.219
+
+SLOT LENGTH: critical sites, 150 nm vs 400 nm slots (2.0 xi)
+  Single: dark I_sw 0.993 vs 0.981;  (-44, 0) 0.797 vs 0.756,  (-44, end-40) 0.808 vs 0.756,  (-70, 0) 0.765 vs 0.745,  (-70, end+20) 0.939 vs 0.917,  (-96, 0) 0.797 vs 0.745,  (0, end+20) 0.977 vs 0.960,  (0, end+4) 0.977 vs 0.960
+  Double: dark I_sw 0.985 vs 0.981;  (-16, 0) 0.818 vs 0.670,  (-40, end+20) 0.942 vs 0.933,  (-40, end+4) 0.931 vs 0.922,  (-64, 0) 0.786 vs 0.675,  (-80, 0) 0.780 vs 0.670,  (-80, end+20) 0.904 vs 0.869,  (-96, 0) 0.786 vs 0.681,  (0, 0) 0.818 vs 0.665,  (0, end+20) 0.915 vs 0.901
+  Stagger: dark I_sw 0.946 vs 0.950;  (-16, 0) 0.874 vs 0.856,  (-40, end+20) 0.905 vs 0.914,  (-40, end+4) 0.905 vs 0.908,  (-64, 0) 0.770 vs 0.664,  (-80, 0) 0.765 vs 0.654,  (-80, end+20) 0.879 vs 0.856,  (-96, 0) 0.770 vs 0.664,  (0, 0) 0.889 vs 0.862,  (0, end+20) 0.900 vs 0.877
+
+MESH: critical sites at 1.4 xi vs the 2.0 xi maps
+  Plain_Wire   dark I_sw 1.007 vs 0.997;  3 sites, 1.4 - 2.0: mean +0.008, range +0.006..+0.009;  (-96,0) 0.877, (-58,0) 0.886, (0,0) 0.910
+  Single_400   dark I_sw 1.001 vs 0.981;  7 sites, 1.4 - 2.0: mean +0.006, range -0.007..+0.019;  (-96,0) 0.744, (-70,0) 0.749, (-44,0) 0.749, (-44,160) 0.754, (0,204) 0.973, (-70,220) 0.935, (0,220) 0.979
+  Double_400   dark I_sw 0.997 vs 0.981;  9 sites, 1.4 - 2.0: mean +0.011, range +0.003..+0.016;  (-96,0) 0.686, (-80,0) 0.675, (-64,0) 0.686, (-16,0) 0.686, (0,0) 0.675, (-40,204) 0.937, (-80,220) 0.871, (-40,220) 0.948, (0,220) 0.915
+  Stagger_400  dark I_sw 0.962 vs 0.950;  9 sites, 1.4 - 2.0: mean +0.005, range -0.005..+0.017;  (-96,0) 0.667, (-80,0) 0.657, (-64,0) 0.667, (-16,0) 0.862, (0,0) 0.867, (-40,204) 0.920, (-80,220) 0.851, (-40,220) 0.930, (0,220) 0.878
+
+FLUX SCAN Single_400: outcome counts per bias (critical sites)
+    bias      clean    trapped  transient     direct   via_trap
+    0.50          7          0          0          0          0
+    0.53          7          0          0          0          0
+    0.56          7          0          0          0          0
+    0.59          7          0          0          0          0
+    0.62          7          0          0          0          0
+    0.65          7          0          0          0          0
+    0.68          7          0          0          0          0
+    0.71          7          0          0          0          0
+    0.74          3          2          2          0          0
+    0.77          3          0          4          0          0
+    0.80          3          0          0          4          0
+    0.83          3          0          0          4          0
+    0.86          3          0          0          4          0
+    0.89          3          0          0          4          0
+    0.92          2          0          0          5          0
+    0.95          2          0          0          5          0
+
+FLUX SCAN Double_400: outcome counts per bias (critical sites)
+    bias      clean    trapped  transient     direct   via_trap
+    0.50          9          0          0          0          0
+    0.53          9          0          0          0          0
+    0.56          9          0          0          0          0
+    0.59          9          0          0          0          0
+    0.62          8          1          0          0          0
+    0.65          4          5          0          0          0
+    0.68          4          0          5          0          0
+    0.71          4          0          5          0          0
+    0.74          4          0          5          0          0
+    0.77          4          0          5          0          0
+    0.80          4          0          4          1          0
+    0.83          4          0          0          5          0
+    0.86          3          1          0          5          0
+    0.89          3          0          0          6          0
+    0.92          1          0          0          8          0
+    0.95          0          0          0          9          0
+
+FLUX SCAN Stagger_400: outcome counts per bias (critical sites)
+    bias      clean    trapped  transient     direct   via_trap
+    0.50          9          0          0          0          0
+    0.53          9          0          0          0          0
+    0.56          9          0          0          0          0
+    0.59          9          0          0          0          0
+    0.62          8          1          0          0          0
+    0.65          6          3          0          0          0
+    0.68          6          0          3          0          0
+    0.71          6          0          3          0          0
+    0.74          6          0          3          0          0
+    0.77          6          0          3          0          0
+    0.80          6          0          3          0          0
+    0.83          6          0          0          3          0
+    0.86          2          1          3          3          0
+    0.89          2          0          0          7          0
+    0.92          0          0          0          9          0
+    0.95          0          0          0          9          0
+
+WITH HEAT (NbTiN two-temperature model, heat_check.py): critical sites only, the same sites for every criterion,
+interpolated over the unit cell.  'sustained' from the flux scans (0.03 steps); plain wire: the bounds coincide.
+device       criterion   sites   i_10   i_50   i_90   i_95  i_max
+Plain_Wire   trigger         3  0.872  0.880  0.897  0.899  0.901
+Plain_Wire   sustained       3  0.872  0.880  0.897  0.899  0.901
+Plain_Wire   heat            3  0.868  0.880  0.897  0.899  0.902
+Single_400   trigger         7  0.747  0.756  0.917  0.930  0.960
+Single_400   heat            7  0.754  0.757  0.916  0.928  0.958
+Double_400   trigger         9  0.683  0.809  0.908  0.919  0.933
+Double_400   sustained       9  0.830  0.877  0.916  0.920  0.950
+Double_400   heat            9  0.789  0.853  0.910  0.917  0.933
+Stagger_400  trigger         9  0.679  0.849  0.900  0.905  0.914
+Stagger_400  sustained       9  0.837  0.890  0.915  0.918  0.920
+Stagger_400  heat            9  0.771  0.845  0.901  0.906  0.916
+  site by site (heat / trigger / sustained):
+    Plain_Wire  (-96,0) 0.866/0.871,  (-58,0) 0.877/0.877,  (0,0) 0.902/0.901
+    Single_400  (-96,0) 0.754/0.745,  (-70,0) 0.754/0.745,  (-70,220) 0.916/0.917,  (-44,0) 0.757/0.756,  (-44,160) 0.757/0.756,  (0,204) 0.958/0.960,  (0,220) 0.958/0.960
+    Double_400  (-96,0) 0.782/0.681,  (-80,0) 0.782/0.670,  (-80,160) 0.789,  (-80,200) 0.810/0.777,  (-80,220) 0.870/0.869,  (-64,0) 0.782/0.675,  (-40,204) 0.919/0.922,  (-40,220) 0.933/0.933,  (-16,0) 0.785/0.670,  (0,0) 0.782/0.665,  (0,160) 0.778,  (0,200) 0.828/0.820,  (0,220) 0.902/0.901
+    Stagger_400 (-96,0) 0.761/0.664,  (-80,0) 0.757/0.654,  (-80,220) 0.845/0.856,  (-64,0) 0.761/0.664,  (-40,204) 0.909/0.908,  (-40,220) 0.916/0.914,  (-16,0) 0.863/0.856,  (0,0) 0.870/0.862,  (0,220) 0.873/0.877
+
+OPTIMISATION CANDIDATES (every feature >= 40 nm): critical sites, 2.0 xi; trigger (no heat) and with heat (NbTiN 2T),
+interpolated over the unit cell; the reference rows use the same critical sites
+device            free nm   I_sw  criterion   i_10   i_50   i_90   i_95  i_max  channel med  bridge max
+Plain_Wire            200  0.997    trigger  0.872  0.880  0.897  0.899  0.901        0.877         nan
+Plain_Wire            200  0.997       heat  0.868  0.880  0.897  0.899  0.902        0.877         nan
+Plain_80               80  0.985    trigger  0.760  0.766  0.781  0.782  0.783        0.764         nan
+Plain_80               80  0.985       heat  0.761  0.767  0.781  0.781  0.782        0.764         nan
+Double_400            120  0.981    trigger  0.683  0.809  0.908  0.919  0.933        0.670       0.933
+Double_400            120  0.981       heat  0.782  0.787  0.870  0.901  0.933        0.782       0.933
+Double_600            120  0.973    trigger  0.669  0.794  0.909  0.920  0.926        0.654       0.926
+Double_600            120  0.973       heat  0.778  0.780  0.847  0.881  0.926        0.778       0.926
+Double_800            120  0.970    trigger  0.633  0.770  0.911  0.917  0.922        0.625       0.922
+Double_800            120  0.970       heat  0.768  0.771  0.803  0.842  0.926        0.771       0.926
+Double_1200           120  0.977    trigger  0.616  0.758  0.913  0.913  0.929        0.609       0.929
+Double_1200           120  0.977       heat  0.775  0.778  0.787  0.821  0.937        0.775       0.937
+Stagger_400           120    nan       heat  0.771  0.845  0.901  0.906  0.916        0.761       0.916
+Single_400            120    nan       heat  0.754  0.757  0.916  0.928  0.958        0.756       0.958
+Single_400_w120        80  0.989    trigger  0.627  0.682  0.951  0.956  0.962        0.627       0.962
+Single_400_w120        80  0.989       heat  0.689  0.734  0.951  0.962  0.972        0.687       0.972
+Single_800_w120        80  0.973    trigger  0.601  0.622  0.928  0.941  0.952        0.601       0.952
+Single_800_w120        80  0.973       heat  0.684  0.694  0.933  0.940  0.958        0.684       0.958
+  heat rows: every heated site of the layout (critical grid + slot-end sites where run), dt_max 0.025

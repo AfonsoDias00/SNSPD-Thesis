@@ -1,0 +1,58 @@
+{
+ "Plain_40": {
+  "I_sw": 19.703861974678013,
+  "flag": "",
+  "n_sims": 8,
+  "branch": "V_trail",
+  "t_trigger": 382.25,
+  "criterion": "sustained"
+ },
+ "Plain_60": {
+  "I_sw": 29.851114634299368,
+  "flag": "",
+  "n_sims": 8,
+  "branch": "V_trail",
+  "t_trigger": 389.5,
+  "criterion": "sustained"
+ },
+ "Plain_120": {
+  "I_sw": 59.5841005996858,
+  "flag": "",
+  "n_sims": 8,
+  "branch": "V_trail",
+  "t_trigger": 384.75,
+  "criterion": "sustained"
+ },
+ "Single_400": {
+  "I_sw": 59.446756333959634,
+  "flag": "",
+  "n_sims": 7,
+  "branch": "V_trail",
+  "t_trigger": 55.0,
+  "criterion": "sustained"
+ },
+ "Double_400": {
+  "I_sw": 59.496212870011185,
+  "flag": "",
+  "n_sims": 7,
+  "branch": "V_trail",
+  "t_trigger": 55.0,
+  "criterion": "sustained"
+ },
+ "Plain_Wire": {
+  "I_sw": 100.48812102193904,
+  "flag": "",
+  "n_sims": 8,
+  "branch": "V_trail",
+  "t_trigger": 387.0,
+  "criterion": "sustained"
+ },
+ "Stagger_400": {
+  "I_sw": 57.60142902064777,
+  "flag": "",
+  "n_sims": 7,
+  "branch": "V_trail",
+  "t_trigger": 55.0,
+  "criterion": "sustained"
+ }
+}

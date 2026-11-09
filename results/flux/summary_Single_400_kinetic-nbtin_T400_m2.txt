@@ -1,0 +1,40 @@
+FLUX TRAPPING  single column, 400 nm slots  kinetic-nbtin_T400_m2   biases in units of I_dep = 60.58 uA (narrowest cross-section 120 nm),  dark I_sw = 0.981
+holes: 0:(0,-440), 1:(0,0), 2:(0,440)
+7 sites x 16 biases 0.50..0.95
+outcome per run: clean / trapped (no trigger, flux left) / transient (voltage trigger, < 1 slip in the last 50 tau0) / direct (sustained switch) / via_trap (sustained, after >= 20 tau0 trapped at |V| < 0.05 before 2 slips)
+
+Per site, lowest scanned bias at which the photon: leaves flux or fires the voltage trigger (i_trap); fires the voltage trigger (i_fire: the detection criterion until 29 Oct 2026); switches and stays resistive (i_sust: the detection criterion, compare 'hitmap'); does so without a trapped dwell (i_direct); does so with the resistive onset by t = 150 tau0 (i_prompt).  '>' = not in the range.
+        site  i_trap  i_fire  i_sust  hitmap  i_direct  i_prompt   state just below i_sust
+     (-96,0)    0.74    0.74    0.80   0.745      0.80      0.80   transient [0 -5 0]
+     (-70,0)    0.74    0.74    0.80   0.745      0.80      0.80   transient [0 -5 0]
+     (-44,0)    0.74    0.77    0.80   0.756      0.80      0.80   transient [0 -4 0]
+   (-44,160)    0.74    0.77    0.80   0.756      0.80      0.80   transient [0 -5 0]
+     (0,204)   >0.95   >0.95   >0.95   0.960     >0.95     >0.95   clean    [0 0 0]
+   (-70,220)    0.92    0.92    0.92   0.917      0.92     >0.95   clean    [0 0 0]
+     (0,220)   >0.95   >0.95   >0.95   0.960     >0.95     >0.95   clean    [0 0 0]
+
+Check against the hitmap thresholds: 3 of 7 sites switch first at the grid bias just above the hitmap threshold;  differ: (-44,0) scan 0.80 vs hitmap 0.756, (-96,0) scan 0.80 vs hitmap 0.745, (-44,160) scan 0.80 vs hitmap 0.756, (-70,0) scan 0.80 vs hitmap 0.745
+
+Area fractions of the unit cell (thresholds interpolated as in hitmap.py; grid resolution 0.03; SUBSET of the sites, indicative only):
+  fired = voltage trigger; sustained = stays resistive (detected); silent trap = flux left, no trigger
+  bias     fired  sustained   direct   prompt  silent trap
+  0.70        0%         0%       0%       0%           0%
+  0.75       16%         0%       0%       0%          39%
+  0.78       58%         0%       0%       0%           3%
+  0.80       64%        52%      52%      52%           3%
+  0.82       68%        59%      59%      57%           2%
+  0.85       74%        69%      69%      64%           1%
+  0.88       79%        77%      77%      71%           1%
+  0.90       82%        81%      81%      75%           1%
+  0.95       96%        96%      96%      83%           0%
+
+Efficiency-curve points for each definition of a detection (grid biases: up to one step above the bisected thresholds):
+              i_10   i_50   i_95  i_max
+      fired  0.744  0.770  0.942  0.980
+  sustained  0.800  0.800  0.943  0.980
+     prompt  0.800  0.800  0.980  0.980
+     direct  0.800  0.800  0.943  0.980
+
+Trapped states left by sub-threshold photons (fluxoid per hole, runs):
+  [0 -2 0]  1
+  [0 -1 0]  1

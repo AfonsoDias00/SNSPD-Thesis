@@ -28,7 +28,7 @@ def apply_style():
 
 
 def draw_holes(ax, geom):
-    for h in geom.holes:
+    for h in tuple(geom.holes) + tuple(getattr(geom, "notches", ())):
         ax.fill(*h.outline(120).T, facecolor=SURFACE, edgecolor=INK, lw=0.9, zorder=3)
 
 

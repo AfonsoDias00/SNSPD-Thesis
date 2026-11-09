@@ -45,6 +45,7 @@ hotspot default to the current hitmap production settings (400 tau0, 1.4 xi, con
 from __future__ import annotations
 
 import argparse
+from dataclasses import replace
 import json
 import os
 import time
@@ -59,6 +60,7 @@ from snspd.units import Film
 
 OUT_DIR = "results/fluxtrap"
 HITMAP_DIR = "results/hitmap"
+HITMAP_SUSTAINED = True        # --hitmap-criterion: which hitmap tag to compare with
 V_QUIET = 0.05           # max |V| between two frames for the device to count as sitting still [V0]
 DWELL_MIN = 20.0         # zero-voltage trapped time before a switch for it to count as via_trap [tau0]
 PROMPT_T = 150.0         # "prompt" by latency: resistive onset by this time (130 tau0 after the photon) [tau0]
@@ -249,7 +251,7 @@ def site_summary(rows, b_max):
 
 def hitmap_ref(cfg, g, film, hitmap_dir=HITMAP_DIR):
     """{site: i_det in units of I_dep} from the hitmap results at the same window, mesh and hotspot."""
-    hcfg = sim.with_out_dir(cfg, hitmap_dir)
+    hcfg = replace(sim.with_out_dir(cfg, hitmap_dir), sustained=HITMAP_SUSTAINED)
     i_dep = film.I_dep_uA(g.free_width_min_nm())
     return {(float(r["x_nm"]), float(r["y_nm"])): float(r["I_sw_uA" if r["flag"] == "at_wall" else "I_det_uA"]) / i_dep
             for r in store.load_rows(hcfg.path("hitmap", "csv"))
@@ -345,7 +347,7 @@ def cmd_trapped(cfg, a):
         if not scan:
             raise SystemExit(f"no scan for {g.key} at {cfg.tag}; run `fluxtrap.py scan` first")
         picks = trapped_states(scan, g, a.max_states)
-    isw = store.load_json(sim.with_out_dir(cfg, a.hitmap_dir).path("isw", "json"), {}).get(g.key, {}).get("I_sw")
+    isw = store.load_json(replace(sim.with_out_dir(cfg, a.hitmap_dir), sustained=HITMAP_SUSTAINED).path("isw", "json"), {}).get(g.key, {}).get("I_sw")
     if isw is None and not a.no_second:
         raise SystemExit(f"no I_sw for {g.key} at {cfg.tag} in {a.hitmap_dir}/ (needed for the second photon)")
     path = trapped_path(cfg, g)
@@ -520,7 +522,7 @@ def cmd_compare(cfg, a):
 def cmd_report(cfg, a):
     g = geo.get(a.geom)
     i_dep = a.film.I_dep_uA(g.free_width_min_nm())
-    isw = store.load_json(sim.with_out_dir(cfg, a.hitmap_dir).path("isw", "json"), {}).get(g.key, {}).get("I_sw")
+    isw = store.load_json(replace(sim.with_out_dir(cfg, a.hitmap_dir), sustained=HITMAP_SUSTAINED).path("isw", "json"), {}).get(g.key, {}).get("I_sw")
     L = [f"FLUX TRAPPING  {g.label}  {cfg.tag}   biases in units of I_dep = {i_dep:.2f} uA "
          f"(narrowest cross-section {g.free_width_min_nm():.0f} nm)" + ("" if isw is None else f",  dark I_sw = {isw / i_dep:.3f}"),
          "holes: " + ", ".join(f"{i}:({h.cx_nm:g},{h.cy_nm:g})" for i, h in enumerate(g.holes))]
@@ -891,6 +893,8 @@ def main(argv=None):
     ap.add_argument("--biases", default="0.56:0.70:0.02,0.71:0.96:0.01", help="units of I_dep (nothing happens below ~0.64)")
     ap.add_argument("--sites", default="", help="scan: only these sites, x,y;x,y [nm] (default: the whole --grid)")
     ap.add_argument("--hitmap-dir", default=HITMAP_DIR, help="hitmap results to compare with")
+    ap.add_argument("--hitmap-criterion", choices=["sustained", "trigger"], default="sustained",
+                    help="which hitmap (criterion tag) in --hitmap-dir to compare with and take I_sw from")
     ap.add_argument("--site", default="-68,0", help="trace: photon site x,y [nm] (use --site=-68,0)")
     ap.add_argument("--max-states", type=int, default=5, help="trapped: most common trapped states to study")
     ap.add_argument("--from", dest="from_", action="append", default=[], metavar="X,Y@BIAS",
@@ -910,6 +914,8 @@ def main(argv=None):
     ap.add_argument("--detailed", action="store_true",
                     help="report/trace: also the detailed figures (per-site state diagram, threshold maps, 3-row trace)")
     a = ap.parse_args(argv)
+    global HITMAP_SUSTAINED
+    HITMAP_SUSTAINED = a.hitmap_criterion == "sustained"
     a.film = sim.PRESETS[a.preset].film
     a.biases = parse_biases(a.biases)
     a.sites = [tuple(float(v) for v in s.split(",")) for s in a.sites.split(";") if s]

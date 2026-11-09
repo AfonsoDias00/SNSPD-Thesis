@@ -96,7 +96,10 @@ def cmd_run(cfg, a, geoms):
     sim.log(f"== run: {cfg.tag}  grid={a.grid}  workers={a.workers}  out={cfg.out_dir}")
     isw_path = cfg.path("isw", "json")
     isw_j = store.load_json(isw_path, {})
-    todo = [dict(kind="isw", geom=g, cfg=cfg, film=a.film) for g in geoms if g.key not in isw_j]
+    # --isw-sustained: the dark I_sw from the sustained criterion even for a trigger map.  At gamma = 10 the bias-on
+    # transient of the uniform start fires the trailing-mean trigger without any switching (docs/methods.md, sec. 4)
+    isw_cfg = replace(cfg, sustained=True) if a.isw_sustained else cfg
+    todo = [dict(kind="isw", geom=g, cfg=isw_cfg, film=a.film) for g in geoms if g.key not in isw_j]
     if todo:
         sim.log(f"-- dark switching current for {[t['geom'].key for t in todo]}")
 
@@ -104,7 +107,8 @@ def cmd_run(cfg, a, geoms):
             if not r["ok"]:
                 sim.log(f"   FAILED {r['task']['geom'].key}: {r['error']}")
                 return
-            isw_j[r["task"]["geom"].key] = r["res"]
+            isw_j[r["task"]["geom"].key] = dict(r["res"], criterion="sustained" if a.isw_sustained else
+                                                ("sustained" if cfg.sustained else "trigger"))
             store.save_json(isw_path, isw_j)
             sim.log(f"   {r['task']['geom'].key}: I_sw = {r['res']['I_sw']:.1f} uA  ({r['res']['n_sims']} runs, "
                     f"{r['wall_s']:.0f} s)" + (f"  [{r['res']['flag']}]" if r["res"]["flag"] else ""))
@@ -346,6 +350,8 @@ def parse_args(argv=None):
     ap.add_argument("--energies", default="0.6,0.35", help="probe-site energy factors, comma separated")
     ap.add_argument("--crowd-biases", default="0.80,0.90,0.95")
     ap.add_argument("--no-crowding", action="store_true")
+    ap.add_argument("--isw-sustained", action="store_true",
+                    help="dark I_sw with the sustained criterion even for --criterion trigger (needed at gamma 10)")
     ap.add_argument("--no-probes", action="store_true")
     ap.add_argument("--go-margin", type=float, default=0.03, help="holes' i_95 must beat the reference by this much")
     ap.add_argument("--sel-margin", type=float, default=0.01, help="holes' selectivity must beat the reference by this much")

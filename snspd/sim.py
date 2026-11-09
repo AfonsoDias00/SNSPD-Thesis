@@ -97,7 +97,7 @@ class SimConfig:
     mesh_xi: float = 1.4         # max mesh edge [xi]
     hotspot: str = "kinetic"     # snspd.hotspot.MODELS; every result before 4 Nov 2026 is "conserving"
     save_every: int = 120
-    dt_max: float = 0.20
+    dt_max: float = 0.025        # solver dt cap [tau0]: 0.2 (until 7 Nov 2026) left a local instability at small cells, see docs/methods.md
     hit_lo_frac: float = 0.30    # lower photon-threshold bracket [fraction of I_sw]
     sustained: bool = True       # False: the voltage trigger alone counts (the lower bound on the threshold)
     out_dir: str = "results/hitmap"
@@ -136,7 +136,14 @@ def make_device(geom: Geometry, mesh_xi: float, film: Film = FILM):
              for i, h in enumerate(geom.holes)]
     terminals = [tdgl.Polygon("source", points=box(W, L / 100, center=(0, L / 2))),
                  tdgl.Polygon("drain", points=box(W, L / 100, center=(0, -L / 2)))]
-    device = tdgl.Device("snspd", layer=film.layer(), film=tdgl.Polygon("film", points=box(W, L)),
+    film_pts = box(W, L)
+    if geom.notches:                       # edge notches: subtract them from the film outline
+        from shapely.geometry import Polygon as SPoly
+        outline = SPoly(film_pts)
+        for n_ in geom.notches:
+            outline = outline.difference(SPoly(n_.outline(geom.hole_points) * 1e-3))
+        film_pts = np.asarray(outline.exterior.coords)[:-1]
+    device = tdgl.Device("snspd", layer=film.layer(), film=tdgl.Polygon("film", points=film_pts),
                          holes=holes or None, terminals=terminals, probe_points=[(0, probe_y), (0, -probe_y)],
                          length_units="um")
     pinned = pinned_mesh_path(geom, mesh_xi)
@@ -304,7 +311,8 @@ def settled_state(device, current_uA, cfg: SimConfig):
     by a START_SETTLE tau0 dark run of a gamma = 1 copy of the device (checked on 6 Nov 2026: under gamma = 10 dynamics
     it stays put, <|psi|^2> unchanged to 1e-4 and |V| <= 0.011 over 200 tau0, for the plain wire and the long zipper
     at 0.80 I_dep).  Returns None if the state is still slipping phase (near or above the gamma = 1 dark I_sw) after
-    SETTLE_TRIES x START_SETTLE tau0; the caller then starts from the uniform state.
+    SETTLE_TRIES x START_SETTLE tau0, first with gamma = 1 and then with the device's own gamma; the caller then
+    starts from the uniform state.
 
     Stationarity is judged on the last quarter of the latest stretch.  Until 6 Nov 2026 it was judged on the second
     half of a single 100 tau0 run.  On the 2 um devices above ~0.92 I_dep the supercurrent phase between the probes
@@ -319,14 +327,18 @@ def settled_state(device, current_uA, cfg: SimConfig):
                               thickness=L.thickness, conductivity=L.conductivity, u=L.u, gamma=1.0)
         _GAMMA1[id(device)] = d1
     sub = replace(cfg, tmax=START_SETTLE)
-    seed = None
-    with ExitStack() as stack:
-        for _ in range(SETTLE_TRIES):
-            sol = stack.enter_context(solved(d1, current_uA, None, sub, seed=seed))
-            t, v = np.asarray(sol.dynamics.time), np.asarray(sol.dynamics.voltage())
-            if phase_slips(t, v, t[-1] - 0.25 * START_SETTLE)[-1] <= 0.02 and abs(v[-1]) <= 0.01:
-                return np.array(sol.tdgl_data.psi), np.array(sol.tdgl_data.mu)
-            seed = sol
+    # gamma = 1 first (fast); if its bias step overshoots into switching (between the gamma = 1 and the gamma = 10
+    # dark I_sw, ~0.96-0.98 I_dep: 7 Nov 2026, Single_400 bridge sites), the device's own gamma = 10 dynamics, which
+    # settle more slowly but do not overshoot.  The stationary state is the same GL solution either way.
+    for dev in (d1, device) if device.layer.gamma != 1.0 else (device,):
+        seed = None
+        with ExitStack() as stack:
+            for _ in range(SETTLE_TRIES):
+                sol = stack.enter_context(solved(dev, current_uA, None, sub, seed=seed))
+                t, v = np.asarray(sol.dynamics.time), np.asarray(sol.dynamics.voltage())
+                if phase_slips(t, v, t[-1] - 0.25 * START_SETTLE)[-1] <= 0.02 and abs(v[-1]) <= 0.01:
+                    return np.array(sol.tdgl_data.psi), np.array(sol.tdgl_data.mu)
+                seed = sol
     return None
 
 

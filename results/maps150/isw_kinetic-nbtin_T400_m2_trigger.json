@@ -1,0 +1,34 @@
+{
+ "Stagger_150": {
+  "I_sw": 57.36458103947734,
+  "flag": "",
+  "n_sims": 7,
+  "branch": "V_trail",
+  "t_trigger": 262.5,
+  "criterion": "sustained"
+ },
+ "Double_150": {
+  "I_sw": 59.733060851181605,
+  "flag": "",
+  "n_sims": 7,
+  "branch": "V_trail",
+  "t_trigger": 390.75,
+  "criterion": "sustained"
+ },
+ "Plain_Wire": {
+  "I_sw": 100.48812102193904,
+  "flag": "",
+  "n_sims": 8,
+  "branch": "V_trail",
+  "t_trigger": 387.0,
+  "criterion": "sustained"
+ },
+ "Single_150": {
+  "I_sw": 60.15670963412635,
+  "flag": "",
+  "n_sims": 7,
+  "branch": "V_trail",
+  "t_trigger": 390.0,
+  "criterion": "sustained"
+ }
+}
