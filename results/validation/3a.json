@@ -1,0 +1,96 @@
+{
+ "id": "3a",
+ "title": "heat model alone: conservation, two-temperature relaxation, diffusion",
+ "wall_s": 135.7,
+ "checks": [
+  {
+   "id": "3a.1",
+   "name": "energy audit of one photon, worst residual over 4 times x 2 states [fraction of h nu]",
+   "value": "3.6e-14",
+   "expected": "<= 1e-9",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "3a.2",
+   "name": "photon energy deposited by t = 300 tau0 [fraction of h nu]",
+   "value": "1.000000",
+   "expected": "1 (to 1e-6)",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "3a.3",
+   "name": "uniform cooling from 1.6 T_c, |psi|^2 = 0: T_e/T_ph [T_c] at t = 5, 30, 200, 1000 tau0; worst deviation from the ODE reference",
+   "value": "1.418/0.654, 1.080/0.813, 0.839/0.820, 0.665/0.642; 2.8e-04",
+   "expected": "<= 5e-3 (first-order steps of 0.025 tau0)",
+   "verdict": "PASS",
+   "note": "spread over the mesh: 0.0e+00"
+  },
+  {
+   "id": "3a.4",
+   "name": "uniform cooling from 1.6 T_c, |psi|^2 = 0.8: T_e/T_ph [T_c] at t = 5, 30, 200, 1000 tau0; worst deviation from the ODE reference",
+   "value": "1.204/0.586, 0.822/0.659, 0.647/0.637, 0.506/0.491; 7.0e-04",
+   "expected": "<= 5e-3 (first-order steps of 0.025 tau0)",
+   "verdict": "PASS",
+   "note": "spread over the mesh: 0.0e+00"
+  },
+  {
+   "id": "3a.5",
+   "name": "normal state: D from the growth of <y^2> of a 15 nm Gaussian over 20 tau0 [nm^2/tau0]",
+   "value": "6.222",
+   "expected": "6.221 (within 2 %)",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "3a.6",
+   "name": "... and the energy is conserved [relative change]",
+   "value": "9.2e-13",
+   "expected": "<= 1e-10",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "3a.7",
+   "name": "edge deposit after 60 tau0 (it has spread 40 nm): energy left in the film [fraction]",
+   "value": "0.999999999998",
+   "expected": "1 (to 1e-10)",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "3a.8",
+   "name": "k_s / k_n at Delta / k_B T = 0, 1, the bath value, 40",
+   "value": "1.0000, 0.9561, 0.0854, 0.0000",
+   "expected": "1, between, small, 0",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "3a.9",
+   "name": "condensation energy 4 E_c(0) / (gamma T_c^2): model; from lambda, xi and c_e",
+   "value": "0.946; 1.032",
+   "expected": "BCS (3/pi^2)(1.764)^2 = 0.946; Gorter-Casimir 1",
+   "verdict": "INFO",
+   "note": ""
+  },
+  {
+   "id": "3a.10",
+   "name": "entropy of the superconducting state at the bath, s_s / (gamma T) = 1 - a0 (1 - t0^2)",
+   "value": "0.139",
+   "expected": "> 0; BCS c_es / (gamma T) at 0.3 T_c is about 0.2",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "3a.11",
+   "name": "specific-heat jump at T_c, Delta C / (gamma T_c) = 2 a0",
+   "value": "1.89",
+   "expected": "BCS 1.43; Gorter-Casimir 2",
+   "verdict": "INFO",
+   "note": ""
+  }
+ ],
+ "extra": {}
+}

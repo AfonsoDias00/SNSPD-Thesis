@@ -1,0 +1,22 @@
+THRESHOLDS  results/thresholds/thr_n750_w1550_m2.csv   (bias in I_dep of the narrowest free cross-section)
+
+Plain wire, 200 nm   (Plain_Wire; free width 200 nm; dark switching 0.949)
+       site [nm]   i_det  flag      t_count  T_e peak  load max
+        (-96, 0)  0.664            777.237     2.215       0.2
+        (-58, 0)  0.727            567.662     2.164       0.2
+          (0, 0)  0.762            518.887     2.079       0.2
+  hard-step efficiency over the unit cell (3 sites, interpolated): i_10 0.674, i_50 0.731, i_95 0.759, i_max 0.762
+
+Double column, 400 nm slots   (Double_400; free width 120 nm; dark switching 0.957)
+       site [nm]   i_det  flag      t_count  T_e peak  load max
+        (-96, 0)  0.746            593.262     2.155       0.2
+        (-80, 0)  0.742            605.512     2.017       0.2
+        (-64, 0)  0.746            596.487     2.267       0.2
+        (-16, 0)  0.758            585.512     2.198       0.2
+          (0, 0)  0.754            602.187     2.116       0.2
+      (-40, 204)  0.875            599.287     2.233       0.2
+      (-80, 220)  0.750            635.962     1.999       0.2
+      (-40, 220)  0.906            551.512     2.137       0.2
+        (0, 220)  0.840            652.212     2.111       0.2
+  hard-step efficiency over the unit cell (9 sites, interpolated): i_10 0.750, i_50 0.782, i_95 0.873, i_max 0.906
+

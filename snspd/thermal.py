@@ -1,212 +1,375 @@
 """
-Electro-thermal TDGL (prototype, 5 Nov 2026): pyTDGL coupled to a local electron temperature with Joule heating.
+Electron and phonon temperatures on the pyTDGL mesh: the heat model and the photon.
 
-Model (Zotova & Vodolazov, PRB 85, 024509 (2012), Eq. (2); arXiv v1 read 5 Nov 2026):
+One model replaces the two of the earlier phases (an epsilon(r, t) "hotspot" with a calibrated amplitude, plus a
+linearised Joule-heat field added to it).  The photon is now an amount of energy h nu put into the electrons; what
+it does to the order parameter follows from the measured heat capacities.  docs/model.md derives everything below
+and says which paper each piece comes from.
 
-    dT/dt = D_T lap T + rho_n j_n^2 / C_v - (T - T0) / tau_e-ph,      j_n = -grad(phi) / rho_n,
+State on every mesh site (temperatures in units of T_c, t = T / T_c):
 
-with C_v constant (its normal-state value at T_c, as in the paper) and no latent-heat term.  The temperature enters
-the TDGL through its linear coefficient.  pyTDGL normalises lengths and |psi| at the bath temperature T0, so
-epsilon = (T_c - T) / (T_c - T0) = 1 - theta with theta = (T - T0) / (T_c - T0).  In pyTDGL units (time tau0, length
-xi, normal current -grad mu):
+    U = t_e^2      electron thermal energy in units of gamma T_c^2 / 2        (c_e = gamma T, Drude)
+    P = t_ph^4     phonon energy in units of c_ph(T_c) T_c / 4                (c_ph ~ T^3, Debye)
 
-    d theta / dt = D lap theta + eta |grad mu|^2 - theta / t_esc,       epsilon = max(epsilon_photon - theta, floor)
+Equations (pyTDGL units: lengths xi, time tau0; n = |psi|^2 from the TDGL):
 
-    eta = tau0 rho_n (K0/4)^2 / (C_v d^2 (T_c - T0)) = 4 E_cond / (C_v (T_c - T0)),
-    E_cond = Phi0^2 / (16 pi^2 mu0 lambda^2 xi^2)  (the GL condensation energy density at T0).
+    T_e ds_e/dt = div(k_s grad T_e) + W - P_ep + photon,     s_e = gamma T_e (1 - b n)                       (1)
+    d(P)/dt     = 4 r X - (P - P_0) / tau_esc                                                                (2)
+    X     = (t_e^q - t_ph^q) / (q tau_ep)            electron-phonon exchange, q = 2 + n_ep                 (3)
+    W     = eta0 [ |grad mu|^2 + u / sqrt(1 + gamma^2 n) ( |(d_t + i mu) psi|^2 + gamma^2/4 (d_t n)^2 ) ]   (4)
+    eps   = (1 - U) / (1 - U_0)                      two-fluid: j_dep(T) ~ (1 - t^2)^(3/2), H_c ~ 1 - t^2    (5)
 
-rho_n cancels (tau0 = mu0 lambda^2 / rho_n), so eta needs only lambda, xi, C_v, T_c and T0.  For the film here
-(lambda = 600 nm, xi = 5 nm: E_cond = 2.4 kJ/m^3) and C_v = 2.4 mJ cm^-3 K^-1 (NbN, the paper's value), eta = 0.59 at
-T_c - T0 = 6.75 K (T_c = 9 K, T0 = 0.25 T_c).  It is uncertain by about a factor 2 either way.
+  (1)-(3) two-temperature model with T-dependent heat capacities and exchange: Sidorova et al., Supercond. Sci.
+          Technol. (2022), DOI 10.1088/1361-6668/ac8454, Eq. (6), with their measured 9 nm NbTiN values; for q = 5 it is Eqs. (30)-(31) of Vodolazov,
+          PR Applied 7, 034014 (2017), prefactors included.  Electron heat conduction k = c_e D (Wiedemann-Franz),
+          reduced in the superconducting state by Vodolazov's Eq. (32).
+  (4)     Joule heat of the normal current (Zotova & Vodolazov, PRB 85, 024509 (2012), Eq. (2)) plus the dissipation
+          of order-parameter relaxation (Yasukawa et al., Supercond. Sci. Technol. (2024), arXiv:2405.07466, Eq. (3), after Schmid 1966), written for
+          the generalised TDGL that pyTDGL solves.  Together they are exactly the rate at which the TDGL loses free
+          energy, so no work done by the bias source goes missing (validation 3b).
+  s_e     the entropy that belongs to the same free energy as the TDGL equation with (5): the condensate lowers it
+          by b n.  When superconductivity is destroyed the electrons cool (latent heat), and they warm again when it
+          recovers.  This is the condensation-energy term E_s(T_e, |Delta|) of Vodolazov 2017 Eq. (30) in
+          Ginzburg-Landau form.
+  photon  energy h nu into the electrons, Gaussian of radius r0 ~ xi, at the rate exp(-(t - t_a)/tau_th)/tau_th
+          (Zotova & Vodolazov Eq. (1): the photon is an energy in the heat equation; Simon et al., PRB 112, 174512
+          (2025): initial volume pi xi^2 d, thermalisation time tau_th).
 
-The photon is the kinetic hotspot of snspd/hotspot.py, unchanged; Joule heat adds to it.  D and t_esc default to the
-same values as that hotspot (10 nm^2/tau0, 100 tau0 = tau_esc of Simon et al.).
-
-Our choices, not the paper's:
-  * the photon is the kinetic hotspot (the paper uses an initial hot disc in the same heat equation);
-  * heat sinks at the contacts: theta = 0 within sink_nm of the two terminals (the paper holds T = T0 at the contacts
-    and raises T_c over 5 xi next to them).  pyTDGL injects the bias as normal current through psi = 0 terminals, so
-    without a sink the current conversion next to them heats steadily;
-  * epsilon >= floor (-1).  pyTDGL evaluates the psi update under np.errstate(all="raise"), and in a normal domain
-    |psi| decays as exp(-|epsilon| t / u): with epsilon = -5, |psi|^3 underflows after ~270 tau0 and the solver stops
-    (dt -> 0).  With -1 that takes > 1300 tau0.  psi is ~0 in such a domain either way; at the zipper's (0,0)
-    threshold the floors -5 and -1 give the same outcomes (peak theta 0.195 / 0.194 in the healed run).
-  * operator splitting: Joule source and escape are applied every solver step, diffusion (backward Euler, reflecting
-    walls, the hotspot's FEM matrices) every dt_tau0 of accumulated time.
-
-Detection becomes a single criterion: the run is still resistive at the end of the window (>= sim.SUSTAIN_SLIPS phase
-slips in the last sim.SUSTAIN_WIN tau0).  Without heat this needs the extra continuation of sim.settle; with heat a
-latched normal domain does not heal, which is the point of the model.
+Numerics: finite volumes on pyTDGL's own Voronoi cells (so energy sums are exact), operator splitting inside each
+solver step: isentropic response to the change of n, heat sources, explicit conduction (sub-stepped when needed),
+linearly implicit exchange and escape (stable for the stiff T^q exchange, and it moves exactly the same energy out of
+the electrons as into the phonons).
 """
 from __future__ import annotations
 
-import contextlib
-import os
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 import numpy as np
-import scipy.sparse as sp
-import scipy.sparse.linalg as spla
 
-from .units import MU0, PHI0, Film
+from .units import EV, FILM, HC_EV_NM, Film
+
+
+# ==============================================================================
+# Material and parameters
+# ==============================================================================
+@dataclass(frozen=True)
+class Material:
+    """Measured film properties that the heat model needs (SI-style units, as tabulated)."""
+    name: str
+    Tc_K: float
+    D_cm2_s: float            # electron diffusion constant
+    tau_ep_ps: float          # electron-phonon ENERGY relaxation time at T_c (c_e / tau_ep = dP_ep/dT_e)
+    n_ep: float               # tau_ep ~ T^-n
+    tau_esc_ps: float         # phonon escape time to the substrate
+    ce_Tc: float              # electron heat capacity at T_c [J/(K m^3)]
+    cph_Tc: float             # phonon heat capacity at T_c [J/(K m^3)]
+    gap_ratio: float = 1.764  # Delta(0) / (k_B T_c); BCS (not measured for these films)
+    tau_th_ps: float = 1.4    # thermalisation time of the photon's energy
+
+
+# 9 nm NbTiN, 200 nm wide strip on SiO2/Si (KTH): Sidorova et al., Supercond. Sci. Technol. (2022), DOI
+# 10.1088/1361-6668/ac8454, arXiv:2204.01423, Table 1.  c_e, c_ph and tau_EP are the film values of Sidorova et al., PRB 104, 184514 (2021)
+# extrapolated to the strip's T_c with c_e ~ T, c_ph ~ T^3, tau_EP ~ T^-n.  tau_th is not measured for NbTiN: 1.4 ps
+# is the ab initio value for NbN with D = 0.5 cm^2/s (Simon et al. 2025, Sec. III).
+NBTIN_9NM = Material("9 nm NbTiN strip (Sidorova 2022, Table 1)", Tc_K=8.60, D_cm2_s=0.472, tau_ep_ps=4.0, n_ep=3.4,
+                     tau_esc_ps=80.0, ce_Tc=1303.0, cph_Tc=8173.0)
 
 
 @dataclass(frozen=True)
 class ThermalParams:
-    eta: float = 0.59                 # Joule heating: d theta/dt per unit |grad mu|^2 (pyTDGL units), see module doc
-    D_nm2_per_tau0: float = 10.0      # heat diffusion (= the hotspot's D; D_T = D for electrons, Wiedemann-Franz)
-    esc_tau0: float = 100.0           # escape to the bath (= the kinetic hotspot's t_esc)
-    sink_nm: float = 25.0             # theta = 0 within this distance of the terminals
-    dt_tau0: float = 0.25             # diffusion step
-    eps_floor: float = -1.0           # see module doc (runs of 5 Nov before 02:00 used -5: same outcomes at threshold)
-    # two-temperature option (0 = one temperature, as Zotova & Vodolazov): the electrons (heated by Joule heat, theta
-    # drives epsilon) exchange energy with the film phonons over ep_tau0; the phonons hold 1/ce_over_cph times more
-    # heat per kelvin and alone escape to the substrate, over esc_tau0
-    ep_tau0: float = 0.0              # electron -> phonon energy relaxation time tau_EP [tau0]
-    ce_over_cph: float = 0.16         # c_e / c_ph at T_c
+    """The heat model in pyTDGL units (lengths nm or xi as named, times tau0, temperatures T_c)."""
+    t0: float                 # bath temperature / T_c
+    D_nm2: float              # electron heat diffusion [nm^2 / tau0]
+    tau_ep: float             # electron-phonon energy relaxation time at T_c [tau0]
+    q: float                  # exchange exponent, 2 + n_ep
+    tau_esc: float            # phonon escape [tau0]
+    r: float                  # c_e(T_c) / c_ph(T_c)
+    eta0: float               # 4 E_c / (gamma T_c^2): TDGL dissipation -> electron energy
+    e_unit_eV: float          # (gamma T_c^2 / 2) d xi^2 [eV]: the energy unit of U per xi^2 of film
+    gap_ratio: float = 1.764
+    eps_model: str = "two_fluid"      # "two_fluid": eps = (1 - t^2)/(1 - t0^2);  "linear": (1 - t)/(1 - t0) (GL)
+    latent: bool = True               # condensate entropy (latent heat); needs the two-fluid eps
+    ks: bool = True                   # reduced heat conduction in the superconducting state
+    relax_heat: bool = True           # order-parameter relaxation heats the electrons, as well as Joule heat
+    sink_nm: float = 50.0             # bath temperature within this distance of the terminals (see HeatField)
+    eps_floor: float = -1.0           # numerical guard (pyTDGL underflows |psi|^3 in long-lived normal domains)
+
+    @property
+    def b(self) -> float:
+        """Condensate entropy coefficient: s_e = gamma T (1 - b |psi|^2)."""
+        return self.eta0 / (1.0 - self.t0 ** 2) if self.latent else 0.0
+
+    def photon_energy(self, eV: float) -> float:
+        """A photon energy in the units of U (per xi^2)."""
+        return eV / self.e_unit_eV
+
+    def describe(self, film: Film = FILM) -> list[str]:
+        ps = film.tau0_ps
+        return [
+            f"heat: bath {self.t0:g} T_c; D = {self.D_nm2:.2f} nm^2/tau0; tau_ep(T_c) = {self.tau_ep:.1f} tau0 "
+            f"({self.tau_ep * ps:.2f} ps), exchange ~ T_e^{self.q:g} - T_ph^{self.q:g}; tau_esc = {self.tau_esc:.0f} "
+            f"tau0 ({self.tau_esc * ps:.0f} ps); c_e/c_ph(T_c) = {self.r:.3f}",
+            f"      eta0 = {self.eta0:.3f}; energy unit {self.e_unit_eV * 1e3:.2f} meV per xi^2; eps(T): "
+            f"{self.eps_model}; latent heat {'on' if self.latent else 'off'} (b = {self.b:.3f}); k_s "
+            f"{'on' if self.ks else 'off'}; relaxation heat {'on' if self.relax_heat else 'off'}",
+        ]
 
 
-# 9 nm NbTiN on SiO2/Si (KTH films), measured by Sidorova et al., arXiv:2108.04717 (PRB 104, 184514 (2021)) and
-# arXiv:2204.01423 (strips, Table 1): T_c 8.6 K (strip) / 9.51 K (film), R_sq 381 Ohm, D 0.472 cm^2/s, tau_EP(T_c)
-# 2.9-4.0 ps, tau_esc 80 ps, c_e 1303 and c_ph 8173 J/(K m^3) at T_c.  With tau0 = hbar / (pi Delta0) = 0.15 ps
-# (dirty BCS, T_c 8.6-9.5 K) and T0 = 0.3 T_c: eta = 4 E_cond / (c_e (T_c - T0)) = 1.22 (electrons only), D = 7.1
-# nm^2/tau0, tau_EP = 27 tau0, tau_esc = 530 tau0.  All taken at T_c (c_ph ~ T^3, tau_EP ~ T^-3.4): a linearised,
-# order-of-magnitude calibration.
-NBTIN_2T = ThermalParams(eta=1.22, D_nm2_per_tau0=7.1, esc_tau0=530.0, ep_tau0=27.0, ce_over_cph=0.16)
+def thermal_params(material: Material = NBTIN_9NM, film: Film = FILM, t0: float = 0.3, **overrides) -> ThermalParams:
+    """Dimensionless heat model of a material in the film's pyTDGL units.
+
+    eta0 is not taken from lambda and xi but from thermodynamics: the two-fluid free energy must give a positive
+    entropy, which ties the condensation energy to the heat capacity, 4 E_c(0) / (gamma T_c^2) = a0 <= 1, and BCS
+    gives a0 = (3 / pi^2) (Delta0 / k_B T_c)^2 = 0.946.  eta0 = a0 (1 - t0^2)^2 is the same quantity at the bath
+    temperature.  lambda = 600 nm, xi = 5 nm and the measured c_e give 1.03 instead: the two agree to 9 %, within
+    the uncertainty of lambda^2 xi^2.  (eta0_from_film returns that value.)"""
+    a0 = 3.0 / np.pi ** 2 * material.gap_ratio ** 2
+    gamma_Tc2 = material.ce_Tc * material.Tc_K                                  # gamma T_c^2 [J/m^3]
+    e_unit = 0.5 * gamma_Tc2 * (film.d_nm * 1e-9) * (film.xi_nm * 1e-9) ** 2 / EV
+    p = ThermalParams(t0=t0, D_nm2=film.nm2_per_tau0(material.D_cm2_s), tau_ep=film.tau0(material.tau_ep_ps),
+                      q=2.0 + material.n_ep, tau_esc=film.tau0(material.tau_esc_ps), r=material.ce_Tc / material.cph_Tc,
+                      eta0=a0 * (1.0 - t0 ** 2) ** 2, e_unit_eV=e_unit, gap_ratio=material.gap_ratio)
+    p = replace(p, **overrides)
+    if p.eps_model not in ("two_fluid", "linear"):
+        raise ValueError(p.eps_model)
+    if p.latent and p.eps_model != "two_fluid":
+        raise ValueError("latent heat needs eps_model='two_fluid': the linear GL entropy is negative far below T_c")
+    if p.b >= 1.0:
+        raise ValueError(f"b = {p.b:.3f} >= 1: the superconducting state would have negative entropy")
+    return p
 
 
-def eta_estimate(film: Film = Film(), C_v_J_m3K: float = 2400.0, Tc_K: float = 9.0, T0_over_Tc: float = 0.25) -> float:
-    """eta = 4 E_cond / (C_v (T_c - T0)), E_cond = Phi0^2 / (16 pi^2 mu0 lambda^2 xi^2)."""
-    lam, xi = film.lambda_nm * 1e-9, film.xi_nm * 1e-9
-    e_cond = PHI0 ** 2 / (16 * np.pi ** 2 * MU0 * lam ** 2 * xi ** 2)
-    return 4.0 * e_cond / (C_v_J_m3K * Tc_K * (1.0 - T0_over_Tc))
+def eta0_from_film(material: Material = NBTIN_9NM, film: Film = FILM) -> float:
+    """4 E_c / (gamma T_c^2) with E_c from the film's lambda and xi (the cross-check of thermal_params)."""
+    return 4.0 * film.E_c_J_m3 / (material.ce_Tc * material.Tc_K)
+
+
+NBTIN = thermal_params()
+
+
+@dataclass(frozen=True)
+class Photon:
+    """One absorbed photon."""
+    wavelength_nm: float = 1550.0
+    absorbed: float = 1.0         # fraction of h nu that stays in the film while the energy thermalises
+    r0_nm: float = 5.0            # 1/e radius of the Gaussian in which the energy appears (~ xi)
+    tau_th_ps: float = NBTIN_9NM.tau_th_ps
+    t_arrival: float = 20.0       # [tau0] after the start of the run
+
+    @property
+    def energy_eV(self) -> float:
+        return self.absorbed * HC_EV_NM / self.wavelength_nm
+
+
+# ==============================================================================
+# Thermal conductivity in the superconducting state
+# ==============================================================================
+def _ks_table(y_max=40.0, n=4001):
+    """k_s / k_n = 1 - (6 / pi^2) int_0^y x^2 e^x / (e^x + 1)^2 dx,  y = |Delta| / (k_B T_e)
+    (Vodolazov 2017, Eq. (32))."""
+    y = np.linspace(0.0, y_max, n)
+    f = y ** 2 / (4.0 * np.cosh(np.minimum(y, 700.0) / 2.0) ** 2)
+    integral = np.concatenate([[0.0], np.cumsum(0.5 * (f[1:] + f[:-1]) * np.diff(y))])
+    return y, np.clip(1.0 - 6.0 / np.pi ** 2 * integral, 0.0, 1.0)
+
+
+_KS_Y, _KS_F = _ks_table()
+
+
+def ks_over_kn(y):
+    return np.interp(y, _KS_Y, _KS_F)
+
+
+def gap_at_bath(p: ThermalParams) -> float:
+    """Delta(T_0) / (k_B T_c), BCS interpolation (Vodolazov 2017, Eq. (28))."""
+    return p.gap_ratio * np.tanh(1.74 * np.sqrt(1.0 / p.t0 - 1.0))
+
+
+# ==============================================================================
+# The heat field
+# ==============================================================================
+AUDIT_KEYS = ("joule", "relax", "photon", "escape", "sink", "latent")
 
 
 class HeatField:
-    """theta on the mesh sites of a pyTDGL device, advanced from the scalar potential mu after each solver step."""
+    """U = t_e^2 and P = t_ph^4 on the mesh sites of a pyTDGL device, advanced after every solver step.
 
-    def __init__(self, device, params: ThermalParams):
-        self.p = params
-        mesh = device.mesh                                   # dimensionless (xi)
-        xi_um = device.coherence_length.magnitude
-        em = mesh.edge_mesh
-        self.e0, self.e1 = em.edges[:, 0], em.edges[:, 1]
-        self.w = em.dual_edge_lengths / em.edge_lengths      # FV weight: sum_e w (dmu)^2 = int |grad mu|^2 dA
-        self.area = np.asarray(mesh.areas, float)
-        n = len(self.area)
-        # reflecting-wall diffusion on the triangles (same FEM as snspd.hotspot.HotspotSolver), lengths in xi
-        P, T = np.asarray(mesh.sites, float), np.asarray(mesh.elements, int)
-        p = P[T]
-        x, y = p[..., 0], p[..., 1]
-        b = np.stack([y[:, 1] - y[:, 2], y[:, 2] - y[:, 0], y[:, 0] - y[:, 1]], 1)
-        c = np.stack([x[:, 2] - x[:, 1], x[:, 0] - x[:, 2], x[:, 1] - x[:, 0]], 1)
-        a = 0.5 * np.abs((x[:, 1] - x[:, 0]) * (y[:, 2] - y[:, 0]) - (x[:, 2] - x[:, 0]) * (y[:, 1] - y[:, 0]))
-        Kloc = (b[:, :, None] * b[:, None, :] + c[:, :, None] * c[:, None, :]) / (4.0 * a)[:, None, None]
-        rows = np.broadcast_to(T[:, :, None], Kloc.shape).ravel()
-        cols = np.broadcast_to(T[:, None, :], Kloc.shape).ravel()
-        K = sp.coo_matrix((Kloc.ravel(), (rows, cols)), shape=(n, n)).tocsc()
-        self.m = np.bincount(T.ravel(), weights=np.repeat(a / 3.0, 3), minlength=n)
-        D = params.D_nm2_per_tau0 / (xi_um * 1e3) ** 2       # xi^2 / tau0
-        self._lu = spla.splu((sp.diags(self.m) + params.dt_tau0 * D * K).tocsc())
-        # contact sinks
-        y_um = P[:, 1] * xi_um
-        half = np.abs(y_um).max()
-        self.sink = np.abs(y_um) >= half - params.sink_nm * 1e-3
-        self.theta = np.zeros(n)
-        self.theta_ph = np.zeros(n)                          # phonon temperature (two-temperature option)
-        self._tacc = 0.0
-        self.peak = 0.0                                      # max theta outside the sinks so far
-        self.joule = 0.0                                     # integral of eta |grad mu|^2 dA dt outside the sinks [xi^2]
+    Contacts.  pyTDGL injects the bias as normal current through psi = 0 terminals.  The conversion to supercurrent
+    next to them dissipates steadily, which a real strip between superconducting leads does not do.  Sites within
+    sink_nm of a terminal are therefore kept at the bath temperature and receive no heat (Zotova & Vodolazov hold
+    T = T0 at the contacts and raise T_c over 5 xi next to them; Vodolazov 2017 holds T_e = T at the ends).  With
+    gamma = 10 the conversion zone reaches about 40 nm into the strip: a 25 nm sink left the electrons at 0.41 T_c
+    just beyond it in the dark, 50 nm leaves them at the bath temperature."""
 
-    def __getstate__(self):
-        # pyTDGL pickles disorder_epsilon (a closure over this object) into the solution file; keep that small
-        return {"theta": self.theta, "theta_ph": self.theta_ph, "peak": self.peak, "joule": self.joule}
+    def __init__(self, device, p: ThermalParams, film: Film = FILM, photon: Photon | None = None, site_nm=None):
+        self.p, self.film = p, film
+        mesh, em = device.mesh, device.mesh.edge_mesh               # dimensionless (xi)
+        self.xi_nm = film.xi_nm
+        self.e0, self.e1 = np.asarray(em.edges[:, 0]), np.asarray(em.edges[:, 1])
+        self.w = np.asarray(em.dual_edge_lengths, float) / np.asarray(em.edge_lengths, float)
+        self.area = np.asarray(mesh.areas, float)                    # Voronoi cell areas [xi^2]
+        self.N = len(self.area)
+        self.xy_nm = np.asarray(mesh.sites, float) * film.xi_nm
+        ay = np.abs(self.xy_nm[:, 1])
+        self.sink = ay >= ay.max() - p.sink_nm if p.sink_nm > 0 else np.zeros(self.N, bool)
+        self.live = ~self.sink
+        self.wD = self.w * p.D_nm2 / film.xi_nm ** 2                 # edge conductance for U [xi^2 / tau0 scale]
+        self.gap0 = gap_at_bath(p)
+        self.U0, self.P0 = p.t0 ** 2, p.t0 ** 4
+        self.U = np.full(self.N, self.U0)
+        self.P = np.full(self.N, self.P0)
+        self.n = np.ones(self.N)                                     # |psi|^2 that the entropy was last evaluated with
+        self.g = 1.0 - p.b * self.n
+        self.eps = np.ones(self.N)
+        self.audit = dict.fromkeys(AUDIT_KEYS, 0.0)                  # cumulative energies [units of U per xi^2]
+        self.te_peak = self.tp_peak = p.t0
+        self._e0 = float(self.area[self.live] @ (self.g * self.U)[self.live])
+        self.G = None
+        if photon is not None and site_nm is not None:
+            self.set_photon(photon, site_nm)
+
+    def __getstate__(self):                       # keep pickles small if a closure over this object is ever stored
+        return {"U": self.U, "P": self.P}
 
     def __setstate__(self, state):
         self.__dict__.update(state)
 
-    def power(self, mu):
-        """|grad mu|^2 per site (finite-volume, consistent with pyTDGL's edge currents)."""
-        mu = np.asarray(mu).real
+    # ---- set-up --------------------------------------------------------------------------------------------------
+    def set_photon(self, photon: Photon, site_nm):
+        r2 = (self.xy_nm[:, 0] - site_nm[0]) ** 2 + (self.xy_nm[:, 1] - site_nm[1]) ** 2
+        if r2.min() > (2.0 * self.xi_nm) ** 2:
+            raise ValueError(f"photon site {site_nm} nm is not on the film")
+        G = np.exp(-r2 / photon.r0_nm ** 2)
+        G[self.sink] = 0.0
+        self.G = G / float(self.area @ G)                            # sum(area * G) = 1: the energy is exact
+        self.E_photon = self.p.photon_energy(photon.energy_eV)
+        self.t_a, self.tau_th = photon.t_arrival, self.film.tau0(photon.tau_th_ps)
+
+    def reset(self, psi):
+        """Bath temperature everywhere, in equilibrium with the order parameter psi."""
+        self.U[:], self.P[:] = self.U0, self.P0
+        self.n = np.minimum(np.abs(np.asarray(psi)) ** 2, 1.0)
+        self.g = 1.0 - self.p.b * self.n
+        self.eps = np.ones(self.N)
+        self.audit = dict.fromkeys(AUDIT_KEYS, 0.0)
+        self.te_peak = self.tp_peak = self.p.t0
+        self._e0 = float(self.area[self.live] @ (self.g * self.U)[self.live])
+
+    # ---- pieces --------------------------------------------------------------------------------------------------
+    def _scatter(self, edge_values):
+        """Sum of an antisymmetric edge quantity into the sites: +value at e0, -value at e1."""
+        return np.bincount(self.e0, edge_values, self.N) - np.bincount(self.e1, edge_values, self.N)
+
+    def joule(self, mu):
+        """|grad mu|^2 per site: sum_e w (d mu)^2 is the integral of |grad mu|^2, half an edge to each end."""
         pe = 0.5 * self.w * (mu[self.e0] - mu[self.e1]) ** 2
-        return (np.bincount(self.e0, pe, len(self.area)) + np.bincount(self.e1, pe, len(self.area))) / self.area
+        return (np.bincount(self.e0, pe, self.N) + np.bincount(self.e1, pe, self.N)) / self.area
 
-    def step(self, dt, mu):
-        q = self.p.eta * self.power(mu)
-        q[self.sink] = 0.0
-        self.joule += float(self.m @ q) * dt
-        if self.p.ep_tau0 > 0:
-            ex = (self.theta - self.theta_ph) / self.p.ep_tau0
-            self.theta += dt * (q - ex)
-            self.theta_ph += dt * (self.p.ce_over_cph * ex - self.theta_ph / self.p.esc_tau0)
+    def relaxation(self, dt, psi_old, mu_old, psi_new):
+        """u / sqrt(1 + gamma^2 n) ( |(d_t + i mu) psi|^2 + gamma^2/4 (d_t n)^2 ) per site, with the gauge-invariant
+        time derivative that pyTDGL's own step uses, psi_new - exp(-i mu dt) psi_old."""
+        f = self.film
+        n_old = np.abs(psi_old) ** 2
+        d = (psi_new - np.exp(-1j * mu_old * dt) * psi_old) / dt
+        dn = (np.abs(psi_new) ** 2 - n_old) / dt
+        return f.u / np.sqrt(1.0 + f.gamma ** 2 * n_old) * (np.abs(d) ** 2 + 0.25 * f.gamma ** 2 * dn ** 2)
+
+    def conduct(self, dt):
+        """Explicit heat conduction, g dU/dt = D div(F grad U) with F = k_s / k_n (harmonic mean on each edge)."""
+        if self.p.ks:
+            F = ks_over_kn(self.gap0 * np.sqrt(self.n / self.U))
+            F = np.maximum(F, 1e-6)
+            k = self.wD * 2.0 * F[self.e0] * F[self.e1] / (F[self.e0] + F[self.e1])
         else:
-            self.theta += dt * (q - self.theta / self.p.esc_tau0)
-        self._tacc += dt
-        while self._tacc >= self.p.dt_tau0:
-            self.theta = self._lu.solve(self.m * self.theta)
-            self._tacc -= self.p.dt_tau0
-        self.theta[self.sink] = 0.0
-        self.theta_ph[self.sink] = 0.0
-        self.peak = max(self.peak, float(self.theta.max()))
+            k = self.wD
+        cap = self.area * self.g
+        rate = (np.bincount(self.e0, k, self.N) + np.bincount(self.e1, k, self.N)) / cap
+        m = max(1, int(np.ceil(dt * rate.max() / 0.7)))
+        h = dt / m
+        for _ in range(m):
+            self.U += h * self._scatter(k * (self.U[self.e1] - self.U[self.e0])) / cap
+        return m
 
+    def exchange(self, dt):
+        """Electron-phonon exchange and phonon escape, linearly implicit in the exchange power X."""
+        p, U, P = self.p, self.U, self.P
+        te_q, tp_q = U ** (0.5 * p.q), P ** (0.25 * p.q)
+        X = (te_q - tp_q) / (p.q * p.tau_ep)
+        XU, XP = te_q / (2.0 * p.tau_ep * U), -tp_q / (4.0 * p.tau_ep * P)
+        L = (P - self.P0) / p.tau_esc
+        Xn = (X - XP * dt * L) / (1.0 + 2.0 * XU * dt / self.g - 4.0 * p.r * XP * dt)
+        self.U = U - 2.0 * Xn * dt / self.g
+        self.P = P + dt * (4.0 * p.r * Xn - L)
+        self.audit["escape"] += float(self.area @ L) * dt / (2.0 * p.r)
 
-def thermal_solver_class():
-    import tdgl
+    # ---- one solver step -----------------------------------------------------------------------------------------
+    def step(self, t, dt, psi_old, mu_old, psi_new, mu_new):
+        """Advance from t to t + dt, given the TDGL fields before and after the solver step."""
+        p, A = self.p, self.area
+        mu_new, mu_old = np.asarray(mu_new).real, np.asarray(mu_old).real
+        # 1. latent heat: the entropy gamma t g is conserved while |psi|^2 changes, so t^2 scales as 1 / g^2
+        if p.latent:
+            n_new = np.minimum(np.abs(psi_new) ** 2, 1.0)
+            g_new = 1.0 - p.b * n_new
+            before = self.g * self.U
+            self.U *= (self.g / g_new) ** 2
+            self.U[self.sink] = self.U0
+            self.audit["latent"] += float(A[self.live] @ (g_new * self.U - before)[self.live])
+            self.n, self.g = n_new, g_new
+        else:
+            self.n = np.minimum(np.abs(psi_new) ** 2, 1.0)
+        # 2. heat sources: dissipation of the TDGL and the photon
+        wj = self.joule(mu_new)
+        wj[self.sink] = 0.0
+        src = 2.0 * p.eta0 * dt * wj
+        self.audit["joule"] += float(A @ src)
+        if p.relax_heat:
+            wr = self.relaxation(dt, psi_old, mu_old, psi_new)
+            wr[self.sink] = 0.0
+            self.audit["relax"] += 2.0 * p.eta0 * dt * float(A @ wr)
+            src += 2.0 * p.eta0 * dt * wr
+        if self.G is not None and t + dt > self.t_a:
+            a, b = max(t - self.t_a, 0.0), t + dt - self.t_a
+            frac = np.exp(-a / self.tau_th) - np.exp(-b / self.tau_th)
+            src += self.E_photon * frac * self.G
+            self.audit["photon"] += self.E_photon * frac
+        self.U += src / self.g
+        # 3. conduction, 4. exchange with the phonons and escape
+        self.conduct(dt)
+        self.exchange(dt)
+        # 5. contacts at the bath temperature
+        if self.sink.any():
+            s = self.sink
+            self.audit["sink"] += float(A[s] @ (self.g[s] * (self.U[s] - self.U0) + (self.P[s] - self.P0) / (2.0 * p.r)))
+            self.U[s], self.P[s] = self.U0, self.P0
+        np.maximum(self.U, 1e-6, out=self.U)
+        np.maximum(self.P, 1e-12, out=self.P)
+        # 6. the TDGL's linear coefficient
+        if p.eps_model == "two_fluid":
+            eps = (1.0 - self.U) / (1.0 - self.U0)
+        else:
+            eps = (1.0 - np.sqrt(self.U)) / (1.0 - p.t0)
+        self.eps = np.maximum(eps, p.eps_floor)
+        self.te_peak = max(self.te_peak, float(np.sqrt(self.U.max())))
+        self.tp_peak = max(self.tp_peak, float(self.P.max() ** 0.25))
 
-    class ThermalTDGLSolver(tdgl.TDGLSolver):
-        """tdgl.TDGLSolver with epsilon = max(eps_photon - theta, floor) and theta advanced after every step."""
+    # ---- read-outs -----------------------------------------------------------------------------------------------
+    @property
+    def te(self):
+        return np.sqrt(self.U)
 
-        def __init__(self, device, options, *, thermal: ThermalParams, eps_photon=None, **kw):
-            self.heat = HeatField(device, thermal)
-            heat, floor = self.heat, thermal.eps_floor
+    @property
+    def tph(self):
+        return self.P ** 0.25
 
-            def eps(r, *, t, vectorized=True):
-                base = np.ones(len(r)) if eps_photon is None else eps_photon(r, t=t)
-                return np.maximum(base - heat.theta, floor)
+    def energy(self):
+        """(electron thermal energy, phonon energy) gained since reset(), summed over the film outside the sinks
+        [units of U per xi^2].  The electron thermal energy density is g U = t_e^2 (1 - b |psi|^2).  The audit
+        closes as  electrons + phonons = joule + relax + photon + latent - escape - sink."""
+        A = self.area[self.live]
+        return (float(A @ (self.g * self.U)[self.live]) - self._e0,
+                float(A @ (self.P - self.P0)[self.live]) / (2.0 * self.p.r))
 
-            super().__init__(device, options, disorder_epsilon=eps, **kw)
-
-        def update(self, state, running_state, dt, **kw):
-            res = super().update(state, running_state, dt, **kw)
-            self.heat.step(float(res.dt), res.mu)
-            return res
-
-    return ThermalTDGLSolver
-
-
-@contextlib.contextmanager
-def solved_thermal(device, current_uA, eps_photon, cfg, thermal: ThermalParams, seed=None, init=None):
-    """Like snspd.sim.solved, with heat.  Yields (Solution, HeatField).  init: (psi, mu) to start from
-    (sim.settled_state, for presets with a settled start); the heat field starts at the bath temperature."""
-    from . import sim
-    h5_path = sim.temp_h5(cfg)
-    sol = None
-    try:
-        solver = thermal_solver_class()(device, sim.solver_options(cfg, cfg.tmax, h5_path), thermal=thermal,
-                                        eps_photon=eps_photon, seed_solution=seed,
-                                        terminal_currents=dict(source=current_uA, drain=-current_uA))
-        if init is not None:
-            solver.psi_init, solver.mu_init = np.array(init[0]), np.array(init[1])
-        sol = solver.solve()
-        yield sol, solver.heat
-    finally:
-        path = getattr(sol, "path", None) or h5_path
-        if path and os.path.exists(path):
-            os.remove(path)
-
-
-def run_thermal(device, current_uA, eps_photon, cfg, thermal: ThermalParams, t0: float):
-    """One run: dict(latched, trigger branch and time, slips in the last window, peak theta, area of theta >= 1 at
-    the end [nm^2], Joule energy).  A preset with a settled start (cfg.pset) starts from sim.settled_state."""
-    from . import sim
-    init = sim.settled_state(device, current_uA, cfg) if cfg.pset.settled_start else None
-    with solved_thermal(device, current_uA, eps_photon, cfg, thermal, init=init) as (sol, heat):
-        trig = sim.detect(sol, t0)
-        t = np.asarray(sol.dynamics.time)
-        v = np.asarray(sol.dynamics.voltage())
-        slips = float(sim.phase_slips(t, v, t0)[-1])
-        xi_nm = device.coherence_length.magnitude * 1e3
-        hot = float(heat.m[heat.theta >= 1.0].sum()) * xi_nm ** 2
-        return dict(latched=trig.slips_last >= sim.SUSTAIN_SLIPS, branch=trig.branch, t_trigger=trig.t,
-                    slips_last=trig.slips_last, slips=slips, theta_peak=heat.peak,
-                    theta_end=float(heat.theta.max()), normal_nm2=hot, joule_xi2=heat.joule)
+    def normal_area_nm2(self):
+        """Area with T_e >= T_c."""
+        return float(self.area[self.U >= 1.0].sum()) * self.xi_nm ** 2

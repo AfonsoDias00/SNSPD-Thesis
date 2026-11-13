@@ -1,0 +1,42 @@
+{
+ "count": false,
+ "dark": false,
+ "i_bias": 0.705,
+ "t_count": null,
+ "load_max": null,
+ "R_end": -4.962571871638687e-05,
+ "resistive_end": false,
+ "slips": 0.14580585266282703,
+ "te_peak": 2.067732823744003,
+ "tph_peak": 1.157177465172566,
+ "normal_nm2": 652.0780751803527,
+ "I_end": 1.0,
+ "t_end": 600.0119999997282,
+ "audit": {
+  "joule": 0.21914935401077715,
+  "relax": 27.276084188559796,
+  "photon": 101.65989215988864,
+  "escape": 31.650451927271234,
+  "sink": 0.016764137997520762,
+  "latent": -40.77951568172586,
+  "electrons": 27.962565359998848,
+  "phonons": 28.745828595467533
+ },
+ "wall_s": 355.58622002601624,
+ "site": [
+  -58.0,
+  0.0
+ ],
+ "geometry": "Plain_Wire",
+ "tag": "src_w1550_m2_source",
+ "title": "Plain wire, 200 nm, photon at (-58, 0) nm, bias 0.705 I_dep: superconducting at the end",
+ "config": [
+  "film: xi = 5 nm, lambda = 600 nm, d = 9 nm, R_sq = 381.4 Ohm (343 uOhm cm), gamma = 10, u = 5.79",
+  "units: tau0 = 0.1318 ps, I_u = 6.547 uA, V_u = 2497.2 uV, L_sq = 50.3 pH, j_dep = 0.504 uA/nm, E_c = 2394 J/m^3, Pearl length = 80 um",
+  "heat: bath 0.3 T_c; D = 6.22 nm^2/tau0; tau_ep(T_c) = 30.4 tau0 (4.00 ps), exchange ~ T_e^5.4 - T_ph^5.4; tau_esc = 607 tau0 (80 ps); c_e/c_ph(T_c) = 0.159",
+  "      eta0 = 0.783; energy unit 7.87 meV per xi^2; eps(T): two_fluid; latent heat on (b = 0.861); k_s on; relaxation heat on",
+  "circuit: none (current source)",
+  "photon: 1550 nm (0.800 eV absorbed = 101.7 energy units), r0 = 5 nm, tau_th = 1.4 ps (10.6 tau0), arrival 20 tau0",
+  "run: mesh 2 xi, dt_max 0.025, window 600 (to 600) tau0, count at 0.2 of I_b in the load"
+ ]
+}

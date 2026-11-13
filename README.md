@@ -1,73 +1,69 @@
-# Perforated SNSPD simulations (pyTDGL)
+# SNSPD with a double slot column (pyTDGL)
 
-TDGL simulations of photon detection in superconducting nanowire single-photon detectors (SNSPDs) with internal holes,
-for fabrication-friendly slot layouts in 9 nm NbTiN.
+Electro-thermal TDGL simulations of single-photon detection in a 200 nm strip of 9 nm NbTiN with two columns of
+400 nm slots (three 40 nm channels in parallel), against plain strips.
 
-This branch (`slot-geometries`, from 6 Nov 2026) starts the second phase. The first phase (ellipse zipper, 30 nm slot
-columns, narrow strips; 16 Oct – 6 Nov) was removed. Its code, results and report are in commit `00f9b0d` on
-`repo-cleanup`. What it established about the method is in [docs/methods.md](docs/methods.md).
+Branch `double400-models` (from 10 Nov 2026): one device, and a photon, heat and circuit model built from the
+literature. Earlier work is on other branches: `slot-geometries` (single, double and staggered slot columns, the
+previous hotspot and heat models) and `repo-cleanup` (hole arrays, commit `00f9b0d`).
+
+## Read first
+
+- [docs/model.md](docs/model.md): what is solved, where each piece comes from, what is still assumed
+- [docs/double400.md](docs/double400.md): the device and what is known about it
+- [docs/methods.md](docs/methods.md): mesh, time step, settled start, detection criterion, with the evidence
+- [docs/references.md](docs/references.md): the papers, and how much of each was read
 
 ## Layout
 
 ```
 snspd/          shared code
-  units.py      film parameters and units (K0, j_dep, tau0, Pearl length)
-  geometry.py   strips and hole layouts, photon-hit grids, unit cells and symmetries; register new layouts here
-  hotspot.py    photon hotspot models (kinetic after Simon et al.; conserving; legacy)
-  sim.py        device and mesh, parameter presets, settled start, detection criteria, bisection, task runner
-  analysis.py   threshold maps, efficiency curves, quantiles, selectivity
-  fluxoid.py    trapped-flux meter
-  thermal.py    electro-thermal TDGL prototype
-  store.py, plotting.py
-  meshgen.py    graded meshes (fine over the slotted section, coarse in the leads); measured not worth it
-hitmap.py       photon-threshold maps and efficiency curves for a set of geometries (the first is the reference)
-fluxtrap.py     flux trapping: fixed-bias scans, trapped states, traces
-snapshots.py    channel currents, voltage and |psi| snapshots just above / below a site's threshold
-heat_check.py   thresholds with Joule heat (snspd/thermal.py) at a few sites
-mesh_check.py   strip length and mesh: benchmark and accuracy against the 2 um, 1.4 xi reference
-slot_analysis.py  tables and figures of the slot layouts against the plain references
-run_slots.sh    the pipeline of 7 Nov 2026 (maps, slot length, mesh check, snapshots, flux scans)
-validation/     solver checks against known answers (python -m validation list)
-docs/methods.md the method, its parameters and the checks behind them
-docs/slots.md   the slot layouts: results and what they mean
-docs/SNSPD geometries beyond hole arrays.md   literature review on hole arrays vs edge protection (27 Oct)
+  units.py      the film and pyTDGL's units (tau0, I_u, V_u, L_sq, j_dep)
+  geometry.py   the double column (double_column(slot_nm)) and the plain reference strips
+  thermal.py    electron and phonon temperatures, the photon as an energy deposit, epsilon(T_e)
+  circuit.py    series kinetic inductance and 50 Ohm load
+  sim.py        device, settled start, one event, the count criterion, threshold bisection
+  cli.py        model options shared by the scripts
+  analysis.py, plotting.py, store.py, fluxoid.py
+event.py        one photon: traces of current, voltage, temperatures, and snapshots
+thresholds.py   threshold bias for a count at each site, dark switching, efficiency
+validation/     checks against known answers (python -m validation list)
+results/
+  baseline_kinetic/   thresholds of the previous model for Double_400 and the plain strips
+  events/, thresholds/, validation/
 ```
 
 ## Running
 
-Use the project environment (`.venv/bin/python`, pyTDGL 0.9.0). Every run is resumable: rows are appended to CSVs as
-they finish, and a rerun skips them.
+Use the project environment (`.venv/bin/python`, pyTDGL 0.9.0).
 
 ```bash
-.venv/bin/python hitmap.py run --geoms Plain_Wire,Double_400 --preset nbtin --tmax 400 --criterion trigger --isw-sustained --mesh-xi 2.0 --workers 10 --out results/maps
-.venv/bin/python hitmap.py report --geoms Plain_Wire,Double_400 --preset nbtin --tmax 400 --criterion trigger --mesh-xi 2.0 --out results/maps
-.venv/bin/python slot_analysis.py
 .venv/bin/python -m validation run quick
 ```
 
-- **Use `--preset nbtin`** (γ = 10, measured NbTiN hotspot times, settled start). The default preset `""` is the
-  γ = 1 model of the first phase.
-- **`--criterion trigger`** gives the lower bound and the default the upper (sustained) bound. In plain strips at
-  γ = 10 they coincide. In the slot layouts they do not: a channel photon can dump the channel's current with a few
-  phase slips and heal, leaving flux trapped (docs/slots.md §6–7). With the trigger criterion add
-  `--isw-sustained`: at γ = 10 the bias-on transient fakes a trigger in dark runs.
-- **Pin the meshes** of holed geometries once results exist: `python -m snspd.sim pin-meshes meshes`, then run with
-  `SNSPD_MESH_DIR=meshes`. Triangulations of holed devices differ between machines.
-- **Memory:** about 0.55 GB per worker for 0.8 µm strips and 1 GB for 2 µm strips at 1.4 ξ. On 11 physical cores,
-  more than ~16 workers in total slows every task.
-- **Run time** scales roughly as (mesh edge)⁻⁴. Use `--mesh-xi 2.0` for screening only (docs/methods.md §5).
+```bash
+.venv/bin/python event.py --cases "Double_400:-80,0:0.80;Plain_Wire:-58,0:0.90" --mesh-xi 2.0 --tmax 500 --workers 2
+```
 
-## Registered geometries
+```bash
+.venv/bin/python thresholds.py run --geoms Plain_Wire,Double_400 --grid critical --mesh-xi 2.0 --workers 11
+```
 
-- **Slot layouts** (`geometry.slot_layout`): `Single_400`, `Double_400`, `Stagger_400`, and the same with 150 nm
-  slots. 200 nm strips with 40 nm bridges and a 120 nm free width: one column of 80 nm slots (60 | 80 | 60), two
-  aligned columns of 40 nm slots (40 nm everywhere), or two staggered by half a period. Each strip is as short as
-  possible: 150 nm of plain lead beyond the outermost slot.
-- **Plain references**: `Plain_Wire` (200 nm, 0.8 µm), `Plain_Wire_2um`, `Plain_120` (the free width), `Plain_60` and
-  `Plain_40` (the channel widths).
+- A case is `<geometry>:<x>,<y>:<bias>`, with x, y in nm and the bias in I_dep of the narrowest free
+  cross-section (120 nm for the double column); `<geometry>:dark:<bias>` has no photon.
+- **`--nsq`** is the series kinetic inductance in squares of film (default 750 = a 200 nm × 150 µm strip). It
+  describes your device: set it to your wire length. `--source` replaces the circuit by a current source.
+- Model variants go in their own files: `--thermal latent=False --label nolatent`,
+  `--photon tau_th_ps=0.6 --label fast`, `--wavelength 1064`, `--t0 0.2`.
+- `thresholds.py` is resumable: rows are appended as they finish and a rerun skips them. `--grid full` is the
+  63-site map of the double column.
+- **Cost.** At 2.0 ξ one 500 τ0 event of the double column takes about 2 min on a free core; a threshold is 7
+  events. Run time scales roughly as (mesh edge)⁻⁴; 2.0 ξ is for screening only. More than about 11 workers on this
+  machine slows every task.
+- **Pin the meshes** before comparing across machines: `python -m snspd.sim pin-meshes meshes 1.4`, then run with
+  `SNSPD_MESH_DIR=meshes`.
 
-## Adding a layout
+## Geometries
 
-Add a builder to `snspd/geometry.py` that returns a `Geometry`. It needs the holes, a photon-hit grid over one unit
-cell, the probe sites and the symmetry used to complete the map (`strip`, `column` or `zipper`). Then register it in
-`GEOMETRIES`. Always compare against a plain strip of the same width and length, with the same preset and mesh.
+`Double_400` (the device), `Plain_Wire` (200 nm), `Plain_120` (the free width), `Plain_40` (one channel).
+`Double_<L>` builds the double column with L nm slots on the fly (e.g. `Double_800`).

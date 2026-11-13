@@ -1,0 +1,40 @@
+{
+ "id": "3b",
+ "title": "energy balance of the TDGL: source work = change of free energy + Joule + relaxation",
+ "wall_s": 14.9,
+ "checks": [
+  {
+   "id": "3b.1",
+   "name": "bias 0.80 I_dep switched on at t = 0 (transient, then steady): residual of work - dF - Joule - relaxation over 60 tau0 [fraction of the dissipated energy]",
+   "value": "+0.0011  (work 3112.4, dF +652.0, Joule 1770.0, relaxation 687.7)",
+   "expected": "|residual| <= 0.02",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "3b.1b",
+   "name": "... share of the dissipation that is order-parameter relaxation",
+   "value": "0.28",
+   "expected": "what a Joule-only heat source leaves out",
+   "verdict": "INFO",
+   "note": ""
+  },
+  {
+   "id": "3b.2",
+   "name": "bias 1.15 I_dep switched on at t = 0 (phase slips, resistive): residual of work - dF - Joule - relaxation over 60 tau0 [fraction of the dissipated energy]",
+   "value": "+0.0010  (work 7149.8, dF +1905.9, Joule 3690.7, relaxation 1547.7)",
+   "expected": "|residual| <= 0.02",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "3b.2b",
+   "name": "... share of the dissipation that is order-parameter relaxation",
+   "value": "0.30",
+   "expected": "what a Joule-only heat source leaves out",
+   "verdict": "INFO",
+   "note": ""
+  }
+ ],
+ "extra": {}
+}

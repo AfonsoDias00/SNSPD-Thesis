@@ -1,7 +1,7 @@
 {
  "id": "2a",
  "title": "fluxoid meter on synthetic fields",
- "wall_s": 20.4,
+ "wall_s": 27.4,
  "checks": [
   {
    "id": "2a.1",

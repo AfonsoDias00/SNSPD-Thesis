@@ -1,0 +1,18 @@
+{
+ "Plain_Wire": {
+  "I_sw": 101.47252659621351,
+  "flag": "",
+  "n_sims": 8,
+  "branch": "V_trail",
+  "t_trigger": 384.75,
+  "criterion": "sustained"
+ },
+ "Double_400": {
+  "I_sw": 60.44360479469289,
+  "flag": "",
+  "n_sims": 7,
+  "branch": "V_trail",
+  "t_trigger": 55.0,
+  "criterion": "sustained"
+ }
+}

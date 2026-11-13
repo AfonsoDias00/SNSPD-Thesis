@@ -1,7 +1,6 @@
 """
-Shared pieces of the validation suite: the result record, devices that are not hit-map geometries (square films,
-an annulus, a strip with one hole), runs without terminals, bisection with a frozen epsilon, and line integrals of
-the phase and of the sheet current.
+Shared pieces of the validation suite: the result record, devices that are not the study's geometries (square films,
+an annulus, strips with test holes), runs without terminals, and line integrals of the phase and the sheet current.
 
 Every test reports Checks: one number each, the value it is expected to have, and PASS / FAIL where the expectation
 is sharp, INFO where the number characterises the model without a pass mark.
@@ -12,18 +11,15 @@ import json
 import os
 import tempfile
 from contextlib import contextmanager
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass
 
 import numpy as np
 
 from snspd import geometry as geo
-from snspd import sim
-from snspd.hotspot import HOTSPOT
 from snspd.units import FILM
 
 OUT_DIR = "results/validation"
 XI = FILM.xi_nm
-CFG = sim.SimConfig(tmax=400.0, mesh_xi=1.4, hotspot="conserving", out_dir=OUT_DIR)   # the stored results checked here
 
 
 @dataclass
@@ -78,7 +74,7 @@ def film_device(film_nm, holes_nm=(), mesh_xi=1.4, name="film"):
     """tdgl.Device without terminals or probes from polygons in nm (film outline, hole outlines)."""
     import tdgl
     holes = [tdgl.Polygon(f"hole_{i}", points=np.asarray(h) * 1e-3) for i, h in enumerate(holes_nm)]
-    dev = tdgl.Device(name, layer=FILM.layer(), film=tdgl.Polygon("film", points=np.asarray(film_nm) * 1e-3),
+    dev = tdgl.Device(name, layer=FILM.layer(gamma=1.0), film=tdgl.Polygon("film", points=np.asarray(film_nm) * 1e-3),
                       holes=holes or None, length_units="um")
     dev.make_mesh(max_edge_length=XI * 1e-3 * mesh_xi, smooth=50)
     return dev
@@ -95,17 +91,42 @@ def annulus(r1_nm, r2_nm, mesh_xi):
     return film_device(circle(r2_nm, points=n(r2_nm)), [circle(r1_nm, points=n(r1_nm))], mesh_xi, name="ring")
 
 
-# Holed devices for the solver checks: the first phase's slot columns (30 nm wide, 40 nm bridges, 2 um strip), until
-# the new layouts are registered in snspd.geometry
-SLOT_400 = geo.slot_column(400.0, 3)
-SLOT_110 = geo.slot_column(110.0, 7)
+# Test holes for the fluxoid meter (2a).  These are fixtures, not layouts of the study: the meter is checked on a
+# centred column of 30 nm slots with 40 nm bridges (the hand-built vortex positions refer to it) and on one round hole.
+@dataclass(frozen=True)
+class Ellipse:
+    cx_nm: float
+    cy_nm: float
+    a_nm: float        # semi-axis along x
+    b_nm: float        # semi-axis along y
+
+    def contains(self, x_nm, y_nm, margin_nm=0.0):
+        return ((np.asarray(x_nm, float) - self.cx_nm) / (self.a_nm + margin_nm)) ** 2 + \
+               ((np.asarray(y_nm, float) - self.cy_nm) / (self.b_nm + margin_nm)) ** 2 < 1.0
+
+    def outline(self, n):
+        th = np.linspace(0.0, 2.0 * np.pi, n, endpoint=False)
+        return np.column_stack([self.cx_nm + self.a_nm * np.cos(th), self.cy_nm + self.b_nm * np.sin(th)])
+
+
+def slot_column(slot_nm: float, n_holes: int) -> geo.Geometry:
+    """One centred column of 30 nm wide slots, slot_nm long, 40 nm bridges, in a 200 nm x 2 um strip."""
+    period, a, b = slot_nm + 40.0, 15.0, slot_nm / 2.0
+    holes = tuple(geo.Slot(0.0, (i - (n_holes - 1) / 2.0) * period, a, b) for i in range(n_holes))
+    return geo.Geometry(key=f"Slot_{slot_nm:g}", label=f"test slot column, {slot_nm:g} nm", width_nm=200.0,
+                        length_nm=2000.0, holes=holes, symmetry="column", cell_half_y_nm=period / 2.0,
+                        hole_points=int(np.ceil(holes[0].perimeter() / 5.0)), probe_y_nm=750.0)
+
+
+SLOT_400 = slot_column(400.0, 3)
+SLOT_110 = slot_column(110.0, 7)
 
 
 def holed_strip(x_nm, a_nm, b_nm=None, y_nm=0.0):
-    """The 200 nm x 0.8 um plain wire with one elliptical (b = a: circular) hole."""
+    """A 200 nm x 0.8 um strip with one elliptical (b = a: circular) hole."""
     b_nm = a_nm if b_nm is None else b_nm
     return geo.Geometry(key=f"Hole_{a_nm:g}x{b_nm:g}_at_{x_nm:g}", label=f"one hole {2 * a_nm:g} x {2 * b_nm:g} nm",
-                        width_nm=200.0, holes=(geo.Ellipse(x_nm, y_nm, a_nm, b_nm),))
+                        width_nm=200.0, holes=(Ellipse(x_nm, y_nm, a_nm, b_nm),))
 
 
 # ==============================================================================
@@ -141,45 +162,6 @@ def psi_frames(sol):
     with h5py.File(sol.path, "r") as f:
         return [(float(f["data"][g].attrs["time"]), np.asarray(f["data"][g]["psi"]))
                 for g in sorted(f["data"].keys(), key=int)]
-
-
-def run_frozen(device, I, eps, cfg, seed=None):
-    """sim.run_simulation for a time-independent epsilon (a frozen normal disc): unlike a photon, the disc is kept in
-    the sustained-switching continuation."""
-    with sim.solved(device, I, eps, cfg, seed) as sol:
-        trig = sim.detect(sol)
-        if not cfg.sustained:
-            return trig._replace(switched=bool(trig.branch))
-        if not trig.switched:
-            return trig
-        with sim.solved(device, I, eps, replace(cfg, tmax=sim.SETTLE), seed=sol) as ext:
-            t = np.asarray(ext.dynamics.time)
-            later = float(sim.phase_slips(t, np.asarray(ext.dynamics.voltage()), t[-1] - sim.SUSTAIN_WIN)[-1])
-    return trig._replace(switched=later >= sim.SUSTAIN_SLIPS, slips_settled=later)
-
-
-def bisect(run, lo, hi, tol):
-    """sim.bisect for any run(I) -> sim.Trigger.  Returns (I, flag, n_runs, trigger at I)."""
-    lo0, hi0, n, trig = lo, hi, 0, sim.Trigger(False)
-    while hi - lo > tol:
-        mid = 0.5 * (lo + hi)
-        n += 1
-        r = run(mid)
-        if r.switched:
-            hi, trig = mid, r
-        else:
-            lo = mid
-    return hi, ("at_wall" if hi >= hi0 else "below_bracket" if lo <= lo0 else ""), n, trig
-
-
-def photon_threshold(geom, x_nm, y_nm, f, I_sw, cfg=CFG, params=HOTSPOT):
-    """i_det = I_det / I_sw of one site, as hitmap.py computes it, for any hotspot parameters (e.g. a later t0)."""
-    from snspd import hotspot as hsm
-    ctx = sim.context(geom, cfg.mesh_xi, FILM, params)
-    eps = hsm.build_eps(ctx["hs"], cfg.hotspot, x_nm, y_nm, f, cfg.tmax, params)
-    tol = sim.scales(geom)[0]
-    run = lambda I: sim.run_simulation(ctx["device"], I, eps, cfg, t0=params.t0_tau0)
-    return bisect(run, cfg.hit_lo_frac * I_sw, I_sw, tol)
 
 
 # ==============================================================================

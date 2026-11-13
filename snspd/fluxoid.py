@@ -4,8 +4,9 @@ Fluxoid of every hole: how many flux quanta a hole holds.
 With screening off and no applied field the vector potential is zero, so the fluxoid of a hole is the winding number
 of arg(psi) along a loop around it -- the same quantity pyTDGL's Solution.hole_fluxoid integrates from the
 interpolated supercurrent, but exact (an integer) and fast enough to evaluate on every saved frame.  The loop is
-pyTDGL's fluxoid polygon: the hole outline pushed out by half the distance to the nearest other boundary (6 nm, the
-middle of the 12 nm bridges, in the long zipper), sampled at n_points and interpolated linearly from the mesh.  The
+pyTDGL's fluxoid polygon: the hole outline pushed out by half the distance to the nearest other boundary (20 nm, the
+middle of the 40 nm channels and bridges, in the double column), sampled at n_points and interpolated linearly from
+the mesh.  The
 winding is only defined while |psi| stays finite on the loop; frames where a vortex core or a normal belt crosses
 it are flagged by the loop minimum of |psi|.
 """

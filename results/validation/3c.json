@@ -1,0 +1,48 @@
+{
+ "id": "3c",
+ "title": "readout circuit: LR relaxation, resistance in squares, current divider",
+ "wall_s": 23.5,
+ "checks": [
+  {
+   "id": "3c.1",
+   "name": "LR recovery after 2 L_k/R_L (3051 tau0): I [uA]",
+   "value": "44.5865",
+   "expected": "44.5866 (to 1e-3)",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "3c.2",
+   "name": "normal plain strip: mu-drop / (I / I_u) between the probes [squares]",
+   "value": "2.657",
+   "expected": "2.663 (within 1 %)",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "3c.3",
+   "name": "normal double column: the same [squares]",
+   "value": "11.17",
+   "expected": ">= 10.98 (series sum of cross-sections), by the spreading resistance at the slot ends",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "3c.4",
+   "name": "normal plain strip in the circuit (40 squares in series): I_end / I_b",
+   "value": "0.0472",
+   "expected": "k / (k + n) = 0.0470 (within 1 %)",
+   "verdict": "PASS",
+   "note": ""
+  },
+  {
+   "id": "3c.5",
+   "name": "... time for 63 % of the current change [tau0]",
+   "value": "14.3",
+   "expected": "N_sq / (k + n) = 14.3 (within 10 %)",
+   "verdict": "PASS",
+   "note": ""
+  }
+ ],
+ "extra": {}
+}

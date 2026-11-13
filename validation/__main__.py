@@ -1,6 +1,6 @@
 """
 python -m validation list                              the tests
-python -m validation run 1a 1b 2a [--workers 6]       run test groups ("all" = every group, "quick" = 1a 1b 2a)
+python -m validation run 3a 3b [--workers 6]          run test groups ("all" = every group, "quick" = 3a 3b 3c)
 python -m validation report                            collect results/validation/<id>.json into summary.txt
 """
 from __future__ import annotations
@@ -13,10 +13,8 @@ from snspd import sim
 
 from . import common as C
 
-MODULES = {"1a": "diffusion", "1b": "epsilon", "1c": "disc_vs_hole", "2a": "meter", "2b": "ring"}
-# 1d (photon thresholds), 2c (one hole in a strip) and 2d (flux-scan statistics) checked the stored results of the
-# first phase and were removed with them (commit 00f9b0d has them).
-QUICK = ("1a", "1b", "2a")            # no long TDGL runs, ~6 min
+MODULES = {"2a": "meter", "2b": "ring", "3a": "heat", "3b": "balance", "3c": "circuit"}
+QUICK = ("3a", "3b", "3c")            # the new model's parts, ~3 min
 
 
 def group(gid):

@@ -1,9 +1,0 @@
-layout,slot,variant,length_nm,nodes,x_nm,y_nm,bias,switched,wall_s
-double,150.0,short/U2.0,830.0,6463,-80.0,0.0,0.75,False,27
-double,400.0,short/U2.0,1580.0,9227,-80.0,0.0,0.75,True,33
-double,150.0,short/U1.4,830.0,9494,-80.0,0.0,0.75,False,130
-double,150.0,2um/G1.4,2000.0,11837,-80.0,0.0,0.75,False,132
-double,400.0,short/U1.4,1580.0,15969,-80.0,0.0,0.75,True,172
-double,400.0,2um/G1.4,2000.0,17101,-80.0,0.0,0.75,True,168
-double,400.0,2um/U1.4,2000.0,22609,-80.0,0.0,0.75,True,206
-double,150.0,2um/U1.4,2000.0,26974,-80.0,0.0,0.75,False,220

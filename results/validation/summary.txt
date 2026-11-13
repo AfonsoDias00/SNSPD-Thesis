@@ -1,83 +1,6 @@
 VALIDATION SUMMARY   (results/validation/<id>.json; PASS / FAIL against the stated expectation, INFO = no pass mark)
 
-1a  hotspot diffusion solver   (167 s)
-  [PASS] 1a.1   Plain wire: integral n dA / pi r0^2 over 380 tau0, sites ((-96.0, 0.0), (0.0, 0.0))
-         measured: max |deviation| 6.9e-09
-         expected: < 1e-5 (float32 snapshots)
-         note:     most negative n / n(0) peak: 0.0e+00
-  [PASS] 1a.2   Slot column, 400 nm: integral n dA / pi r0^2 over 380 tau0, sites ((0.0, 220.0), (-28.0, 200.0), (-96.0, 0.0))
-         measured: max |deviation| 5.6e-09
-         expected: < 1e-5 (float32 snapshots)
-         note:     most negative n / n(0) peak: 0.0e+00
-  [PASS] 1a.3   Slot column, 110 nm: integral n dA / pi r0^2 over 380 tau0, sites ((0.0, 75.0), (-96.0, 0.0))
-         measured: max |deviation| 6.6e-09
-         expected: < 1e-5 (float32 snapshots)
-         note:     most negative n / n(0) peak: 0.0e+00
-  [PASS] 1a.4   free space (600 nm square, 1.4 xi): profile vs (r0^2/s^2) exp(-r^2/s^2)
-         measured: rel. L2 error 0.0045 (max over t = 10, 50, 100, 200)
-         expected: < 0.03
-         note:     t = 0 (interpolated Gaussian): 0.0002; per t: 10: 0.0045, 50: 0.0017, 100: 0.0010, 200: 0.0005; peak / exact: 10: 1.007, 50: 1.003, 100: 1.002, 200: 1.001
-  [PASS] 1a.5   free space: d<r^2>/dt over 4D (a wrong D or tau0 unit shows here)
-         measured: 1.0000
-         expected: 1 within 1 %
-         note:     intercept 196.0 nm^2 vs r0^2 = 196
-  [PASS] 1a.6   source 0 nm from an insulating wall vs the exact truncated-Gaussian + image solution
-         measured: rel. L2 error 0.0047
-         expected: < 0.03
-         note:     t = 10: 0.0047, t = 50: 0.0016, t = 100: 0.0009
-  [PASS] 1a.7   source 4 nm from an insulating wall vs the exact truncated-Gaussian + image solution
-         measured: rel. L2 error 0.0039
-         expected: < 0.03
-         note:     t = 10: 0.0039, t = 50: 0.0015, t = 100: 0.0008
-  [PASS] 1a.8   source 42 nm from an insulating wall vs the exact truncated-Gaussian + image solution
-         measured: rel. L2 error 0.0042
-         expected: < 0.03
-         note:     t = 10: 0.0042, t = 50: 0.0014, t = 100: 0.0007;  without the image term at t = 100: 0.329
-  [PASS] 1a.9   200 nm strip, edge source: decay rate of the first width mode over D (pi/w)^2 = 2.47e-03 / tau0 (fit 0-380 tau0)
-         measured: 0.9997
-         expected: 1 within 2 %
-         note:     1/rate = 405 tau0
-  [PASS] 1a.10  56 nm strip, edge source: decay rate of the first width mode over D (pi/w)^2 = 3.15e-02 / tau0 (fit 0-150 tau0)
-         measured: 0.9971
-         expected: 1 within 2 %
-         note:     1/rate = 32 tau0
-  [PASS] 1a.11  56 nm strip, centre source: peak over the 1-D value sqrt(pi) r0^2 / (w s), t >= 100 tau0
-         measured: 1.0012, 1.0006, 1.0003
-         expected: 1 within 1 % (peak ~ t^-1/2)
-         note:     200 nm wire, same ratio at t = 50/100/200/380 tau0: 2.414, 1.745, 1.266, 1.045 (still 2-D early in the window)
-  [PASS] 1a.12  Crank-Nicolson: error at t = 20 tau0 vs dt = 1/128, order for dt = 1 -> 0.125
-         measured: 2.00, 2.00, 2.00
-         expected: 2 (error falls ~4x per halving), within 1.8-2.2
-         note:     dt 1: 3.6e-04, dt 0.5: 9.1e-05, dt 0.25: 2.3e-05, dt 0.125: 5.6e-06 (production dt = 0.25)
-  [PASS] 1a.13  P1 mesh convergence: error vs the exact solution at t = 20 tau0, order in the mean edge for 2.8 -> 0.35 xi
-         measured: 1.72, 1.78, 2.13
-         expected: 2, within 1.5-2.5
-         note:     2.8 xi (7.4 nm): 1.1e-02, 1.4 xi (4.1 nm): 4.3e-03, 0.7 xi (1.7 nm): 8.7e-04, 0.35 xi (0.8 nm): 1.9e-04
-
-1b  epsilon mapping   (13 s)
-  [PASS] 1b.1   pyTDGL 0.9 TDGLSolver given epsilon = -3 / 1.2
-         measured: accepted / rejected
-         expected: accepted / rejected (only epsilon > 1 is checked, at t = 0)
-  [PASS] 1b.2   uniform film at epsilon = -1 / -1.5 / -3: decay rate of |psi| over the discrete prediction -ln(1 + epsilon dt / u) / dt
-         measured: 1.0000 / 1.0000 / 1.0000
-         expected: 1 within 1 % each (u = 5.79)
-         note:     rates [1/tau0]: -1: 0.1758 (|eps|/u = 0.1727, dt = 0.200), -1.5: 0.2660 (|eps|/u = 0.2591, dt = 0.200), -3: 0.5470 (|eps|/u = 0.5181, dt = 0.200)
-  [PASS] 1b.3   rate ratio epsilon = -1.5 : -1 and -3 : -1
-         measured: 1.513, 3.112
-         expected: 1.513, 3.112 if used as given (1, 1 if clipped to -1)
-  [PASS] 1b.4   epsilon at the hotspot centre at t0, f = 1, over every production hit site
-         measured: -3.25 at Plain 30 nm (-13.0, 0.0) (deepest)
-         expected: > eps_floor = -6: the floor never acts, epsilon is linear in f everywhere
-         note:     per geometry, shallowest .. deepest: Plain wire -1.45 at (0.0, 0.0) .. -2.80 at (-96.0, 0.0); Plain wire, 2 um -1.43 at (-58.0, 0.0) .. -2.82 at (-96.0, 0.0); Slot column, 400 nm -1.42 at (-58.0, 0.0) .. -2.80 at (-96.0, 0.0); Slot column, 110 nm -1.42 at (-42.0, 27.5) .. -2.81 at (-96.0, 75.0); Plain 30 nm -1.87 at (0.0, 0.0) .. -3.25 at (-13.0, 0.0); Plain 56 nm -1.49 at (0.0, 0.0) .. -3.24 at (-26.0, 0.0); Plain 100 nm -1.47 at (-29.0, 0.0) .. -3.23 at (-48.0, 0.0)
-  [PASS] 1b.5   min epsilon over 20-400 tau0 at Plain 30 nm (-13.0, 0.0)
-         measured: -3.247 at t = 20 tau0
-         expected: at t0 = 20
-  [INFO] 1b.6   photon energy factor below which the centre of an interior hotspot never goes normal (epsilon > 0)
-         measured: f < 0.40
-         expected: 1 / |A|
-         note:     epsilon < -1 is outside the documented range but is physical in a two-temperature picture (T_e > 2 T_c - T at the core); it sets how fast psi collapses (rate |epsilon| / u) and the proximity length xi / sqrt|epsilon| at the hotspot edge, not the size of the normal core
-
-2a  fluxoid meter on synthetic fields   (20 s)
+2a  fluxoid meter on synthetic fields   (27 s)
   [PASS] 2a.1   winding n = -3..3 around every hole (two slot columns, one hole), with and without a transport phase gradient
          measured: 42 of 42 exact
          expected: all exact and accepted (min |psi| >= 0.05)
@@ -110,4 +33,108 @@ VALIDATION SUMMARY   (results/validation/<id>.json; PASS / FAIL against the stat
          expected: never (each vortex counted at most once)
          note:     the two fluxoid loops (each pushed out to half the bridge) meet at the bridge middle; a frame taken while a vortex crosses there adds a spurious quantum for one frame
 
-25 PASS, 2 FAIL, 1 INFO
+2b  closed ring: winding, persistent current, depairing limit   (253 s)
+  [PASS] 2b.1   stable rings: winding read at every frame (all meshes)
+         measured: 27 of 27 runs clean
+         expected: every frame accepted and = n
+  [PASS] 2b.2   circulating current from psi vs (K0/4) xi int f^2 n/r dr (radial GL), n = 1..8, 0.5 xi
+         measured: max |I / I_GL - 1| = 0.0056
+         expected: < 0.01 (coarser meshes in the note)
+         note:     1.4 xi: 1:-0.001, 2:-0.002, 3:-0.005, 4:-0.008, 5:-0.012, 6:-0.017, 7:-0.022, 8:-0.027; 0.8 xi: 1:-0.000, 2:-0.001, 3:-0.002, 4:-0.003, 5:-0.004, 6:-0.006, 7:-0.008, 8:-0.009; 0.5 xi: 1:-0.002, 2:-0.003, 3:-0.003, 4:-0.003, 5:-0.004, 6:-0.004, 7:-0.005, 8:-0.006;  uniform-state formula (1 - q^2) q at the local q = n/r vs GL: 1:-0.000, 2:-0.000, 3:-0.000, 4:-0.000, 5:-0.001, 6:-0.001, 7:-0.002, 8:-0.003
+  [INFO] 2b.2b  the same current from pyTDGL's interpolated current density (what hitmap.py's crowding analysis reads)
+         measured: 1.4 xi: +0.093 / 0.8 xi: +0.070 / 0.5 xi: +0.032
+         expected: I / I_GL - 1 (largest over n)
+         note:     a ring 3 xi wide is mostly boundary sites at 1.4 xi; the excess falls with the mesh
+  [PASS] 2b.3   |psi|^2 at mid-radius vs the radial GL solution, 0.5 xi
+         measured: max |rel. diff| = 0.0029
+         expected: < 0.01
+         note:     1.4 xi: 1:-0.0005, 2:-0.0020, 3:-0.0044, 4:-0.0078, 5:-0.0119, 6:-0.0166, 7:-0.0217, 8:-0.0268; 0.8 xi: 1:-0.0002, 2:-0.0006, 3:-0.0014, 4:-0.0024, 5:-0.0037, 6:-0.0052, 7:-0.0067, 8:-0.0082; 0.5 xi: 1:-0.0001, 2:-0.0002, 3:-0.0005, 4:-0.0009, 5:-0.0013, 6:-0.0018, 7:-0.0024, 8:-0.0029
+  [PASS] 2b.4   largest winding that survives 600 tau0 (1.4 / 0.8 / 0.5 xi)
+         measured: 8 / 8 / 8
+         expected: 8 (q^2 < 1/3 + 1/6R^2 at R = 15 xi: n < 8.67); 7 if set at R1 (n < 7.80); all lower n stable
+         note:     q = n_max / R_mid = 0.533, 0.533, 0.533 vs 1/sqrt 3 = 0.577
+  [FAIL] 2b.5   start above the limit, n = 9..12: end state, all meshes and seeds
+         measured: n = 2..4, i.e. current 0.34-0.64 j_dep
+         expected: 8 or slightly below (plan)
+         note:     1.4 xi: 9->[3], 10->[3], 11->[4], 12->[3, 3, 4]; 0.8 xi: 9->[4], 10->[3], 11->[3], 12->[3, 2, 2]; 0.5 xi: 9->[3], 10->[3], 11->[2], 12->[3, 3, 2].  Each slip leaves the slip point depressed and the next follows ~5 tau0 later, down to about half the depairing current: TDGL switching/retrapping hysteresis, no heat needed
+  [FAIL] 2b.6   n = 12, 0.5 xi, a frame every 2 solver steps for 100 tau0: size of every change between accepted frames
+         measured: [-6, -2, -1]  (84 of 787 frames rejected)
+         expected: all -1 (one slip at a time, plan)
+         note:     same run with a frame every 10 steps: [-6, -2, -1].  In a fast burst |psi| at the slip point stays below the gate through several slips, so only the net change is defined
+  [PASS] 2b.6b  every change of more than one quantum spans rejected frames (all runs, both frame rates)
+         measured: 32 of 32 bridged
+         expected: all (a multi-slip jump between two consecutive accepted frames would be a meter fault)
+  [PASS] 2b.7   mesh convergence: largest stable winding on 1.4 / 0.8 / 0.5 xi
+         measured: 8 / 8 / 8
+         expected: identical
+         note:     end states from n = 12 (seeds 0-2): 1.4 xi [3, 3, 4]; 0.8 xi [2, 2, 3]; 0.5 xi [2, 3, 3] -- they differ by up to 1 between seeds at one mesh, so they are not a mesh test
+
+3a  heat model alone: conservation, two-temperature relaxation, diffusion   (136 s)
+  [PASS] 3a.1   energy audit of one photon, worst residual over 4 times x 2 states [fraction of h nu]
+         measured: 3.6e-14
+         expected: <= 1e-9
+  [PASS] 3a.2   photon energy deposited by t = 300 tau0 [fraction of h nu]
+         measured: 1.000000
+         expected: 1 (to 1e-6)
+  [PASS] 3a.3   uniform cooling from 1.6 T_c, |psi|^2 = 0: T_e/T_ph [T_c] at t = 5, 30, 200, 1000 tau0; worst deviation from the ODE reference
+         measured: 1.418/0.654, 1.080/0.813, 0.839/0.820, 0.665/0.642; 2.8e-04
+         expected: <= 5e-3 (first-order steps of 0.025 tau0)
+         note:     spread over the mesh: 0.0e+00
+  [PASS] 3a.4   uniform cooling from 1.6 T_c, |psi|^2 = 0.8: T_e/T_ph [T_c] at t = 5, 30, 200, 1000 tau0; worst deviation from the ODE reference
+         measured: 1.204/0.586, 0.822/0.659, 0.647/0.637, 0.506/0.491; 7.0e-04
+         expected: <= 5e-3 (first-order steps of 0.025 tau0)
+         note:     spread over the mesh: 0.0e+00
+  [PASS] 3a.5   normal state: D from the growth of <y^2> of a 15 nm Gaussian over 20 tau0 [nm^2/tau0]
+         measured: 6.222
+         expected: 6.221 (within 2 %)
+  [PASS] 3a.6   ... and the energy is conserved [relative change]
+         measured: 9.2e-13
+         expected: <= 1e-10
+  [PASS] 3a.7   edge deposit after 60 tau0 (it has spread 40 nm): energy left in the film [fraction]
+         measured: 0.999999999998
+         expected: 1 (to 1e-10)
+  [PASS] 3a.8   k_s / k_n at Delta / k_B T = 0, 1, the bath value, 40
+         measured: 1.0000, 0.9561, 0.0854, 0.0000
+         expected: 1, between, small, 0
+  [INFO] 3a.9   condensation energy 4 E_c(0) / (gamma T_c^2): model; from lambda, xi and c_e
+         measured: 0.946; 1.032
+         expected: BCS (3/pi^2)(1.764)^2 = 0.946; Gorter-Casimir 1
+  [PASS] 3a.10  entropy of the superconducting state at the bath, s_s / (gamma T) = 1 - a0 (1 - t0^2)
+         measured: 0.139
+         expected: > 0; BCS c_es / (gamma T) at 0.3 T_c is about 0.2
+  [INFO] 3a.11  specific-heat jump at T_c, Delta C / (gamma T_c) = 2 a0
+         measured: 1.89
+         expected: BCS 1.43; Gorter-Casimir 2
+
+3b  energy balance of the TDGL: source work = change of free energy + Joule + relaxation   (15 s)
+  [PASS] 3b.1   bias 0.80 I_dep switched on at t = 0 (transient, then steady): residual of work - dF - Joule - relaxation over 60 tau0 [fraction of the dissipated energy]
+         measured: +0.0011  (work 3112.4, dF +652.0, Joule 1770.0, relaxation 687.7)
+         expected: |residual| <= 0.02
+  [INFO] 3b.1b  ... share of the dissipation that is order-parameter relaxation
+         measured: 0.28
+         expected: what a Joule-only heat source leaves out
+  [PASS] 3b.2   bias 1.15 I_dep switched on at t = 0 (phase slips, resistive): residual of work - dF - Joule - relaxation over 60 tau0 [fraction of the dissipated energy]
+         measured: +0.0010  (work 7149.8, dF +1905.9, Joule 3690.7, relaxation 1547.7)
+         expected: |residual| <= 0.02
+  [INFO] 3b.2b  ... share of the dissipation that is order-parameter relaxation
+         measured: 0.30
+         expected: what a Joule-only heat source leaves out
+
+3c  readout circuit: LR relaxation, resistance in squares, current divider   (24 s)
+  [PASS] 3c.1   LR recovery after 2 L_k/R_L (3051 tau0): I [uA]
+         measured: 44.5865
+         expected: 44.5866 (to 1e-3)
+  [PASS] 3c.2   normal plain strip: mu-drop / (I / I_u) between the probes [squares]
+         measured: 2.657
+         expected: 2.663 (within 1 %)
+  [PASS] 3c.3   normal double column: the same [squares]
+         measured: 11.17
+         expected: >= 10.98 (series sum of cross-sections), by the spreading resistance at the slot ends
+  [PASS] 3c.4   normal plain strip in the circuit (40 squares in series): I_end / I_b
+         measured: 0.0472
+         expected: k / (k + n) = 0.0470 (within 1 %)
+  [PASS] 3c.5   ... time for 63 % of the current change [tau0]
+         measured: 14.3
+         expected: N_sq / (k + n) = 14.3 (within 10 %)
+
+29 PASS, 4 FAIL, 5 INFO

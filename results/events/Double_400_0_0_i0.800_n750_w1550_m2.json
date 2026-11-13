@@ -1,0 +1,41 @@
+{
+ "count": true,
+ "dark": false,
+ "i_bias": 0.8,
+ "t_count": 294.66200000000595,
+ "load_max": 0.6404923946039232,
+ "R_end": 3.3066356415818414,
+ "resistive_end": true,
+ "slips": 581.9275083858196,
+ "te_peak": 2.1111110997596483,
+ "tph_peak": 1.7244187143845846,
+ "normal_nm2": 48530.92972530511,
+ "I_end": 0.35950760539607685,
+ "t_end": 500.0119999998192,
+ "audit": {
+  "joule": 26659.045081974895,
+  "relax": 2732.680301231051,
+  "photon": 101.65989215988864,
+  "escape": 5610.963989430554,
+  "sink": 1.2305350262767347,
+  "latent": -1143.8257223976545,
+  "electrons": 3926.717378682786,
+  "phonons": 18810.647649828457
+ },
+ "wall_s": 119.35966396331787,
+ "site": [
+  0.0,
+  0.0
+ ],
+ "geometry": "Double_400",
+ "tag": "n750_w1550_m2",
+ "config": [
+  "film: xi = 5 nm, lambda = 600 nm, d = 9 nm, R_sq = 381.4 Ohm (343 uOhm cm), gamma = 10, u = 5.79",
+  "units: tau0 = 0.1318 ps, I_u = 6.547 uA, V_u = 2497.2 uV, L_sq = 50.3 pH, j_dep = 0.504 uA/nm, E_c = 2394 J/m^3, Pearl length = 80 um",
+  "heat: bath 0.3 T_c; D = 6.22 nm^2/tau0; tau_ep(T_c) = 30.4 tau0 (4.00 ps), exchange ~ T_e^5.4 - T_ph^5.4; tau_esc = 607 tau0 (80 ps); c_e/c_ph(T_c) = 0.159",
+  "      eta0 = 0.783; energy unit 7.87 meV per xi^2; eps(T): two_fluid; latent heat on (b = 0.861); k_s on; relaxation heat on",
+  "circuit: 750 squares in series (L_k = 37.7 nH), R_L = 50 Ohm; L_k/R_L = 5721 tau0 (0.75 ns); one phase slip moves 0.055 uA",
+  "photon: 1550 nm (0.800 eV absorbed = 101.7 energy units), r0 = 5 nm, tau_th = 1.4 ps (10.6 tau0), arrival 20 tau0",
+  "run: mesh 2 xi, dt_max 0.025, window 500 (to 500) tau0, count at 0.2 of I_b in the load"
+ ]
+}

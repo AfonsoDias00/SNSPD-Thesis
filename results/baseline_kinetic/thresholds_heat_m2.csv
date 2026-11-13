@@ -1,0 +1,17 @@
+geom,x_nm,y_nm,variant,i_heat,flag,n_runs,branch,t_trigger,theta_peak,normal_nm2,wall_s
+Double_400,-96.0,0.0,NbTiN 2T,0.782,,7,V_trail,100.25,0.721,0,1943
+Plain_Wire,-58.0,0.0,NbTiN 2T,0.877,,7,V_trail,291.0,2.74,11366,1951
+Double_400,-80.0,0.0,NbTiN 2T,0.782,,7,V_trail,94.5,0.893,0,1957
+Plain_Wire,0.0,0.0,NbTiN 2T,0.9016,,7,V_trail,309.25,2.504,9703,1957
+Double_400,-16.0,0.0,NbTiN 2T,0.7855,,7,V_trail,95.75,0.482,0,1962
+Double_400,-80.0,220.0,NbTiN 2T,0.8699,,7,V_trail,216.0,0.513,0,1963
+Double_400,-64.0,0.0,NbTiN 2T,0.782,,7,V_trail,100.5,0.722,0,1992
+Plain_Wire,-96.0,0.0,NbTiN 2T,0.8664,,7,V_trail,288.75,2.932,12406,1993
+Double_400,-40.0,204.0,NbTiN 2T,0.9191,,7,V_trail,373.25,0.365,0,2006
+Double_400,0.0,0.0,NbTiN 2T,0.782,,7,V_trail,91.0,0.456,0,2021
+Double_400,-40.0,220.0,NbTiN 2T,0.9332,,7,V_trail,377.25,0.362,0,2054
+Double_400,0.0,220.0,NbTiN 2T,0.9016,,7,V_trail,369.5,0.378,0,337
+Double_400,0.0,160.0,NbTiN 2T,0.7785,,7,V_trail,90.75,0.499,0,811
+Double_400,-80.0,160.0,NbTiN 2T,0.7891,,7,V_trail,90.5,1.217,1648,813
+Double_400,0.0,200.0,NbTiN 2T,0.8277,,7,V_trail,153.25,0.466,0,814
+Double_400,-80.0,200.0,NbTiN 2T,0.8102,,7,V_trail,120.75,0.603,0,816
