@@ -121,3 +121,201 @@ every variant tried.
   0.66–0.76 I_dep, so it predicts no full plateau at 1550 nm for a strip that switches at 0.63. If your own or
   KTH's data disagree, the absolute photon scale is still off and that is the number to fix first.
 
+## 4 · Photon energy: 1550, 2500 and 4000 nm (night of 11–12 Nov 2026)
+
+`energy_scan.py` → `results/thresholds/thr_n750_w{1550,2500,4000}_m2.csv`; `energy_analysis.py` →
+`results/energy/` (summary.txt, efficiency_vs_energy.png, threshold_vs_energy.png).
+
+**Set-up**
+- The same model as §2: 2.0 ξ, 750 squares, bath 0.3 T_c, a count at 20 % in the load.
+- Plain wire: its full 8-site grid. The strip symmetry makes this exact across the width.
+- Double column: a 23-site medium grid at all three energies, plus the full 63-site map at 1550 nm.
+- 121 thresholds in 7.5 h on 11 workers; no failures.
+
+**Thresholds against photon energy** (I_dep of the narrowest free width)
+
+| Site | 0.80 eV (1550) | 0.50 eV (2500) | 0.31 eV (4000) | shift 1550 → 4000 |
+| --- | --- | --- | --- | --- |
+| plain wire, edge (−96 / −88, 0) | 0.664 / 0.648 | 0.731 / 0.703 | 0.809 / 0.801 | +0.15 |
+| plain wire, (−58, 0) | 0.727 | 0.809 | 0.871 | +0.14 |
+| plain wire, centre (0, 0) | 0.762 | 0.840 | 0.894 | +0.13 |
+| double, channels, y = 0–180 (11 sites) | 0.742–0.758 | 0.754–0.762 | 0.766–0.773 | **+0.01 to +0.03** |
+| double, channel ends, y = 200–210 | 0.746–0.777 | 0.769–0.832 | 0.785–0.883 | +0.04 to +0.11 |
+| double, slot end (−56 / −40 / −24, 204) | 0.742 / 0.875 / 0.789 | 0.812 / 0.914 / 0.852 | 0.875 / 0.938 / 0.894 | +0.06 to +0.13 |
+| double, bridge row (y = 220, 6 sites) | 0.750–0.906 | 0.801–0.934 | 0.894–0.953 | +0.05 to +0.14 |
+| dark switching: plain / double | 0.949 / 0.957 | | | |
+
+**Efficiency, hard step**
+
+| | i_50 | i_90 (= I_det, 90 % of plateau) | i_99 | η(0.80) | η(0.90) |
+| --- | --- | --- | --- | --- | --- |
+| plain, 1550 nm | 0.739 | 0.762 | 0.762 | 100 % | 100 % |
+| double, 1550 nm (full map) | 0.749 | 0.762 | 0.879 | 93 % | 100 % |
+| plain, 2500 nm | 0.819 | 0.838 | 0.840 | 40 % | 100 % |
+| double, 2500 nm (medium grid) | 0.762 | 0.815 | 0.913 | 88 % | 98 % |
+| plain, 4000 nm | 0.879 | 0.895 | 0.895 | 0 % | 100 % |
+| double, 4000 nm (medium grid) | 0.770 | 0.878 | 0.938 | 72 % | 94 % |
+
+![Efficiency against bias at three photon energies](../results/energy/efficiency_vs_energy.png)
+
+![Thresholds against photon energy, every site](../results/energy/threshold_vs_energy.png)
+
+**What it shows**
+
+1. **The hypothesis holds.** As the photon gets weaker, the plain wire loses sensitivity much faster than the
+   double column's channels:
+   - Plain wire, every site: +0.13 to +0.15 from 0.80 to 0.31 eV.
+   - Double column, channel sites: +0.01 to +0.03.
+   - The double column's onset (i_50) moves 0.750 → 0.770; the plain wire's 0.739 → 0.879.
+   - At 0.80 I_dep and 4000 nm, 72 % of the double column's cell counts and none of the plain wire's.
+2. **The onset crossover is near 1650 nm (about 0.75 eV)** (linear interpolation of i_50 between 1550 and 2500 nm).
+   At 1550 nm the plain wire is still 0.01 ahead at i_50, and the same at i_90 (0.762 against the full map's 0.762).
+   From 2500 nm on, the double column is ahead by 0.06 (2500) and 0.11 (4000) at i_50.
+3. **Why the channels barely care:** a 40 nm channel is blocked by any of these photons, and the count is decided
+   by the cascade and the heat, not by the photon. The plain wire needs the photon to start a belt across 200 nm,
+   which costs bias as the hot spot shrinks.
+4. **The bridges still set the plateau, and they are energy-sensitive.**
+   - The bridge rows and slot ends behave like the plain wire, since the full 200 nm carries the current there.
+     They rise by 0.05–0.14.
+   - So the double column's advantage shrinks from i_50 to i_90: at 4000 nm it is 0.11 at i_50 but only 0.017 at
+     i_90.
+   - Its i_99 (0.938) is above the plain wire's (0.895), close to dark switching (0.957).
+   - Longer slots (`Double_800`, `Double_1200`) shrink exactly this tail. At low photon energy they are the case
+     to run next.
+5. **The energy spread changes little.** With a 10–20 % spread of the deposited energy, the plain wire's curves
+   broaden, because its threshold depends steeply on energy. The channels' do not. No conclusion changes:
+   - 4000 nm, 20 % spread: i_90 is 0.918 (plain) and 0.883 (double).
+   - η(0.80) is 10 % (plain) and 72 % (double).
+
+**Caveats**
+- At 2500 and 4000 nm the double column is interpolated from the medium grid. At 1550 nm that grid gives the same
+  i_50 and i_99 as the full map, but i_90 0.014 too high. So the 2500 / 4000 nm i_90 values are slightly
+  pessimistic for the double column.
+- 2.0 ξ screening mesh; ±0.02 as in §2.
+- Plain-wire thresholds above about 0.93 would be suspect because of the contacts (§2.5); at 4000 nm the plain wire
+  tops out at 0.895.
+- The photon energy is the only parameter changed. The absorbed fraction, r0 and τ_th are as at 1550 nm. §5 tests
+  them: the model sees only the deposited energy, and τ_th and r0 move thresholds by ≤ 0.03.
+
+## 5 · Model uncertainty: deposited fraction, first picosecond, ε closure (12–13 Nov 2026)
+
+Three assumptions of the hotspot model were tested at 1550 nm with the same set-up as §4 (2.0 ξ, 750 squares,
+plain wire 8 sites, double column 23-site medium grid).
+
+- `energy_scan.py --photon … --thermal … --label …` writes each variant to its own file,
+  `results/thresholds/thr_n750_w1550_m2_<label>.csv`.
+- `sensitivity_scan.py run | report` runs the five variants of §5.2 in one pool and writes
+  `results/energy/summary_sensitivity.txt` and `sensitivity.png`.
+- `closure_kl.py` computes the Kupriyanov–Lukichev depairing current (no TDGL) → `results/closure/`.
+- `energy_analysis.py` also writes `results/energy/summary_abs0.5.txt` and `efficiency_abs0.5.png`.
+
+### 5.1 The model sees only the deposited energy
+
+`absorbed = 0.5` at 1550 nm deposits 0.400 eV. Before the run, each site's threshold was predicted by interpolating
+the 0.31 / 0.50 / 0.80 eV runs of §4 in ln E (`results/energy/prediction_abs0.5.csv`).
+
+| | measured − predicted, mean | worst site |
+| --- | --- | --- |
+| plain wire (8 sites) | +0.002 | 0.004 |
+| double column (23 sites) | +0.001 | 0.021 (bridge row, y = 220) |
+
+So the thresholds depend on hν × absorbed and on nothing else. Consequences:
+- **The energy axis of §4 is the deposited energy** (0.80 / 0.50 / 0.31 eV), not the wavelength. The deposited
+  fraction of a real NbTiN film is not measured; Simon et al. lose about 25 % to the substrate, and literature
+  values of 0.3–0.6 are quoted from memory, not checked.
+- **If half of a 1550 nm photon is deposited**, the slots already win at telecom wavelength:
+
+| 1550 nm | i_50 | i_90 | i_99 | η(0.80) |
+| --- | --- | --- | --- | --- |
+| plain, absorbed 1.0 | 0.739 | 0.762 | 0.762 | 100 % |
+| plain, absorbed 0.5 | 0.848 | 0.865 | 0.867 | 26 % |
+| double, absorbed 1.0 | 0.750 | 0.776 | 0.875 | 93 % |
+| double, absorbed 0.5 | 0.765 | 0.848 | 0.927 | 78 % |
+
+- The analytic energy spread of §4 is consistent with the dynamics: a photon that deposits E behaves exactly like
+  the simulated photon of energy E.
+- Simon's 0.75 (0.60 eV at 1550 nm) needs no run: it lies between the 0.50 and 0.80 eV results.
+
+### 5.2 Sensitivity runs
+
+| label | change | question |
+| --- | --- | --- |
+| `tth0.7`, `tth2.8` | τ_th = 0.7 / 2.8 ps (default 1.4) | first picosecond: how fast the energy arrives |
+| `r015` | r0 = 15 nm (default 5) | first picosecond: how wide it arrives |
+| `2fNL` | latent heat off | latent heat; reference for `linNL` |
+| `linNL` | linear GL ε = (1 − t)/(1 − t0), latent heat off | ε closure (latent heat needs the two-fluid entropy) |
+
+155 thresholds, 9.5 h on 11 workers, no failures.
+
+**Mean threshold shift against the default model** (I_dep)
+
+| variant | plain wire | double: channels (y ≤ 180) | double: bridge rows (y > 180) | largest single site |
+| --- | --- | --- | --- | --- |
+| τ_th 0.7 ps | +0.033 | +0.002 | +0.009 | 0.047 |
+| τ_th 2.8 ps | −0.020 | −0.003 | −0.006 | 0.027 |
+| r0 15 nm | +0.007 | −0.004 | −0.013 | 0.024 |
+| latent heat off | −0.048 | −0.042 | −0.039 | 0.070 |
+| linear ε, latent off | −0.113 | −0.057 | −0.112 | 0.192 |
+| *closure alone (`linNL` − `2fNL`)* | *−0.065* | *−0.015* | *−0.073* | |
+
+**Plain wire minus double column** (negative: the plain wire is ahead)
+
+| variant | Δi_50 | Δi_90 | Δi_99 |
+| --- | --- | --- | --- |
+| default | −0.011 | −0.014 | −0.113 |
+| τ_th 0.7 ps | +0.025 | +0.012 | −0.089 |
+| τ_th 2.8 ps | −0.036 | −0.035 | −0.126 |
+| r0 15 nm | +0.003 | +0.010 | −0.075 |
+| latent heat off | −0.037 | −0.040 | −0.133 |
+| linear ε, latent off | −0.097 | −0.060 | −0.069 |
+
+![Efficiency at 1550 nm for each model variant](../results/energy/sensitivity.png)
+
+### 5.3 The ε closure against the Usadel depairing current
+
+pyTDGL's depairing current scales as ε^{3/2}, so the closure ε(T_e) fixes j_dep(T_e). `closure_kl.py` solves the
+Usadel equation of a dirty superconductor with a uniform supercurrent, maximises the current over the pair-breaking
+parameter (Kupriyanov & Lukichev 1980) and defines the matched closure ε_KL = (j_KL(t)/j_KL(t0))^{2/3}. Checks:
+Δ(0.05 T_c) = 1.764 T_c; Δ(0.99 T_c) = 0.305 against the GL limit 0.306.
+
+| T_e / T_c | two-fluid ε / ε_KL | linear ε / ε_KL |
+| --- | --- | --- |
+| 0.5 | 1.016 | 0.82 |
+| 0.6 | 1.035 | 0.76 |
+| 0.7 | 1.059 | 0.71 |
+| 0.8 | 1.085 | 0.67 |
+| 0.9 | 1.115 | 0.63 |
+
+![Depairing current: KL against the closures](../results/closure/kl_closure.png)
+
+In the hotspot halo (0.5–0.9 T_c), where the crowded current decides a count, the default two-fluid closure is
+2–11 % stronger than KL; linear GL is 18–37 % weaker. The two-fluid − KL gap is 8–22 % of the two-fluid − linear
+gap, so a KL closure would move thresholds by roughly −0.005 to −0.015 (plain wire, bridges) and −0.002 (channels).
+This is an estimate scaled from `linNL`, not a run.
+
+### 5.4 What it means
+
+1. **The first picosecond is a small effect.** τ_th and r0 move the double column by ≤ 0.013 and the plain wire by
+   ≤ 0.033. The plain wire reacts to the timing of the deposit (τ_th), hardly to its width (r0). A 40 nm channel
+   is blocked whatever the details. The thermal-electron approximation is adequate for the comparison.
+2. **At 1550 nm the two geometries tie within the model uncertainty.** The default i_50 gap (0.011) is smaller than
+   the τ_th and r0 shifts, and two variants put the double column ahead. The crossover of §4 (about 1650 nm) is
+   uncertain by a few hundred nm. The advantage of the slots at lower deposited energy (+0.13 to +0.15 on the
+   plain wire against +0.01 to +0.03 in the channels, §4) is much larger and holds.
+3. **The bridges are a robust weakness.** In every variant the plain wire's i_99 beats the double column's by
+   0.07–0.13.
+4. **Latent heat** shifts both geometries by about −0.04 alike.
+5. **The closure is the largest lever, but the default is close to theory.** Wide parts (plain wire, bridges)
+   react to the halo's strength; channels do not. Linear GL is far from KL, two-fluid is not, so no rerun.
+6. **Remaining model uncertainty at 1550 nm:** about ±0.03 on the plain wire and ±0.01 on the double column,
+   comparable to the 2.0 ξ mesh error.
+
+**Calibration gap, still open.** Real 9 nm NbTiN devices switch at I_C/I_dep = 0.63 (Sidorova) and count
+1550 nm photons, so their thresholds are below 0.63. The model's lowest 1550 nm threshold is 0.648 (plain-wire
+edge). None of the tested assumptions closes the gap in a defensible way:
+- lowering the deposited fraction raises the thresholds;
+- τ_th and r0 move them by ≤ 0.03;
+- the linear closure reaches 0.60, but only because linear GL is wrong in the halo.
+
+The most likely cause is edge defects of the real wire, which lower both I_C and the local thresholds; the ideal
+strip has none. Comparisons between geometries are robust; absolute bias values are not calibrated.

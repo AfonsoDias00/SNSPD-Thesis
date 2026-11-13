@@ -1,0 +1,28 @@
+SENSITIVITY OF THE THRESHOLDS AT 1550 nm (2.0 xi, circuit 750 squares; shifts against the default model)
+
+Plain wire, 200 nm (dark switching 0.949, 8 sites; channels y <= 180 nm, bridge rows y > 180)
+  variant     mean   chan.  bridge  max|.|   i_10   i_50   i_90   i_99  eta(0.80)
+  default   +0.000  +0.000           0.000   0.657  0.739  0.762  0.762   100.0 %
+  2fNL      -0.048  -0.048           0.070   0.631  0.672  0.701  0.703   100.0 %
+  linNL     -0.113  -0.113           0.149   0.569  0.598  0.637  0.637   100.0 %
+  tth2.8    -0.020  -0.020           0.027   0.648  0.711  0.736  0.739   100.0 %
+  tth0.7    +0.033  +0.033           0.047   0.680  0.776  0.797  0.797   100.0 %
+  r015      +0.007  +0.007           0.016   0.656  0.747  0.775  0.778   100.0 %
+
+Double column, 400 nm slots (dark switching 0.957, 23 sites; channels y <= 180 nm, bridge rows y > 180)
+  variant     mean   chan.  bridge  max|.|   i_10   i_50   i_90   i_99  eta(0.80)
+  default   +0.000  +0.000  +0.000   0.000   0.746  0.750  0.776  0.875    92.9 %
+  2fNL      -0.040  -0.042  -0.039   0.070   0.705  0.709  0.741  0.836    96.8 %
+  linNL     -0.091  -0.057  -0.112   0.192   0.686  0.695  0.697  0.706   100.0 %
+  tth2.8    -0.005  -0.003  -0.006   0.016   0.740  0.747  0.771  0.865    93.7 %
+  tth0.7    +0.006  +0.002  +0.009   0.019   0.747  0.751  0.785  0.886    91.8 %
+  r015      -0.010  -0.004  -0.013   0.024   0.740  0.744  0.765  0.853    94.6 %
+
+plain minus double column (negative: the plain wire is ahead)
+  variant   d i_50  d i_90  d i_99
+  default   -0.011  -0.014  -0.113
+  2fNL      -0.037  -0.040  -0.133
+  linNL     -0.097  -0.060  -0.069
+  tth2.8    -0.036  -0.035  -0.126
+  tth0.7    +0.025  +0.012  -0.089
+  r015      +0.003  +0.010  -0.075
