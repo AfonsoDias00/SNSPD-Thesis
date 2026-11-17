@@ -1,0 +1,24 @@
+{
+    // Used when this folder is opened on its own; the repository root has the same settings.
+    // Build with latexmk; all engine/output settings live in .latexmkrc (XeLaTeX + biber,
+    // aux files in /tmp/latex-build/Thesis_report). LaTeX Workshop runs it in the root file's folder.
+    "latex-workshop.latex.recipes": [
+        { "name": "latexmk (.latexmkrc)", "tools": ["latexmk-rc"] }
+    ],
+    "latex-workshop.latex.tools": [
+        {
+            "name": "latexmk-rc",
+            "command": "latexmk",
+            "args": ["-synctex=1", "-interaction=nonstopmode", "-file-line-error", "%DOC%"],
+            "env": {}
+        }
+    ],
+    "latex-workshop.latex.outDir": "%DIR%",
+    "latex-workshop.latex.rootFile.doNotPrompt": true,
+    "latex-workshop.latex.autoBuild.run": "onSave",
+    "latex-workshop.latex.autoClean.run": "never",
+    "latex-workshop.view.pdf.viewer": "tab",
+
+    // ---- Spelling and grammar (LTeX+) ----
+    "ltex.language": "en-GB"
+}

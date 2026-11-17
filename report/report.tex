@@ -1,0 +1,114 @@
+\documentclass{tudelft-report}
+
+%% Set up the bibliography
+\usepackage[british]{babel} % British English hyphenation and names
+\usepackage{csquotes}        % Context-sensitive quotes (recommended with biblatex)
+\usepackage[style=ieee,backend=biber]{biblatex}
+\addbibresource{report.bib}
+
+%% Additional packages and commands
+\usepackage{parskip}
+\setlist{itemsep=-2pt} % Reducing white space in lists slightly
+\renewcommand{\deg}{\unit{\degree}\xspace} % Use \deg easily, everywhere
+
+%% ----------------------------------------------------------------------
+%%    Math & physics (see chapter 3 for usage examples)
+%% ----------------------------------------------------------------------
+
+\usepackage{bm}         % Bold math symbols, including Greek (\bm{k})
+\usepackage{derivative} % Derivatives: \odv{f}{x}, \pdv[order=2]{f}{x}, differential \odif{x}
+\usepackage{pgfplots}   % Native plots in the document font
+\pgfplotsset{compat=1.18}
+\graphicspath{{figures/}} % Figures live in figures/<chapter>/; write \includegraphics{02-theory/name}
+\usepackage[colorinlistoftodos,textsize=scriptsize]{todonotes} % Margin notes: \todo{...}; use [disable] for the final version
+
+%% Units and numbers: 632.8(1) nm -> 632.8 ± 0.1 nm, m/s instead of m s^-1
+\sisetup{
+    mode             = match,  % Numbers in text use the text font
+    uncertainty-mode = separate,
+    per-mode         = symbol,
+    range-units      = single,
+    list-units       = single,
+    product-units    = single,
+}
+
+%% Notation --- change a definition here to change it throughout the thesis
+\newcommand{\vect}[1]{\bm{#1}}          % Vector: \vect{E}, \vect{k}
+\newcommand{\uvec}[1]{\hat{\bm{#1}}}    % Unit vector: \uvec{x}
+\newcommand{\e}{\mathrm{e}}             % Euler's number (upright)
+\newcommand{\iu}{\mathrm{i}}            % Imaginary unit (upright)
+\newcommand{\conj}[1]{#1^{*}}           % Complex conjugate
+\newcommand{\FT}{\mathcal{F}}           % Fourier transform: \FT\{f\}
+\newcommand{\IFT}{\mathcal{F}^{-1}}     % Inverse Fourier transform
+\DeclarePairedDelimiter{\abs}{\lvert}{\rvert}       % \abs{x}, \abs*{x} auto-sizes
+\DeclarePairedDelimiter{\norm}{\lVert}{\rVert}      % \norm{x}
+\DeclarePairedDelimiter{\avg}{\langle}{\rangle}     % Time/ensemble average: \avg{I}
+\DeclareMathOperator{\sinc}{sinc}
+\DeclareMathOperator{\rect}{rect}
+\DeclareMathOperator{\circfn}{circ}
+\renewcommand{\Re}{\operatorname{Re}}
+\renewcommand{\Im}{\operatorname{Im}}
+
+%% ----------------------------------------------------------------------
+%%    Begin of document + Frontmatter (Roman page numbering)
+%% ----------------------------------------------------------------------
+
+\begin{document}
+
+\frontmatter
+
+%% Define the main parameters
+%% Working title, from the preparation report (6 Oct 2026); revisit once the results settle
+\title{Vortex Control in Superconducting Single-Photon Detectors Using Nanohole Structures}
+%\subtitle{An optional subtitle}
+\author{Afonso Paredes Dias}
+
+%\subject{AB1234: Optional Course Name} % Cover only (not used for a thesis)
+\affiliation{Delft University of Technology} % Cover only
+\coverimage{figures/cover.jpg} % Aspect ratio of 2:3 (portrait) recommended
+\definecolor{title}{HTML}{4884d6} % Color for cover title
+
+\makecover
+
+\input{frontmatter/title-thesis}
+\input{frontmatter/preface}
+\input{frontmatter/summary}
+
+\tableofcontents
+\listoffigures
+\listoftables
+
+\input{frontmatter/nomenclature}
+
+%% ----------------------------------------------------------------------
+%%    Mainmatter (Arabic page numbering)
+%% ----------------------------------------------------------------------
+
+\mainmatter
+
+\input{mainmatter/01-introduction}
+\input{mainmatter/02-theory}
+\input{mainmatter/03-methods}
+\input{mainmatter/04-results}
+\input{mainmatter/05-experiment} % Only if devices are measured
+\input{mainmatter/06-discussion}
+\input{mainmatter/07-conclusion}
+
+%% Prevent urls running into margins in bibliography
+\setcounter{biburlnumpenalty}{7000}
+\setcounter{biburllcpenalty}{7000}
+\setcounter{biburlucpenalty}{7000}
+
+%% Add bibliography
+\printbibliography[heading=bibintoc,title=References]
+
+%% ----------------------------------------------------------------------
+%%    Appendix (Letters for chapters)
+%% ----------------------------------------------------------------------
+
+\appendix
+\input{appendix/a-validation}
+\input{appendix/b-parameters}
+%\input{appendix/typesetting_examples} % Cheat sheet for the macros above: uncomment to see it
+
+\end{document}

@@ -1,0 +1,33 @@
+\chapter{Numerical Model and Methods}
+\label{chapter:methods}
+
+\emph{Working notes: \texttt{simulations/docs/model.md}, \texttt{methods.md} and \texttt{validity.md}.}
+
+\section{Device and material parameters}
+\label{sec:me-device}
+\emph{The 200 nm strip of 9 nm NbTiN; geometries (plain strips, hole arrays, slot columns, Double\_400);
+measured film parameters \cite{sidorova2021,sidorova2022,jonsson2022} in a table.}
+
+\section{Solver and discretisation}
+\label{sec:me-solver}
+\emph{pyTDGL \cite{bishopvanhorn2023}; mesh size, time step, the settled start; convergence evidence.}
+
+\section{Photon model}
+\label{sec:me-photon}
+\emph{The photon as an energy deposit; build-up time and initial volume \cite{simon2025}; wavelength.}
+
+\section{Heat model}
+\label{sec:me-heat}
+\emph{The two-temperature model as implemented; parameters and their sources.}
+
+\section{Readout circuit}
+\label{sec:me-circuit}
+\emph{Series kinetic inductance and 50\,\unit{\ohm} load; the length of wire it represents.}
+
+\section{Detection criterion and threshold search}
+\label{sec:me-criterion}
+\emph{What counts as a detection; bisection of the threshold bias per absorption site; dark switching.}
+
+\section{Validation}
+\label{sec:me-validation}
+\emph{Summary of the validation suite (details in \cref{appendix:validation}).}

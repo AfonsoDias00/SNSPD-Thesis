@@ -1,0 +1,125 @@
+\chapter{Theory}
+\label{chapter:theory}
+
+\emph{Builds up, in order, everything the model in \cref{chapter:methods} needs. Working notes:
+\texttt{simulations/docs/model.md} and \texttt{simulations/docs/validity.md}.}
+
+%% ----------------------------------------------------------------------
+\section{Superconductivity in thin films}
+\label{sec:th-films}
+
+\subsection{The order parameter}
+\label{sec:th-order-parameter}
+\emph{$\psi = \abs{\psi}\e^{\iu\varphi}$; Cooper pairs, the gap; phase coherence and supercurrent.}
+
+\subsection{Characteristic lengths}
+\label{sec:th-lengths}
+\emph{Coherence length $\xi$, penetration depth $\lambda$, Pearl length $\Lambda = 2\lambda^2/d$; why a 9 nm NbTiN
+strip is in the regime $\xi \ll w \ll \Lambda$ (current uniform at large scale, no screening of the self-field).}
+
+\subsection{Dirty-limit superconductors}
+\label{sec:th-dirty}
+\emph{Diffusion constant $D$, $\xi = \sqrt{\hbar D / \Delta}$; NbTiN as a strongly disordered film.}
+
+%% ----------------------------------------------------------------------
+\section{Ginzburg--Landau theory}
+\label{sec:th-gl}
+
+\subsection{The free energy and the GL equations}
+\label{sec:th-gl-equations}
+\emph{Free energy functional, the two GL equations, the supercurrent density.}
+
+\subsection{The depairing current}
+\label{sec:th-depairing}
+\emph{$j_\mathrm{dep}$ of a uniform strip; its temperature dependence \cite{sidorova2022}; measured $I_\mathrm{sw}/I_\mathrm{dep}$
+\cite{frasca2019}.}
+
+\subsection{Fluxoid quantisation and multiply connected films}
+\label{sec:th-fluxoid}
+\emph{Phase winding around a hole; persistent currents in a ring; why holes and slots change which states are
+allowed.}
+
+%% ----------------------------------------------------------------------
+\section{Time-dependent Ginzburg--Landau theory}
+\label{sec:th-tdgl}
+
+\subsection{The generalised TDGL equation}
+\label{sec:th-gtdgl}
+\emph{The Kramer--Watts-Tobin equation \cite{kramer1978,wattstobin1981}: the inelastic parameter $\gamma$, $u = 5.79$,
+the time unit $\tau_0$; the current-continuity equation for the electric potential $\mu$.}
+
+\subsection{Dimensionless units}
+\label{sec:th-units}
+\emph{pyTDGL's units of length, time, current and voltage \cite{bishopvanhorn2023}; how a bias in $I_\mathrm{dep}$ maps to
+them.}
+
+\subsection{Validity of TDGL}
+\label{sec:th-tdgl-validity}
+\emph{Near $T_c$ vs. at the operating temperature; the role of $\gamma$; what the kinetic-equation approach adds
+\cite{vodolazov2017,simon2025}.}
+
+%% ----------------------------------------------------------------------
+\section{Vortices in current-carrying strips}
+\label{sec:th-vortices}
+
+\subsection{Vortex entry and the edge barrier}
+\label{sec:th-edge-barrier}
+\emph{Bean--Livingston-type barrier in thin strips; entry current; vortex--antivortex pairs \cite{vodolazov2012}.}
+
+\subsection{Current crowding}
+\label{sec:th-crowding}
+\emph{Crowding at bends and around holes \cite{clem2011}; crowding in GTDGL \cite{jonsson2022}.}
+
+\subsection{Phase-slip lines and the resistive state}
+\label{sec:th-psl}
+\emph{From vortex crossings to a normal belt across the strip.}
+
+%% ----------------------------------------------------------------------
+\section{Photon detection mechanisms}
+\label{sec:th-detection}
+
+\subsection{Energy cascade after absorption}
+\label{sec:th-cascade}
+\emph{Photon energy into hot electrons, phonons and quasiparticles; thermalisation time \cite{engel2015,simon2025}.}
+
+\subsection{Hotspot and vortex-assisted models}
+\label{sec:th-hotspot}
+\emph{Normal-core hotspot \cite{goltsman2001}; diffusion-based and vortex-assisted detection
+\cite{bulaevskii2012,bartolf2010,engel2015}; the detection current and the plateau.}
+
+\subsection{TDGL descriptions of detection}
+\label{sec:th-tdgl-detection}
+\emph{Photon as a local suppression or as an energy deposit \cite{zotova2012,vodolazov2017,simon2025}.}
+
+\subsection{Dark counts}
+\label{sec:th-dark}
+\emph{Thermally activated vortex crossing and phase slips \cite{bartolf2010,bulaevskii2012}.}
+
+%% ----------------------------------------------------------------------
+\section{Heat transport}
+\label{sec:th-heat}
+
+\subsection{The two-temperature model}
+\label{sec:th-2t}
+\emph{Electron and phonon temperatures, electron--phonon exchange ($T_e^n - T_\mathrm{ph}^n$), phonon escape to the
+substrate, temperature-dependent heat capacities \cite{vodolazov2017,sidorova2021,sidorova2022,annunziata2010}.}
+
+\subsection{Coupling heat to the order parameter}
+\label{sec:th-heat-coupling}
+\emph{$\epsilon(T_e)$ in the TDGL equation; Joule heating as the source \cite{zotova2012}.}
+
+%% ----------------------------------------------------------------------
+\section{The detector in its readout circuit}
+\label{sec:th-circuit}
+
+\subsection{Kinetic inductance}
+\label{sec:th-kinetic-inductance}
+\emph{$L_k$ of a long strip; why the device is current-biased only on short time scales.}
+
+\subsection{Electrothermal feedback, reset and latching}
+\label{sec:th-latching}
+\emph{The loop equation, the reset time $L_k/R_L$, latching \cite{kerman2006,kerman2009,annunziata2010}.}
+
+\subsection{Parallel channels and cascade switching}
+\label{sec:th-cascade-switching}
+\emph{SNAPs and cascade switching \cite{ejrnaes2007,marsili2011}: the limit for a slotted strip.}
