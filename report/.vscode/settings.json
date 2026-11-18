@@ -19,6 +19,9 @@
     "latex-workshop.latex.autoClean.run": "never",
     "latex-workshop.view.pdf.viewer": "tab",
 
+    // Soft-wrap long lines in .tex files (write one sentence per line for clean git diffs)
+    "[latex]": { "editor.wordWrap": "on" },
+
     // ---- Spelling and grammar (LTeX+) ----
     "ltex.language": "en-GB"
 }
